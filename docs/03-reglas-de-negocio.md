@@ -63,6 +63,8 @@ Convenciones generales:
   | Moteles | $ 2.300 | Servicio con destino a moteles |
   | Zona de termales | $ 2.700 | No se cobra a residentes de la vereda Gallinazo |
   | Mascotas | $ 1.000 | Servicio con mascota |
+  | Categoría **Media Alta** | $ 1.000 | Vehículo de esa categoría ([D-22](13-decisiones-pendientes-y-riesgos.md)) |
+  | Categoría **Alta** | $ 2.000 | Vehículo de esa categoría ([D-22](13-decisiones-pendientes-y-riesgos.md)) |
 
   El decreto establece que **no se cobrará ningún otro recargo**. Por eso **no hay recargo de reserva** en los
   viajes programados (ver RN-081) mientras Legal no confirme otra cosa ([D-19](13-decisiones-pendientes-y-riesgos.md)).
@@ -78,6 +80,16 @@ Convenciones generales:
   4. Las **rutas con tarifa fija** (RN-090) **no se recalculan**: se cobra el valor de la tabla.
   5. Peajes y cobro de espera se suman al valor final (RN-041).
 - **RN-013** Una **cotización** es válida por `[5 min]`. Pasado ese tiempo, la app debe recotizar antes de confirmar.
+- **RN-015** **Taxímetro en la app del conductor** ([D-23](13-decisiones-pendientes-y-riesgos.md)). La app del conductor mide con GPS,
+  desde "Iniciar" hasta "Finalizar", tres valores: **distancia recorrida**, **duración total** y **tiempo detenido**. El tiempo
+  detenido es el que se cobra a $223 por minuto (RN-010). Reglas:
+  1. El conductor y el pasajero ven el **valor en curso** mientras dura el viaje.
+  2. Al finalizar, la app envía sus mediciones y el servidor las **verifica con la trayectoria** que recibió durante el viaje
+     (ajustada al mapa). La base guarda las dos: lo que midió el taxímetro y los valores con los que se cobra.
+  3. Si la diferencia supera `[10 %]`, se genera una alerta `diferencia_taximetro` para la operación (ver [R-15](13-decisiones-pendientes-y-riesgos.md)).
+  4. Mientras no haya señal, la app **acumula las mediciones localmente** y las completa al reconectar; un tramo sin GPS se
+     marca y se estima con la ruta del servidor.
+  5. Un punto se considera **detenido** cuando la velocidad es menor a `[3 km/h]` durante al menos `[10 s]`: umbrales pendientes de calibrar en el piloto.
 - **RN-014** Toda tarifa tiene **vigencia** (desde/hasta) y **versión**. Cada viaje guarda la versión de
   tarifa con la que se cotizó para poder auditarla.
 

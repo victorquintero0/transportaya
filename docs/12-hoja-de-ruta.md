@@ -35,12 +35,14 @@ flowchart LR
 | Monorepo (pnpm + Turborepo), TypeScript, ESLint y Prettier | Hecho |
 | CI en GitHub Actions: formato, lint, tipos, pruebas y build | Hecho (se ejecuta al abrir un PR) |
 | Entorno local con Docker Compose (PostGIS, Redis, MinIO, Mailpit) | Hecho (configuración validada; no se levantó en esta sesión) |
-| Paquete `dominio`: estados del viaje, tarifa, comisión 3 % / 5 %, cierre diario | Hecho, con 45 pruebas |
+| Paquete `dominio`: estados del viaje, tarifa, comisión 3 % / 5 %, cierre diario | Hecho, con 47 pruebas |
 | API NestJS base con `/v1/salud` y simulador de tarifa | Hecho |
 | Esqueleto de las tres PWA con manifiesto y *service worker* | Hecho |
 | Herramienta de la prueba técnica de la PWA del conductor (ADR-0003) | Herramienta lista; **falta ejecutarla en celulares Android reales** |
 | Tarifas urbanas de Manizales (Decreto 0641 de 2025) | Hecho en el dominio, con pruebas. Quedan abiertas D-19, D-22 y D-23 |
-| Esquema de base de datos y migraciones | Pendiente |
+| Esquema de base de datos y migraciones (43 tablas, PostGIS, integridad en la base) | Hecho, con 64 pruebas contra PostgreSQL real ([docs/09](09-modelo-de-datos.md)) |
+| Carga inicial de Manizales: tarifa, 193 rutas y catálogo de vehículos | Hecho (`pnpm semilla` en `packages/db`) |
+| Trabajo programado de particiones de posiciones y cierre diario | Pendiente |
 | Autenticación con OTP y usuarios internos con doble factor | Pendiente |
 | Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |

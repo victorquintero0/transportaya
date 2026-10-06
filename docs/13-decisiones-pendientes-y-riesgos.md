@@ -23,6 +23,8 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-16** | Nombre comercial | **TransporteYa** | Dominio |
 | **D-17** | Torre de control | **24/7 desde el lanzamiento** | Turnos y protocolo de emergencias |
 | **D-20** | Tarifa urbana de Manizales | **Tarifas de taxi con taxímetro 2026** (Decreto 0641 del 31/12/2025): banderazo $3.700, $1.784 por km, $223 por tiempo detenido, mínima $6.300 y los recargos de [RN-011](03-reglas-de-negocio.md). Cargadas en `packages/dominio` como semilla | Ver D-19, D-22 y D-23 |
+| **D-22** | Tarifa por categoría | **Media Alta suma $1.000 y Alta suma $2.000** a la carrera. Se interpretó como un recargo fijo sobre la tarifa (no sobre el banderazo ni el mínimo), sin multiplicar por la dinámica y dentro de la base de la comisión | Confirmar esa interpretación |
+| **D-23** | Tiempo detenido | **$223 por minuto**, medido por un **taxímetro con GPS en la app del conductor** que mide distancia y tiempos ([RN-015](03-reglas-de-negocio.md)) | Ver D-24 |
 
 ## Decisiones que siguen abiertas
 
@@ -31,9 +33,8 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-15** | Seguros para pasajeros: póliza de responsabilidad civil y de accidentes de pasajeros. El todo riesgo cubre el vehículo, no al pasajero | Legal | Definido por Legal. Mientras tanto se exigen SOAT, todo riesgo y RTM | Lanzamiento |
 | **D-18** | Proveedor de nube y región | Tecnología | Comparar en la Fase 0 por costo, latencia desde Colombia y cumplimiento de la Ley 1581 | Fase 0 |
 | **D-19** | **Marco de las tarifas.** Las rutas desde Manizales se titulan "tarifas sugeridas" para taxis de servicio público (Resolución 031 de 1981), y el Decreto 0641 regula taxis **con taxímetro**. Falta confirmar con Legal si se pueden aplicar a vehículos particulares, si la **dinámica** (RN-020 a RN-025) es compatible con una tarifa regulada, y que el decreto no prevé recargo de reserva ni otros recargos | Negocio + Legal | Abierta | Fase 1 |
+| **D-24** | **Parámetros del taxímetro.** Velocidad y duración que definen "detenido" (propuesta: menos de 3 km/h durante 10 s), tolerancia de diferencia entre el taxímetro y la trayectoria del servidor (propuesta: 10 %), cuál valor se cobra si difieren, y la fracción de tiempo detenido para estimar la cotización | Negocio + Tecnología | Abierta. Se calibra con datos del piloto | Fase 1 |
 | **D-21** | Clasificación definitiva de cada vehículo en el catálogo | Negocio | Borrador en [catálogo](14-catalogo-de-vehiculos.md) | Fase 1 |
-| **D-22** | **Tarifa por categoría.** El decreto fija una sola tarifa de taxi. Falta definir si Media Alta y Alta pagan un multiplicador o una tarifa propia | Negocio | Abierta | Fase 1 |
-| **D-23** | **Tiempo detenido.** El decreto cobra $223 por tiempo detenido sin precisar la unidad (se asumió por minuto). Falta confirmarla con la Secretaría de Movilidad, definir cuándo se considera "detenido" con el GPS (por ejemplo, velocidad menor a un umbral) y la fracción de tiempo detenido para estimar la cotización | Negocio + Tecnología | Abierta. Se calibra con datos del piloto | Fase 1 |
 
 ## Riesgos
 
@@ -55,3 +56,4 @@ Escala: **Alto / Medio / Bajo** para probabilidad e impacto.
 | **R-12** | **Margen insuficiente:** una comisión del 3 % puede ser menor que el costo de la pasarela en viajes con tarjeta (porcentaje más un valor fijo por transacción) | Alta | Alto | Obtener las tarifas de Wompi en la Fase 0 y modelar el margen por método de pago; si no alcanza, trasladar el costo al pasajero, limitar la tarjeta a viajes de cierto valor o ajustar la comisión |
 | **R-13** | **Recálculo del precio al final (D-10):** el pasajero puede sentir que paga más de lo esperado, y la normativa de protección al consumidor exige información clara | Media | Medio | Mostrar siempre un rango estimado y el aviso de que el valor final depende de distancia y tiempo reales; poner un tope sobre el estimado, a definir con Negocio |
 | **R-14** | **Cobro de la comisión por Bre-B:** conciliación manual o errores pueden bloquear a conductores que sí pagaron | Media | Medio | Conciliación automática por webhook si Wompi lo permite; si no, un monitor de cobranza y habilitación manual el mismo día |
+| **R-15** | **Taxímetro por software:** la precisión del GPS del celular, las zonas sin señal o un GPS falso alteran la distancia y el tiempo detenido, y con ello el cobro. Además, el decreto de taxis exige taxímetro electrónico calibrado, y el de la app no es un dispositivo homologado (ver D-19) | Media | Alto | Verificar con la trayectoria del servidor, alerta `diferencia_taximetro`, filtrado de posiciones imprecisas (RNF-50), límites de diferencia y revisión de los viajes con diferencias grandes |

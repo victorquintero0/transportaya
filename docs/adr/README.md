@@ -10,6 +10,7 @@ que reemplaza al anterior y se actualiza el estado del viejo.
 | [0002](0002-mapas-openstreetmap-autoalojado.md) | Mapas, rutas y direcciones con OpenStreetMap autoalojado | Aceptada |
 | [0003](0003-app-conductor-como-pwa.md) | App de conductores como PWA, con Capacitor como plan B | Aceptada, sujeta a prueba técnica |
 | [0004](0004-postgresql-postgis-y-redis.md) | PostgreSQL + PostGIS como base principal y Redis para tiempo real | Aceptada |
+| [0005](0005-esquema-con-drizzle-e-integridad-en-la-base.md) | Esquema con Drizzle y reglas de integridad en la base de datos | Aceptada |
 
 ## Plantilla
 

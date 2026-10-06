@@ -59,6 +59,7 @@ Mientras está **habilitado**, el conductor tiene además un **estado operativo*
 | CON-22 | Navegación en el mapa de la app y botón para abrir **Waze** o **Google Maps** | MVP |
 | CON-23 | Botones de estado: **Llegué** (validado por GPS) → **Iniciar** (con PIN si aplica) → **Finalizar** | MVP |
 | CON-24 | Contador de espera visible después de "Llegué" | MVP |
+| CON-23a | **Taxímetro con GPS**: desde "Iniciar" mide distancia, duración y tiempo detenido, y muestra el valor en curso (RN-015). Acumula sin conexión y envía las mediciones al finalizar | MVP |
 | CON-25 | Cancelar con motivo; "pasajero no se presentó" habilitado tras el tiempo de espera | MVP |
 | CON-26 | Chat con el pasajero con mensajes rápidos ("Ya llegué", "Estoy en camino") | MVP |
 | CON-27 | Al finalizar en efectivo: valor a cobrar en grande y confirmación del valor recibido | MVP |

@@ -15,9 +15,9 @@ export interface ParametrosTarifa {
  * Recargo (RN-011). No se multiplica por la dinámica. Un recargo porcentual se aplica sobre el
  * subtotal sin dinámica, expresado en puntos básicos (100 pb = 1 %).
  */
-export type Recargo =
-  | { nombre: string; tipo: 'fijo'; valor: number }
-  | { nombre: string; tipo: 'porcentaje'; puntosBasicos: number };
+export type RecargoFijo = { nombre: string; tipo: 'fijo'; valor: number };
+export type RecargoPorcentual = { nombre: string; tipo: 'porcentaje'; puntosBasicos: number };
+export type Recargo = RecargoFijo | RecargoPorcentual;
 
 export interface EntradaTarifa {
   parametros: ParametrosTarifa;

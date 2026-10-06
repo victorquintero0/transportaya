@@ -47,7 +47,7 @@ Las metas numéricas son **iniciales** y se revisan después del piloto.
 - **RNF-45** Documentos y fotos de conductores en almacenamiento privado y cifrado; acceso con URL firmada de corta duración.
 - **RNF-46** Números de cuenta bancaria cifrados a nivel de columna.
 - **RNF-47** Secretos en un gestor de secretos, nunca en el repositorio.
-- **RNF-48** Auditoría de todas las acciones sensibles (ver [modelo de datos](09-modelo-de-datos.md#auditoría)).
+- **RNF-48** Auditoría de todas las acciones sensibles (ver [modelo de datos](09-modelo-de-datos.md#reglas-de-integridad-que-hace-cumplir-la-base)).
 - **RNF-49** Validación de webhooks por firma; protección contra repetición.
 - **RNF-50** Detección de fraude básica: GPS falso (saltos imposibles, apps de ubicación simulada cuando sea
   detectable), cuentas múltiples por dispositivo, viajes cortos repetidos entre el mismo pasajero y conductor.

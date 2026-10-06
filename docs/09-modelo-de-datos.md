@@ -1,19 +1,51 @@
 # 09 · Modelo de datos
 
-Modelo **inicial** de las entidades principales. Sirve para alinear al equipo; los nombres exactos de
-columnas e índices se definen en las migraciones.
+La fuente de verdad es el código: [`packages/db/src/schema/`](../packages/db/src/schema) define las 43 tablas y
+[`packages/db/migraciones/`](../packages/db/migraciones) las crea en PostgreSQL 16 con PostGIS 3.4. Este documento
+explica el modelo y las reglas que la base hace cumplir; si difiere del código, manda el código.
+
+## Cómo se trabaja con la base
+
+```bash
+cd packages/db
+DATABASE_URL=postgres://transportaya:transportaya@localhost:5432/transportaya pnpm migrar   # aplica las migraciones
+DATABASE_URL=... pnpm semilla                                                               # Manizales: tarifa, rutas y catálogo
+pnpm generar                                                                                # genera una migración tras cambiar el esquema
+pnpm test                                                                                   # 64 pruebas de integridad contra PostgreSQL real
+```
+
+- Las pruebas crean una base temporal por archivo y la borran al terminar. Necesitan un PostgreSQL con PostGIS y
+  un usuario con permisos de superusuario (`TEST_DATABASE_URL`, por defecto `localhost:5432`). En la CI se exigen
+  (`REQUIRE_DB=1`); en local, si no hay base, se saltan con aviso.
+- **Nunca se edita una migración ya aplicada.** Un cambio de esquema es una migración nueva (ver
+  [ADR-0005](adr/0005-esquema-con-drizzle-e-integridad-en-la-base.md)).
 
 ## Convenciones
 
-- **Identificadores:** UUID v7 (ordenables por fecha). Los viajes tienen además un **código corto** legible
-  para soporte, por ejemplo `TY-7K3M9Q`.
+- **Identificadores:** UUID v7 generado por la base (`uuid_v7()`), ordenable por fecha de creación. Los viajes tienen
+  además un **código corto** legible, por ejemplo `TY-7K3M9Q`.
 - **Dinero:** `bigint` en pesos colombianos. Nunca `float`.
-- **Fechas:** `timestamptz` guardadas en UTC; se muestran en `America/Bogota`.
-- **Geografía:** PostGIS `geography` SRID 4326. Puntos para ubicaciones, polígonos para zonas y
-  `LineString` para trayectorias.
-- **Enumeraciones:** definidas una sola vez en `packages/dominio` y reflejadas en la base de datos.
-- **Borrado de cuentas:** se **anonimizan** los datos personales y se conservan los viajes y movimientos
-  por obligaciones contables y legales.
+- **Fechas:** `timestamptz` en UTC; se muestran en `America/Bogota`. El día contable de un movimiento es el día de Bogotá
+  (columna generada `movimiento_saldo.dia`).
+- **Geografía:** PostGIS `geography` SRID 4326, con índices GiST. En el código un punto es `{ lat, lng }`.
+- **Enumeraciones:** las categorías, los estados del viaje y del pago, los tipos de servicio y los tipos de movimiento se
+  crean desde las constantes de `@transportaya/dominio`, para que la base y la lógica no puedan divergir.
+- **Borrado de cuentas:** se **anonimizan** los datos personales y se conservan los viajes y movimientos por
+  obligaciones contables y legales. Por eso las claves hacia `usuario` no tienen borrado en cascada.
+
+## Mapa de tablas
+
+| Área | Tablas |
+|---|---|
+| Identidad | `usuario`, `empleado`, `usuario_rol`, `otp_codigo`, `sesion`, `suscripcion_push` |
+| Pasajeros | `pasajero`, `contacto_confianza`, `lugar_guardado`, `metodo_pago` |
+| Conductores y vehículos | `conductor`, `vehiculo`, `conductor_vehiculo`, `cuenta_pago_conductor`, `documento`, `sesion_conductor`, `posicion_conductor` |
+| Catálogos y tarifas | `ciudad`, `catalogo_vehiculo`, `tarifa`, `tarifa_recargo`, `ruta_fija`, `zona`, `dinamica_zona`, `festivo`, `parametro` |
+| Viajes y despacho | `cotizacion`, `viaje`, `viaje_evento`, `oferta`, `viaje_mensaje`, `viaje_compartido`, `calificacion`, `alerta` |
+| Dinero | `pago`, `reembolso`, `movimiento_saldo`, `cierre_diario`, `pago_conductor`, `pago_comision` |
+| Soporte y control | `ticket`, `ticket_mensaje`, `auditoria` |
+
+Vistas: `saldo_conductor` (suma del libro) y `viaje_tiempos` (asignación, llegada, espera, viaje y total de servicio de cada viaje).
 
 ## Personas y vehículos
 
@@ -21,380 +53,208 @@ columnas e índices se definen en las migraciones.
 erDiagram
     USUARIO ||--o| PASAJERO : "es"
     USUARIO ||--o| CONDUCTOR : "es"
-    USUARIO ||--o{ USUARIO_ROL : "tiene"
+    USUARIO ||--o| EMPLEADO : "es"
+    EMPLEADO ||--o{ USUARIO_ROL : "tiene"
+    PASAJERO ||--o{ METODO_PAGO : "registra"
+    PASAJERO ||--o{ LUGAR_GUARDADO : "guarda"
+    PASAJERO ||--o{ CONTACTO_CONFIANZA : "tiene"
+    CIUDAD ||--o{ CONDUCTOR : "opera en"
     CONDUCTOR ||--o{ CONDUCTOR_VEHICULO : "usa"
     VEHICULO ||--o{ CONDUCTOR_VEHICULO : "es usado por"
+    CATALOGO_VEHICULO ||--o{ VEHICULO : "clasifica"
     CONDUCTOR ||--o{ DOCUMENTO : "carga"
     VEHICULO ||--o{ DOCUMENTO : "tiene"
-    CONDUCTOR ||--o| CUENTA_BANCARIA : "cobra en"
+    CONDUCTOR ||--o{ CUENTA_PAGO_CONDUCTOR : "cobra en"
     CONDUCTOR ||--o{ SESION_CONDUCTOR : "se conecta"
-    CIUDAD ||--o{ CONDUCTOR : "opera en"
 
-    USUARIO {
-        uuid id PK
-        text telefono UK "+57..."
-        text email
-        text nombre
-        text estado "activo, bloqueado, anonimizado"
-        timestamptz creado_en
-    }
-    USUARIO_ROL {
-        uuid usuario_id FK
-        text rol "monitor, soporte, cumplimiento, financiero, supervisor, admin"
-    }
-    PASAJERO {
-        uuid usuario_id PK, FK
-        numeric calificacion_promedio
-        bigint deuda_pendiente "COP"
-    }
     CONDUCTOR {
-        uuid usuario_id PK, FK
-        uuid ciudad_id FK
-        text estado_habilitacion "registro_incompleto ... bloqueado"
-        text estado_operativo "desconectado ... en_viaje"
+        uuid usuario_id PK
+        enum estado_habilitacion
+        enum estado_operativo
         uuid vehiculo_activo_id FK
-        numeric calificacion_promedio
-        boolean acepta_intermunicipal
+        bool bloqueado_por_deuda
+        bool acepta_categoria_inferior
+        bool acepta_intermunicipal
     }
     VEHICULO {
         uuid id PK
         text placa UK
+        enum categoria "media, media_alta, alta"
+        bool fuera_de_catalogo
+    }
+    CATALOGO_VEHICULO {
         text marca
         text linea
-        int modelo_anio
-        text color
-        text categoria "media, media_alta, alta"
-        uuid catalogo_vehiculo_id FK
-        text estado
-    }
-    CONDUCTOR_VEHICULO {
-        uuid conductor_id FK
-        uuid vehiculo_id FK
-        text relacion "propietario, autorizado"
+        enum categoria
     }
     DOCUMENTO {
-        uuid id PK
-        text titular_tipo "conductor, vehiculo"
-        uuid titular_id
-        text tipo "licencia, soat, rtm, ..."
-        text numero
+        enum titular "conductor o vehiculo"
+        enum tipo "soat, rtm, todo_riesgo, licencia..."
         date vence_en
-        text archivo_clave "almacenamiento de objetos"
-        text estado "pendiente, aprobado, rechazado, vencido"
-        uuid revisado_por FK
-        text motivo_rechazo
+        enum estado
     }
-    CUENTA_BANCARIA {
-        uuid conductor_id FK
-        text banco
-        text tipo_cuenta
-        text numero_cifrado
-        text estado
-    }
-    SESION_CONDUCTOR {
-        uuid id PK
-        uuid conductor_id FK
-        uuid vehiculo_id FK
-        timestamptz inicio
-        timestamptz fin
-    }
-    CIUDAD {
-        uuid id PK
-        text nombre
-        geography area_servicio "polígono"
+    CUENTA_PAGO_CONDUCTOR {
+        enum tipo "llave_bre_b o cuenta_bancaria"
+        text valor_cifrado
     }
 ```
 
-## Viajes, despacho y ubicación
+## Tarifas, viajes y despacho
 
 ```mermaid
 erDiagram
+    CIUDAD ||--o{ TARIFA : "define"
+    TARIFA ||--o{ TARIFA_RECARGO : "tiene"
+    CIUDAD ||--o{ RUTA_FIJA : "origen de"
+    CIUDAD ||--o{ ZONA : "contiene"
+    ZONA ||--o{ DINAMICA_ZONA : "recibe"
+    PASAJERO ||--o{ COTIZACION : "pide"
+    TARIFA ||--o{ COTIZACION : "aplica en"
+    RUTA_FIJA ||--o{ COTIZACION : "aplica en"
+    COTIZACION ||--o| VIAJE : "origina"
     PASAJERO ||--o{ VIAJE : "solicita"
     CONDUCTOR ||--o{ VIAJE : "realiza"
     VIAJE ||--o{ VIAJE_EVENTO : "registra"
     VIAJE ||--o{ OFERTA : "se ofrece en"
     CONDUCTOR ||--o{ OFERTA : "recibe"
-    COTIZACION ||--o| VIAJE : "origina"
-    TARIFA ||--o{ COTIZACION : "se aplica en"
-    CIUDAD ||--o{ TARIFA : "define"
-    CIUDAD ||--o{ ZONA : "contiene"
-    CONDUCTOR ||--o{ POSICION_CONDUCTOR : "reporta"
     VIAJE ||--o{ CALIFICACION : "recibe"
+    VIAJE ||--o{ VIAJE_MENSAJE : "tiene"
     VIAJE ||--o{ ALERTA : "dispara"
+    CONDUCTOR ||--o{ POSICION_CONDUCTOR : "reporta"
 
-    VIAJE {
-        uuid id PK
-        text codigo UK "TY-7K3M9Q"
-        uuid pasajero_id FK
-        uuid conductor_id FK
-        uuid vehiculo_id FK
-        text tipo_servicio "inmediato, programado, aeropuerto, intermunicipal"
-        text categoria
-        text estado "buscando_conductor ... finalizado"
-        text estado_pago
-        geography origen
-        text origen_direccion
-        geography destino
-        text destino_direccion
-        timestamptz programado_para
-        uuid cotizacion_id FK
-        uuid tarifa_id FK "versión aplicada"
-        numeric multiplicador_dinamico
-        bigint precio_estimado
-        bigint precio_final
-        bigint comision
-        text metodo_pago
-        uuid empresa_id FK
-        uuid centro_costo_id FK
-        int distancia_real_m
-        int duracion_real_s
-        geography trayectoria "LineString ajustada al mapa"
-        timestamptz solicitado_en
-        timestamptz aceptado_en
-        timestamptz en_sitio_en
-        timestamptz iniciado_en
-        timestamptz finalizado_en
-        timestamptz cancelado_en
-        text cancelado_por "pasajero, conductor, operacion, sistema"
-        text motivo_cancelacion
+    TARIFA {
+        int version
+        bigint base "banderazo"
+        bigint valor_km
+        bigint valor_minuto "tiempo detenido"
+        bigint minima
+        tstzrange vigencia
     }
-    VIAJE_EVENTO {
-        uuid id PK
-        uuid viaje_id FK
-        text tipo "solicitado, oferta_enviada, aceptado, ..."
-        text actor_tipo
-        uuid actor_id
-        geography ubicacion
-        jsonb datos
-        timestamptz ocurrido_en
+    TARIFA_RECARGO {
+        text codigo "nocturno, aeropuerto, categoria..."
+        bigint valor
+        enum categoria "solo para recargos por categoria"
     }
-    OFERTA {
-        uuid id PK
-        uuid viaje_id FK
-        uuid conductor_id FK
-        int ronda
-        int eta_recogida_s
-        int distancia_recogida_m
-        timestamptz ofrecida_en
-        timestamptz expira_en
-        timestamptz respondida_en
-        text resultado "aceptada, rechazada, expirada, retirada"
+    RUTA_FIJA {
+        text destino
+        enum modalidad "solo_ida o ida_y_vuelta"
+        bigint tarifa
     }
     COTIZACION {
-        uuid id PK
-        uuid pasajero_id FK
-        geography origen
-        geography destino
-        text categoria
-        uuid tarifa_id FK
+        bigint precio_min
+        bigint precio_max
         numeric multiplicador_dinamico
-        bigint precio
-        int distancia_m
-        int duracion_s
+    }
+    VIAJE {
+        text codigo UK
+        enum estado
+        enum estado_pago
+        numeric multiplicador_dinamico
+        int distancia_taximetro_m
+        int tiempo_detenido_taximetro_s
+        int distancia_real_m
+        int tiempo_detenido_s
+        bigint total_carrera
+        bigint precio_final
+        bigint comision
+        int comision_pb
+        geography trayectoria
+    }
+    OFERTA {
+        int ronda
+        enum resultado
         timestamptz expira_en
     }
-    TARIFA {
-        uuid id PK
-        uuid ciudad_id FK
-        text categoria
-        text tipo_servicio
-        int version
-        bigint base
-        bigint valor_km
-        bigint valor_minuto
-        bigint minima
-        bigint cancelacion
-        bigint espera_minuto
-        timestamptz vigente_desde
-        timestamptz vigente_hasta
-    }
-    ZONA {
-        uuid id PK
-        uuid ciudad_id FK
-        text tipo "aeropuerto, restringida, punto_encuentro, ..."
-        text nombre
-        geography poligono
-    }
     POSICION_CONDUCTOR {
-        uuid conductor_id FK
-        timestamptz registrada_en "partición diaria"
+        timestamptz registrada_en "particion diaria"
         geography ubicacion
-        int precision_m
-        int velocidad_kmh
-        int rumbo
-        text estado_operativo
-        uuid viaje_id FK
-    }
-    CALIFICACION {
-        uuid id PK
-        uuid viaje_id FK
-        uuid de_usuario_id FK
-        uuid a_usuario_id FK
-        int estrellas
-        text[] etiquetas
-        text comentario
-    }
-    ALERTA {
-        uuid id PK
-        text tipo
-        text severidad "critica, alta, media, baja"
-        uuid viaje_id FK
-        uuid conductor_id FK
-        text estado "abierta, tomada, cerrada"
-        uuid tomada_por FK
-        text nota_cierre
-        timestamptz creada_en
-        timestamptz cerrada_en
     }
 ```
 
-## Pagos, saldos, corporativo y soporte
+**Mediciones del taxímetro.** El viaje guarda dos juegos de valores: lo que reportó el **taxímetro de la app del conductor**
+(`*_taximetro_*`) y los valores **con los que se cobra** (`distancia_real_m`, `tiempo_detenido_s`, `duracion_s`), que se verifican
+con la trayectoria que recibe el servidor ([RN-015](03-reglas-de-negocio.md)). Si difieren más de un umbral se genera una alerta
+`diferencia_taximetro`.
+
+## Dinero: libro, cierre diario y pagos
 
 ```mermaid
 erDiagram
-    PASAJERO ||--o{ METODO_PAGO : "registra"
     VIAJE ||--o{ PAGO : "se cobra con"
     METODO_PAGO ||--o{ PAGO : "usa"
     PAGO ||--o{ REEMBOLSO : "tiene"
     CONDUCTOR ||--o{ MOVIMIENTO_SALDO : "acumula"
     VIAJE ||--o{ MOVIMIENTO_SALDO : "genera"
-    LIQUIDACION ||--o{ MOVIMIENTO_SALDO : "agrupa"
-    CONDUCTOR ||--o{ LIQUIDACION : "recibe"
-    LOTE_PAGO ||--o{ LIQUIDACION : "paga"
-    EMPRESA ||--o{ CENTRO_COSTO : "tiene"
-    EMPRESA ||--o{ EMPLEADO_EMPRESA : "autoriza"
-    EMPRESA ||--o{ ESTADO_CUENTA : "recibe"
-    USUARIO ||--o{ EMPLEADO_EMPRESA : "pertenece"
-    USUARIO ||--o{ TICKET : "radica"
-    VIAJE ||--o{ TICKET : "se reclama en"
-    TICKET ||--o{ TICKET_MENSAJE : "contiene"
+    CONDUCTOR ||--o{ CIERRE_DIARIO : "cierra cada dia"
+    CIERRE_DIARIO ||--o| PAGO_CONDUCTOR : "paga si es a favor"
+    CIERRE_DIARIO ||--o{ PAGO_COMISION : "cobra si es a cargo"
+    PAGO_COMISION ||--o| MOVIMIENTO_SALDO : "genera pago_comision"
+    PAGO_CONDUCTOR ||--o| MOVIMIENTO_SALDO : "genera pago_liquidacion"
+    CUENTA_PAGO_CONDUCTOR ||--o{ PAGO_CONDUCTOR : "recibe"
 
-    METODO_PAGO {
-        uuid id PK
-        uuid pasajero_id FK
-        text tipo "tarjeta, nequi, pse, ..."
-        text proveedor
-        text token_proveedor "nunca el número de tarjeta"
-        text marca
-        text ultimos4
-        boolean predeterminado
-    }
-    PAGO {
-        uuid id PK
-        uuid viaje_id FK
-        uuid metodo_pago_id FK
-        text tipo "efectivo, electronico, corporativo"
-        bigint monto
-        text estado
-        text referencia_proveedor
-        text clave_idempotencia UK
-        int intentos
-    }
-    REEMBOLSO {
-        uuid id PK
-        uuid pago_id FK
-        uuid ticket_id FK
-        bigint monto
-        uuid aprobado_por FK
-    }
     MOVIMIENTO_SALDO {
-        uuid id PK
-        uuid conductor_id FK
-        text tipo "ingreso_viaje_electronico, comision_viaje_efectivo, ..."
+        enum tipo
         bigint monto "con signo"
-        uuid viaje_id FK
-        uuid liquidacion_id FK
-        text motivo
+        date dia "dia de Bogota, generado"
         uuid creado_por FK
         uuid aprobado_por FK
-        timestamptz creado_en
     }
-    LIQUIDACION {
-        uuid id PK
-        uuid conductor_id FK
-        date dia "cierre diario"
+    CIERRE_DIARIO {
+        date dia
         bigint saldo_inicial
+        bigint neto_dia
         bigint saldo_final
-        text estado "borrador, aprobada, en_pago, pagada, rechazada, por_cobrar"
-        uuid lote_pago_id FK
+        enum resultado "a_favor, a_cargo, en_cero"
     }
-    LOTE_PAGO {
-        uuid id PK
-        date fecha
-        text archivo_clave
-        text estado
-    }
-    EMPRESA {
-        uuid id PK
-        text nit UK
-        text razon_social
-        numeric descuento_pct
-        boolean aplica_dinamica
-        bigint cupo_credito
-        int dia_corte
-        text estado
-    }
-    CENTRO_COSTO {
-        uuid id PK
-        uuid empresa_id FK
-        text codigo
-        text nombre
-    }
-    EMPLEADO_EMPRESA {
-        uuid usuario_id FK
-        uuid empresa_id FK
-        text rol "empleado, administrador"
-        uuid centro_costo_id FK
-        jsonb politica
-    }
-    ESTADO_CUENTA {
-        uuid id PK
-        uuid empresa_id FK
-        date periodo
-        bigint total
-        text estado "emitido, pagado, vencido"
-    }
-    TICKET {
-        uuid id PK
-        text tipo "peticion, queja, reclamo, ..."
-        text estado
-        text prioridad
-        uuid usuario_id FK
-        uuid viaje_id FK
-        uuid asignado_a FK
-        timestamptz vence_sla_en
-        timestamptz creado_en
-    }
-    TICKET_MENSAJE {
-        uuid id PK
-        uuid ticket_id FK
-        uuid autor_id FK
-        text cuerpo
-        boolean interno
-        timestamptz creado_en
+    PAGO_COMISION {
+        bigint monto
+        text referencia "llave o Bre-B"
+        enum estado "pendiente, conciliado"
     }
 ```
 
-## Auditoría
+El saldo de un conductor **no se guarda**: es la suma de su libro (`saldo_conductor`). El cierre diario lo fija a las 00:00;
+si es negativo, el conductor queda bloqueado hasta que se concilie su pago ([RN-063](03-reglas-de-negocio.md)).
 
-Tabla `auditoria` independiente, de solo inserción:
+## Reglas de integridad que hace cumplir la base
 
-| Columna | Descripción |
+Estas reglas no dependen de que la aplicación se comporte bien. Cada una tiene una prueba en `packages/db/test/`.
+
+| Regla | Mecanismo |
 |---|---|
-| `id` | UUID v7 |
-| `usuario_id` | Quién hizo la acción |
-| `accion` | Por ejemplo `tarifa.publicar`, `conductor.suspender`, `saldo.ajustar` |
-| `entidad`, `entidad_id` | Registro afectado |
-| `antes`, `despues` | `jsonb` con los valores anteriores y nuevos |
-| `motivo` | Texto obligatorio en acciones sensibles |
-| `ip`, `ocurrido_en` | Contexto |
+| El libro de movimientos, la auditoría y los eventos del viaje **no se pueden modificar, borrar ni vaciar** | Disparadores `BEFORE UPDATE OR DELETE` y `BEFORE TRUNCATE` |
+| El signo y el origen de cada movimiento son coherentes (efectivo debita, electrónico acredita, etc.) | `CHECK movimiento_signo_y_origen` |
+| Un viaje no se contabiliza dos veces | Índice único parcial `(viaje_id, tipo)` |
+| Un ajuste exige motivo y **doble aprobación** (quien lo crea no lo aprueba) | `CHECK` dentro del mismo constraint |
+| El cierre diario cuadra (`saldo_final = saldo_inicial + neto`) y su resultado coincide con el signo | `CHECK cierre_diario_cuadra` y `cierre_diario_resultado` |
+| Un pago de comisión no se concilia dos veces con la misma referencia | Índice único `(canal, referencia)` |
+| Las transiciones de estado del viaje son las permitidas, **idénticas a las del dominio** | Disparador `validar_transicion_viaje` + prueba que compara las 64 combinaciones con `puedeTransitar` |
+| Un viaje asignado tiene conductor y vehículo; uno finalizado tiene precio, comisión y tiempos; uno cancelado, quién y cuándo | `CHECK` del viaje |
+| Un conductor no tiene dos viajes activos, ni dos sesiones en línea, ni dos ofertas pendientes | Índices únicos parciales |
+| Un viaje tiene **una sola** oferta aceptada: la asignación es atómica | Índice único parcial |
+| Una sola tarifa vigente por ciudad y servicio; una sola tarifa por ruta fija; un solo multiplicador de dinámica por zona y horario | Restricciones de exclusión (`EXCLUDE USING gist`) |
+| Un documento es de un conductor **o** de un vehículo; rechazar exige motivo; aprobar exige revisor | `CHECK` del documento |
+| Placa, teléfono E.164, PIN de 4 dígitos, últimos 4 de la tarjeta y código de viaje con formato válido | `CHECK` por columna |
+| Una cotización usa una tarifa urbana **o** una ruta fija | `CHECK cotizacion_una_tarifa` |
+| `actualizado_en` siempre refleja el último cambio | Disparador `fijar_actualizado_en` |
 
-## Índices y consideraciones clave
+## Posiciones y retención
 
-- `viaje (estado)` parcial para viajes activos; `viaje (conductor_id, solicitado_en)` y `viaje (pasajero_id, solicitado_en)`.
-- Índices **GiST** en todas las columnas `geography`.
-- **Una sola oferta activa por conductor** y **un solo conductor por viaje**: restricciones únicas parciales
-  (además del bloqueo en Redis).
-- `movimiento_saldo (conductor_id, creado_en)`; el saldo actual se guarda también en una vista materializada
-  o columna calculada, siempre reconciliable con la suma del libro.
-- `posicion_conductor` particionada por día; las particiones viejas se eliminan según la política de retención.
+`posicion_conductor` es una tabla **particionada por día** (corte a la medianoche de Bogotá). La migración crea 14 días hacia
+adelante y una partición por defecto que recibe lo que no tenga partición propia, para no perder datos.
+
+Un trabajo programado debe, cada día:
+
+1. `SELECT crear_particiones_posicion(current_date, 14)`: asegura los días siguientes.
+2. `SELECT eliminar_particiones_posicion(current_date - 180)`: aplica la retención de `[6 meses]` ([RNF-64](11-requisitos-no-funcionales.md)).
+
+Pendiente: implementar ese trabajo en `apps/api` (BullMQ).
+
+## Fuera de esta versión
+
+- **Clientes corporativos (F3):** `empresa`, `centro_costo`, `empleado_empresa` y `estado_cuenta`. Se agregan en una migración
+  nueva cuando se construya esa fase; `viaje` ya podrá referenciarlas.
+- **Calendario de festivos:** la tabla `festivo` existe pero falta cargar los de cada año.
+- **Dinámica automática (F2):** las celdas H3 y sus mediciones no se guardan; viven en Redis. Aquí solo está la dinámica manual por zona.
+- **Cifrado de columnas:** `valor_cifrado` (cuentas de pago) y `totp_secreto_cifrado` guardan texto ya cifrado por la aplicación
+  (RNF-46); la gestión de llaves aún no está implementada.

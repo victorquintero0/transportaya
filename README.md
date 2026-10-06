@@ -29,6 +29,7 @@ apps/
   operacion/    App web de operación
 packages/
   dominio/      Reglas de negocio compartidas: estados del viaje, tarifa, comisión y cierre diario
+  db/           Esquema de PostgreSQL + PostGIS (Drizzle), migraciones, carga inicial y pruebas de integridad
 infra/docker/   Servicios locales: PostgreSQL + PostGIS, Redis, MinIO y Mailpit
 docs/           Documentación funcional y técnica
 ```
@@ -46,6 +47,11 @@ pnpm build
 
 cp .env.example .env
 docker compose -f infra/docker/docker-compose.yml up -d   # servicios de apoyo
+
+# Base de datos (las pruebas de packages/db necesitan PostgreSQL con PostGIS; ver docs/09)
+export DATABASE_URL=postgres://transportaya:transportaya@localhost:5432/transportaya
+pnpm --filter @transportaya/db migrar      # aplica las migraciones
+pnpm --filter @transportaya/db semilla     # Manizales: tarifa, 193 rutas y catálogo de vehículos
 
 pnpm --filter @transportaya/api dev        # API en http://localhost:3000/v1/salud
 pnpm --filter @transportaya/pasajero dev   # http://localhost:5171

@@ -33,6 +33,8 @@ taxímetro, vigente desde el 1 de enero de 2026). Los valores y los recargos est
 
 El decreto del cable aéreo (Decreto 0640 de 2025, $3.250) no se usa: no es tarifa de taxi.
 
+Para cargar estos archivos y la tarifa en la base: `pnpm --filter @transportaya/db semilla` (ver [docs/09](../09-modelo-de-datos.md)).
+
 ## `catalogo-vehiculos.csv`
 
 Catálogo inicial de vehículos que circulan en Colombia, con la categoría propuesta. Ver [14 · Catálogo de vehículos](../14-catalogo-de-vehiculos.md).

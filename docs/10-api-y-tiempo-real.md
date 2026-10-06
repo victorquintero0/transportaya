@@ -74,7 +74,7 @@ documento OpenAPI que genera el backend.
 | GET | `/v1/conductor/viaje-actual` | Viaje activo (para recuperar estado al reconectar) |
 | POST | `/v1/conductor/viajes/{id}/llegue` | Marcar llegada (valida distancia) |
 | POST | `/v1/conductor/viajes/{id}/iniciar` | Iniciar viaje (con PIN si aplica) |
-| POST | `/v1/conductor/viajes/{id}/finalizar` | Finalizar y calcular precio final |
+| POST | `/v1/conductor/viajes/{id}/finalizar` | Finalizar con las mediciones del taxímetro (distancia, duración y tiempo detenido); el servidor las verifica y calcula el precio final |
 | POST | `/v1/conductor/viajes/{id}/efectivo-recibido` | Confirmar valor recibido |
 | POST | `/v1/conductor/viajes/{id}/cancelar` | Cancelar con motivo |
 | POST | `/v1/conductor/ubicaciones` | Envío en lote de ubicaciones guardadas sin conexión |

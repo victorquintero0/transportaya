@@ -194,6 +194,7 @@ transportaya/
 │   └── api/             # Backend NestJS: API, WebSocket y workers
 ├── packages/
 │   ├── dominio/         # Tipos, enums, máquinas de estado, esquemas Zod y cálculo de tarifas
+│   ├── db/              # Esquema de PostgreSQL + PostGIS (Drizzle), migraciones, carga inicial y pruebas de integridad
 │   ├── sdk/             # Cliente tipado de la API REST y del WebSocket
 │   ├── ui/              # Componentes y tema compartidos
 │   ├── mapas/           # Componentes de MapLibre y utilidades geográficas

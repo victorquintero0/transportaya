@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { puedeAtender } from './categorias.js';
+import { puedeAtender, recargoDeCategoria } from './categorias.js';
+import { calcularTarifaUrbana } from './tarifas.js';
+import { TARIFA_TAXI_MANIZALES_2026 as TAXI } from './semilla-manizales-2026.js';
 import {
   ESTADOS_VIAJE,
   TransicionInvalidaError,
@@ -50,5 +52,26 @@ describe('puedeAtender (RN-003)', () => {
   });
   it('nunca atiende una categoría superior', () => {
     expect(puedeAtender('media', 'alta', true)).toBe(false);
+  });
+});
+
+describe('recargo por categoría (D-22)', () => {
+  it('Media no tiene recargo; Media Alta suma $1.000 y Alta $2.000', () => {
+    expect(recargoDeCategoria('media', TAXI.recargoCategoria)).toBeNull();
+    expect(recargoDeCategoria('media_alta', TAXI.recargoCategoria)).toEqual({
+      nombre: 'categoria_media_alta',
+      tipo: 'fijo',
+      valor: 1000,
+    });
+    expect(recargoDeCategoria('alta', TAXI.recargoCategoria)?.valor).toBe(2000);
+  });
+
+  it('se refleja en el total de la carrera', () => {
+    const entrada = { parametros: TAXI.parametros, distanciaM: 6000, tiempoCobrableS: 180 };
+    const sin = calcularTarifaUrbana(entrada);
+    const alta = recargoDeCategoria('alta', TAXI.recargoCategoria);
+    const con = calcularTarifaUrbana({ ...entrada, recargos: alta ? [alta] : [] });
+    expect(sin.totalRedondeado).toBe(15_000);
+    expect(con.totalRedondeado).toBe(17_000);
   });
 });
