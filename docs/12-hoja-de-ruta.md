@@ -35,11 +35,11 @@ flowchart LR
 | Monorepo (pnpm + Turborepo), TypeScript, ESLint y Prettier | Hecho |
 | CI en GitHub Actions: formato, lint, tipos, pruebas y build | Hecho (se ejecuta al abrir un PR) |
 | Entorno local con Docker Compose (PostGIS, Redis, MinIO, Mailpit) | Hecho (configuración validada; no se levantó en esta sesión) |
-| Paquete `dominio`: estados del viaje, tarifa, comisión 3 % / 5 %, cierre diario | Hecho, con 34 pruebas |
+| Paquete `dominio`: estados del viaje, tarifa, comisión 3 % / 5 %, cierre diario | Hecho, con 45 pruebas |
 | API NestJS base con `/v1/salud` y simulador de tarifa | Hecho |
 | Esqueleto de las tres PWA con manifiesto y *service worker* | Hecho |
 | Herramienta de la prueba técnica de la PWA del conductor (ADR-0003) | Herramienta lista; **falta ejecutarla en celulares Android reales** |
-| Cargar las tarifas de taxi urbanas de Manizales | Pendiente: no se pudo leer la fuente ([D-20](13-decisiones-pendientes-y-riesgos.md)) |
+| Tarifas urbanas de Manizales (Decreto 0641 de 2025) | Hecho en el dominio, con pruebas. Quedan abiertas D-19, D-22 y D-23 |
 | Esquema de base de datos y migraciones | Pendiente |
 | Autenticación con OTP y usuarios internos con doble factor | Pendiente |
 | Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |

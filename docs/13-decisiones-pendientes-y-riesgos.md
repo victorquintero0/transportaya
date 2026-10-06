@@ -22,6 +22,7 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-14** | Requisitos del vehículo | **Sin límite de antigüedad**. Exige **revisión técnico-mecánica** y **seguro todo riesgo** vigentes | — |
 | **D-16** | Nombre comercial | **TransporteYa** | Dominio |
 | **D-17** | Torre de control | **24/7 desde el lanzamiento** | Turnos y protocolo de emergencias |
+| **D-20** | Tarifa urbana de Manizales | **Tarifas de taxi con taxímetro 2026** (Decreto 0641 del 31/12/2025): banderazo $3.700, $1.784 por km, $223 por tiempo detenido, mínima $6.300 y los recargos de [RN-011](03-reglas-de-negocio.md). Cargadas en `packages/dominio` como semilla | Ver D-19, D-22 y D-23 |
 
 ## Decisiones que siguen abiertas
 
@@ -29,9 +30,10 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 |---|---|---|---|---|
 | **D-15** | Seguros para pasajeros: póliza de responsabilidad civil y de accidentes de pasajeros. El todo riesgo cubre el vehículo, no al pasajero | Legal | Definido por Legal. Mientras tanto se exigen SOAT, todo riesgo y RTM | Lanzamiento |
 | **D-18** | Proveedor de nube y región | Tecnología | Comparar en la Fase 0 por costo, latencia desde Colombia y cumplimiento de la Ley 1581 | Fase 0 |
-| **D-19** | **Tabla de tarifas de taxi vs. vehículos particulares.** La tabla se titula "tarifas sugeridas" para "vehículo de servicio público tipo taxi" (Resolución 031 de 1981). Falta definir si se usa tal cual para vehículos particulares y si varía por categoría (Media, Media Alta, Alta) | Negocio + Legal | Abierta | Fase 1 |
-| **D-20** | Tarifa urbana en Manizales y el Eje Cafetero: valores de base, km, minuto y mínima por categoría | Negocio | **Se tomarán las tarifas de taxi de Manizales 2026** (fuente: [Centro de Información de la Alcaldía](https://centrodeinformacion.manizales.gov.co/definidas-las-tarifas-del-servicio-de-transporte-publico-colectivo-buses-busetas-y-microbuses-individual-de-pasajeros-taxi-y-cable-aereo-para-2026/)). **Sin cargar**: la red de la sesión bloqueó ese dominio y no se encontraron los valores en otra fuente. Falta pegar los valores (banderazo, valor por unidad o por km y minuto, mínima y recargos) y decidir cómo se traducen a base, km y minuto | Fase 1 |
+| **D-19** | **Marco de las tarifas.** Las rutas desde Manizales se titulan "tarifas sugeridas" para taxis de servicio público (Resolución 031 de 1981), y el Decreto 0641 regula taxis **con taxímetro**. Falta confirmar con Legal si se pueden aplicar a vehículos particulares, si la **dinámica** (RN-020 a RN-025) es compatible con una tarifa regulada, y que el decreto no prevé recargo de reserva ni otros recargos | Negocio + Legal | Abierta | Fase 1 |
 | **D-21** | Clasificación definitiva de cada vehículo en el catálogo | Negocio | Borrador en [catálogo](14-catalogo-de-vehiculos.md) | Fase 1 |
+| **D-22** | **Tarifa por categoría.** El decreto fija una sola tarifa de taxi. Falta definir si Media Alta y Alta pagan un multiplicador o una tarifa propia | Negocio | Abierta | Fase 1 |
+| **D-23** | **Tiempo detenido.** El decreto cobra $223 por tiempo detenido sin precisar la unidad (se asumió por minuto). Falta confirmarla con la Secretaría de Movilidad, definir cuándo se considera "detenido" con el GPS (por ejemplo, velocidad menor a un umbral) y la fracción de tiempo detenido para estimar la cotización | Negocio + Tecnología | Abierta. Se calibra con datos del piloto | Fase 1 |
 
 ## Riesgos
 

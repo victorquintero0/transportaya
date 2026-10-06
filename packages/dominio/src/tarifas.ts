@@ -1,6 +1,9 @@
-import { redondearA } from './dinero.js';
+import { aproximarPorDefecto } from './dinero.js';
 
-/** Parámetros de una versión de tarifa (RN-010, RN-014). Todos los valores son enteros en COP. */
+/**
+ * Parámetros de una versión de tarifa (RN-010, RN-014). Todos los valores son enteros en COP.
+ * `valorMinuto` se aplica al **tiempo cobrable**: en la tarifa de taxi de Manizales es el tiempo detenido.
+ */
 export interface ParametrosTarifa {
   base: number;
   valorKm: number;
@@ -20,8 +23,11 @@ export interface EntradaTarifa {
   parametros: ParametrosTarifa;
   /** Distancia en metros: estimada al cotizar, real al finalizar (RN-012). */
   distanciaM: number;
-  /** Duración en segundos: estimada al cotizar, real al finalizar (RN-012). */
-  duracionS: number;
+  /**
+   * Segundos de tiempo cobrable: en la tarifa de taxi de Manizales, el tiempo detenido. Se estima al
+   * cotizar (ver `estimarTiempoDetenido`) y se mide con el GPS al finalizar (RN-012).
+   */
+  tiempoCobrableS: number;
   /** Se congela al confirmar el viaje (RN-022). 1 = sin dinámica. */
   multiplicadorDinamico?: number;
   recargos?: readonly Recargo[];
@@ -39,7 +45,7 @@ export interface DesgloseTarifa {
   /** max(mínima, subtotal × dinámica) */
   tarifaViaje: number;
   recargos: number;
-  /** Tarifa del viaje + recargos, redondeada a la centena. Es la base de la comisión junto con la espera. */
+  /** Tarifa del viaje + recargos, aproximada por defecto a la centena. Es la base de la comisión junto con la espera. */
   totalRedondeado: number;
   peajes: number;
   cobroEspera: number;
@@ -50,20 +56,21 @@ export interface DesgloseTarifa {
 
 /**
  * RN-010:
- *   subtotal     = base + km × valor_km + minutos × valor_minuto
+ *   subtotal     = base + km × valor_km + minutos_cobrables × valor_minuto
  *   tarifa_viaje = max(mínima, subtotal × dinámica)
- *   total        = redondear(tarifa_viaje + recargos) + peajes + espera + propina
+ *   total        = aproximar_por_defecto(tarifa_viaje + recargos) + peajes + espera + propina
  */
 export function calcularTarifaUrbana(entrada: EntradaTarifa): DesgloseTarifa {
-  const { parametros, distanciaM, duracionS } = entrada;
+  const { parametros, distanciaM, tiempoCobrableS } = entrada;
   const multiplicador = entrada.multiplicadorDinamico ?? 1;
   if (multiplicador < 1)
     throw new RangeError('El multiplicador de dinámica no puede ser menor a 1');
-  if (distanciaM < 0 || duracionS < 0)
-    throw new RangeError('Distancia y duración no pueden ser negativas');
+  if (distanciaM < 0 || tiempoCobrableS < 0) {
+    throw new RangeError('Distancia y tiempo no pueden ser negativos');
+  }
 
   const distancia = Math.round((distanciaM / 1000) * parametros.valorKm);
-  const tiempo = Math.round((duracionS / 60) * parametros.valorMinuto);
+  const tiempo = Math.round((tiempoCobrableS / 60) * parametros.valorMinuto);
   const subtotal = parametros.base + distancia + tiempo;
   const tarifaViaje = Math.max(parametros.minima, Math.round(subtotal * multiplicador));
 
@@ -73,7 +80,7 @@ export function calcularTarifaUrbana(entrada: EntradaTarifa): DesgloseTarifa {
     0,
   );
 
-  const totalRedondeado = redondearA(tarifaViaje + recargos);
+  const totalRedondeado = aproximarPorDefecto(tarifaViaje + recargos);
   const peajes = entrada.peajes ?? 0;
   const cobroEspera = entrada.cobroEspera ?? 0;
   const propina = entrada.propina ?? 0;
@@ -155,4 +162,15 @@ export function puedeCancelarPorPasajeroAusente(
   parametros: ParametrosCancelacion = CANCELACION_POR_DEFECTO,
 ): boolean {
   return segundosEnSitio >= parametros.segundosPasajeroAusente;
+}
+
+/**
+ * La cotización no conoce el tiempo detenido real: se estima como una fracción de la duración del
+ * viaje. La fracción debe calibrarse con los datos del piloto (D-23).
+ */
+export function estimarTiempoDetenido(duracionEstimadaS: number, fraccionDetenido: number): number {
+  if (fraccionDetenido < 0 || fraccionDetenido > 1) {
+    throw new RangeError('La fracción de tiempo detenido debe estar entre 0 y 1');
+  }
+  return Math.round(duracionEstimadaS * fraccionDetenido);
 }

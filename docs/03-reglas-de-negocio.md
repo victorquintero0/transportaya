@@ -7,7 +7,7 @@ App Operación; la definición final corresponde a negocio (ver [decisiones pend
 Convenciones generales:
 
 - Moneda: pesos colombianos (COP), almacenados como **enteros** (sin decimales ni flotantes).
-- Los precios que ve el usuario se **redondean a la centena** más cercana `[100 COP]`.
+- El valor de la carrera se **aproxima por defecto a la centena anterior** (Decreto 0641 de 2025, parágrafo tercero). Ver RN-010.
 - Horas en zona `America/Bogota`. Los festivos siguen el calendario oficial de Colombia, cargado por año.
 
 ---
@@ -31,21 +31,48 @@ Convenciones generales:
 - **RN-010** La tarifa de un viaje urbano se calcula así:
 
   ```text
-  subtotal       = tarifa_base + (km × valor_km) + (minutos × valor_minuto)
+  subtotal       = tarifa_base + (km × valor_km) + (minutos_cobrables × valor_minuto)
   tarifa_viaje   = max(tarifa_minima, subtotal × multiplicador_dinamico)
-  total          = redondear(tarifa_viaje + recargos) + peajes + cobro_espera + propina
+  total          = aproximar_por_defecto(tarifa_viaje + recargos) + peajes + cobro_espera + propina
   ```
 
-  La distancia y el tiempo estimados salen del motor de rutas (OSRM) para la ruta más rápida.
+  - La distancia estimada sale del motor de rutas (OSRM) para la ruta más rápida; la real, de la trayectoria GPS.
+  - Los **minutos cobrables** son el **tiempo detenido**, como en el taxímetro de Manizales (D-20, D-23). Al
+    cotizar no se conoce, así que se estima como una fracción de la duración estimada; al finalizar se mide con el GPS.
+  - **Aproximación por defecto:** si el valor termina en una cifra mayor a $50, se aproxima **a la centena anterior**
+    (parágrafo tercero del Decreto 0641 de 2025). El redondeo es siempre hacia abajo, nunca al más cercano.
 
-- **RN-011** **Recargos** configurables, fijos o porcentuales, que **no** se multiplican por la dinámica:
-  nocturno `[20:00–05:59]`, dominical y festivo, aeropuerto (origen o destino dentro de la zona del
-  aeropuerto) y reserva (viajes programados). Si aplican varios, se suman.
+  **Tarifa urbana de Manizales 2026** ([D-20](13-decisiones-pendientes-y-riesgos.md); Decreto 0641 del 31/12/2025,
+  vigente desde el 1 de enero de 2026), tomada de las tarifas de taxi con taxímetro:
+
+  | Concepto | Valor |
+  |---|---|
+  | Banderazo (`tarifa_base`) | $ 3.700 |
+  | Costo por kilómetro | $ 1.784 |
+  | Costo por tiempo detenido | $ 223 (por minuto; ver [D-23](13-decisiones-pendientes-y-riesgos.md)) |
+  | Tarifa mínima | $ 6.300 |
+
+- **RN-011** **Recargos** que **no** se multiplican por la dinámica. Los valores iniciales son los del Decreto 0641:
+
+  | Recargo | Valor | Cuándo aplica |
+  |---|---|---|
+  | Aeropuerto | $ 4.700 | Origen o destino en el aeropuerto |
+  | Nocturno | $ 1.000 | De `[19:00]` a `[06:00]` del día siguiente |
+  | Dominical y festivo | $ 1.000 | Domingos y festivos; **no se suma al nocturno**: si el servicio es nocturno en domingo o festivo, solo se cobra el nocturno |
+  | Servicio solicitado por central o aplicación web (puerta a puerta) | $ 800 | Todo viaje pedido por la aplicación |
+  | Moteles | $ 2.300 | Servicio con destino a moteles |
+  | Zona de termales | $ 2.700 | No se cobra a residentes de la vereda Gallinazo |
+  | Mascotas | $ 1.000 | Servicio con mascota |
+
+  El decreto establece que **no se cobrará ningún otro recargo**. Por eso **no hay recargo de reserva** en los
+  viajes programados (ver RN-081) mientras Legal no confirme otra cosa ([D-19](13-decisiones-pendientes-y-riesgos.md)).
+  El decreto fija además la **hora de trabajo en $ 42.000** (servicio por tiempo). Los recargos son configurables,
+  fijos o porcentuales, y se suman cuando aplican varios.
 - **RN-012** **Precio recalculado al final** ([D-10](13-decisiones-pendientes-y-riesgos.md)). En viajes urbanos, la
-  cotización es un **estimado**: el precio que se cobra se calcula con la **distancia y el tiempo reales**
+  cotización es un **estimado**: el precio que se cobra se calcula con la **distancia real y el tiempo detenido real**
   (trayectoria GPS ajustada al mapa) aplicando la tarifa vigente al momento de la cotización. Reglas:
   1. La app muestra siempre un **rango** (por ejemplo, "$ 15.000 – $ 18.000") y el aviso de que el valor final
-     depende de la distancia y el tiempo reales.
+     depende de la distancia y el tiempo detenido reales.
   2. El multiplicador de dinámica de la cotización (RN-022) se mantiene aunque cambie después.
   3. Pendiente de definir con Negocio: un **tope** sobre el máximo del rango (ver [R-13](13-decisiones-pendientes-y-riesgos.md)).
   4. Las **rutas con tarifa fija** (RN-090) **no se recalculan**: se cobra el valor de la tabla.
@@ -54,19 +81,22 @@ Convenciones generales:
 - **RN-014** Toda tarifa tiene **vigencia** (desde/hasta) y **versión**. Cada viaje guarda la versión de
   tarifa con la que se cotizó para poder auditarla.
 
-**Ejemplo ilustrativo** (valores ficticios, no son tarifas reales):
+**Ejemplo con la tarifa de Manizales 2026** (viaje nocturno de 6 km con 3 minutos detenido, pedido por la app):
 
 | Concepto | Valor |
 |---|---|
-| Base | $ 2.500 |
-| 6 km × $ 1.100 | $ 6.600 |
-| 18 min × $ 250 | $ 4.500 |
-| Subtotal | $ 13.600 |
-| × dinámica 1,2 | $ 16.320 |
+| Banderazo | $ 3.700 |
+| 6 km × $ 1.784 | $ 10.704 |
+| 3 min detenido × $ 223 | $ 669 |
+| Subtotal (sin dinámica) | $ 15.073 |
 | + recargo nocturno | $ 1.000 |
-| **Total redondeado** | **$ 17.300** |
-| Comisión 3 % | $ 519 |
-| Neto para el conductor | $ 16.781 |
+| + recargo puerta a puerta | $ 800 |
+| Valor antes de aproximar | $ 16.873 |
+| **Total aproximado por defecto** | **$ 16.800** |
+| Comisión 3 % | $ 504 |
+| Neto para el conductor | $ 16.296 |
+
+El simulador de la App Operación y las pruebas automáticas del paquete `dominio` reproducen este ejemplo.
 
 ## 3. Dinámica
 
@@ -213,7 +243,7 @@ Convenciones generales:
 ## 9. Viajes programados (F2)
 
 - **RN-080** Se pueden reservar con mínimo `[45 min]` y máximo `[7 días]` de anticipación.
-- **RN-081** El precio se **cierra al reservar**: sin dinámica y con el recargo de reserva.
+- **RN-081** El precio se **cierra al reservar**: sin dinámica. El decreto de tarifas no prevé recargo de reserva (RN-011).
 - **RN-082** Los conductores ven las reservas disponibles en un **tablero** y pueden tomarlas desde
   `[24 h]` antes. Quien toma una reserva debe **confirmarla** `[60 min]` antes; si no confirma, vuelve al tablero.
 - **RN-083** Si a `[30 min]` del servicio no hay conductor, se despacha automáticamente como un viaje inmediato

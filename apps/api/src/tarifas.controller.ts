@@ -12,7 +12,7 @@ const recargo = z.discriminatedUnion('tipo', [
 const solicitud = z.object({
   parametros: z.object({ base: entero, valorKm: entero, valorMinuto: entero, minima: entero }),
   distanciaM: z.number().nonnegative(),
-  duracionS: z.number().nonnegative(),
+  tiempoCobrableS: z.number().nonnegative(),
   multiplicadorDinamico: z.number().min(1).optional(),
   recargos: z.array(recargo).optional(),
   peajes: entero.optional(),

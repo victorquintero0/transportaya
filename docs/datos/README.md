@@ -25,6 +25,14 @@ Ajuste aplicado por Negocio: **Pereira** pasó de $280.000 (en la imagen) a **$2
 - La tabla es solo desde Manizales. Faltan las tarifas desde otras ciudades del Eje Cafetero, o si es el mismo valor en sentido contrario.
 - No se sabe si el valor aplica a todas las categorías (Media, Media Alta, Alta) o a una sola (ver D-19).
 
+## Tarifa urbana de Manizales 2026
+
+No es un archivo: está en el código, en `packages/dominio/src/semilla-manizales-2026.ts`, con sus pruebas.
+Viene del **Decreto 0641 del 31 de diciembre de 2025** de la Alcaldía de Manizales (tarifas de taxi con
+taxímetro, vigente desde el 1 de enero de 2026). Los valores y los recargos están en la [regla RN-010 y RN-011](../03-reglas-de-negocio.md).
+
+El decreto del cable aéreo (Decreto 0640 de 2025, $3.250) no se usa: no es tarifa de taxi.
+
 ## `catalogo-vehiculos.csv`
 
 Catálogo inicial de vehículos que circulan en Colombia, con la categoría propuesta. Ver [14 · Catálogo de vehículos](../14-catalogo-de-vehiculos.md).
