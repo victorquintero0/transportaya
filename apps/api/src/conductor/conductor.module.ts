@@ -8,6 +8,7 @@ import { PerfilService } from './perfil.service.js';
 import { UbicacionesService } from './ubicaciones.service.js';
 import { UbicacionStore } from './ubicacion.store.js';
 import { VehiculosService } from './vehiculos.service.js';
+import { VencimientosService } from './vencimientos.service.js';
 
 @Module({
   controllers: [ConductorController],
@@ -19,8 +20,16 @@ import { VehiculosService } from './vehiculos.service.js';
     ConexionService,
     UbicacionesService,
     UbicacionStore,
+    VencimientosService,
     { provide: ALMACENAMIENTO, useClass: AlmacenamientoLocal },
   ],
-  exports: [CifradoService, PerfilService, ConexionService, UbicacionStore, UbicacionesService],
+  exports: [
+    CifradoService,
+    PerfilService,
+    ConexionService,
+    UbicacionStore,
+    UbicacionesService,
+    VencimientosService,
+  ],
 })
 export class ConductorModule {}

@@ -32,7 +32,8 @@ const TRANSICIONES: Record<EstadoViaje, readonly EstadoViaje[]> = {
   programado: ['buscando_conductor', 'cancelado'],
   buscando_conductor: ['asignado', 'sin_conductor', 'cancelado'],
   asignado: ['en_sitio', 'buscando_conductor', 'cancelado'],
-  en_sitio: ['en_curso', 'cancelado'],
+  // RN-045: si el conductor ya llegó y no puede continuar, el viaje vuelve a despacho con prioridad.
+  en_sitio: ['en_curso', 'buscando_conductor', 'cancelado'],
   en_curso: ['finalizado', 'cancelado'],
   finalizado: [],
   cancelado: [],

@@ -14,6 +14,8 @@ export class GuardAutenticacion implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    // El WebSocket se autentica una sola vez al conectarse (TiempoRealGateway); este guard es solo para HTTP.
+    if (ctx.getType() !== 'http') return true;
     const objetivos = [ctx.getHandler(), ctx.getClass()];
     if (this.reflector.getAllAndOverride<boolean>(PUBLICO, objetivos)) return true;
 

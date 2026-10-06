@@ -14,6 +14,8 @@ const esquema = z
     /** Habilita el simulador de pasajeros y los atajos de desarrollo (cierre diario, pago Bre-B). Nunca en producción. */
     SIMULADOR: booleano.optional(),
     ALMACENAMIENTO_DIR: z.string().default('.almacenamiento'),
+    /** Llave Bre-B de TransporteYa a la que los conductores pagan su comisión (D-04). Pendiente de definir por Finanzas. */
+    LLAVE_BRE_B_EMPRESA: z.string().trim().min(3).optional(),
     CORS_ORIGENES: z
       .string()
       .default('http://localhost:5171,http://localhost:5172,http://localhost:5173')
@@ -45,6 +47,8 @@ const esquema = z
     // Valor fijo solo para desarrollo, para que las sesiones sobrevivan a un reinicio.
     JWT_SECRET: env.JWT_SECRET ?? 'desarrollo-transportaya-no-usar-en-produccion-0123456789',
     SIMULADOR: env.SIMULADOR ?? env.NODE_ENV !== 'production',
+    LLAVE_BRE_B_EMPRESA:
+      env.LLAVE_BRE_B_EMPRESA ?? (env.NODE_ENV !== 'production' ? '@transporteya-demo' : undefined),
   }));
 
 export type Configuracion = z.infer<typeof esquema>;

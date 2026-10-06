@@ -2,15 +2,79 @@ import type { INestApplication, Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { type BaseDePrueba, baseDisponible, crearBaseDePrueba } from '@transportaya/db/pruebas';
 import { sembrarManizales } from '@transportaya/db/semillas';
+import { io, type Socket } from 'socket.io-client';
+import { desplazar } from '@transportaya/dominio';
 import { AppModule } from '../src/app.module.js';
 import { CONFIG, type Configuracion, leerConfiguracion } from '../src/config.js';
 import { PROVEEDOR_OTP, type ProveedorOtp } from '../src/auth/proveedor-otp.js';
+import {
+  DESPACHO_POR_DEFECTO,
+  PARAMETROS_DESPACHO,
+  type ParametrosDespacho,
+} from '../src/viajes/despacho.service.js';
 
 export { baseDisponible };
 
 export interface Respuesta<T = unknown> {
   estado: number;
   cuerpo: T;
+}
+
+/** Cliente de WebSocket que recuerda los eventos recibidos para poder esperarlos en las pruebas. */
+export class ClienteSocket {
+  readonly eventos: { evento: string; datos: any }[] = [];
+  private readonly oyentes = new Set<() => void>();
+
+  constructor(readonly socket: Socket) {
+    socket.onAny((evento, datos) => {
+      this.eventos.push({ evento, datos });
+      for (const o of [...this.oyentes]) o();
+    });
+  }
+
+  /** Espera un evento (que haya llegado ya o llegue pronto) que cumpla el filtro. */
+  esperar<T = any>(evento: string, filtro: (d: T) => boolean = () => true, ms = 4000): Promise<T> {
+    return new Promise((resolver, rechazar) => {
+      const buscar = () => this.eventos.find((e) => e.evento === evento && filtro(e.datos));
+      const hallado = buscar();
+      if (hallado) return resolver(hallado.datos);
+      const temporizador = setTimeout(() => {
+        this.oyentes.delete(revisar);
+        rechazar(
+          new Error(
+            `No llegó el evento "${evento}" en ${ms} ms. Llegaron: ${this.eventos.map((e) => e.evento).join(', ') || 'ninguno'}`,
+          ),
+        );
+      }, ms);
+      const revisar = () => {
+        const e = buscar();
+        if (!e) return;
+        clearTimeout(temporizador);
+        this.oyentes.delete(revisar);
+        resolver(e.datos);
+      };
+      this.oyentes.add(revisar);
+    });
+  }
+
+  /** Garantiza que NO llega un evento durante un rato. */
+  async noLlega(evento: string, ms = 600): Promise<void> {
+    await new Promise((r) => setTimeout(r, ms));
+    if (this.eventos.some((e) => e.evento === evento))
+      throw new Error(`No debía llegar el evento "${evento}"`);
+  }
+
+  cuantos(evento: string): number {
+    return this.eventos.filter((e) => e.evento === evento).length;
+  }
+
+  cerrar(): void {
+    this.socket.close();
+  }
+}
+
+export interface ConductorEnLinea extends ConductorListo {
+  socket: ClienteSocket;
 }
 
 export interface ConductorListo {
@@ -40,6 +104,30 @@ export interface Arnes {
   postForm<T = any>(ruta: string, formulario: FormData, token?: string): Promise<Respuesta<T>>;
   /** Pide un servicio de la aplicación para probarlo directamente. */
   servicio<T>(token: Type<T> | symbol): T;
+  /** Una posición nueva, lejos de las anteriores, para que cada prueba tenga su propia zona. */
+  nuevaZona(): { lat: number; lng: number };
+  /** Un viaje de mentira de principio a fin: lo pide un pasajero, el conductor lo acepta, lo hace y lo finaliza. */
+  completarViaje(
+    c: ConductorEnLinea,
+    opciones?: {
+      metodoPago?: 'efectivo' | 'tarjeta';
+      distanciaM?: number;
+      tiempoDetenidoS?: number;
+    },
+  ): Promise<{
+    viajeId: string;
+    precioFinal: number;
+    comision: number;
+    gananciaNeta: number;
+    metodoPago: string;
+  }>;
+  /** Abre un WebSocket autenticado como ese conductor. */
+  conectarSocket(token: string): Promise<ClienteSocket>;
+  /** Registro completo + conectado en una posición + WebSocket abierto. */
+  conductorEnLinea(
+    telefono: string,
+    posicion: { lat: number; lng: number },
+  ): Promise<ConductorEnLinea>;
   /** Lleva a un conductor por todo el registro real, hasta quedar habilitado. */
   crearConductorHabilitado(
     telefono: string,
@@ -57,7 +145,10 @@ export interface Arnes {
  * Levanta la API de verdad (Nest + HTTP) contra una base PostgreSQL con PostGIS creada para el
  * archivo de pruebas, ya migrada y con Manizales sembrada.
  */
-export async function levantarApi(extra: Partial<Record<string, string>> = {}): Promise<Arnes> {
+export async function levantarApi(
+  extra: Partial<Record<string, string>> = {},
+  opciones: { despacho?: Partial<ParametrosDespacho> } = {},
+): Promise<Arnes> {
   const bd = await crearBaseDePrueba();
   await sembrarManizales(bd);
 
@@ -73,6 +164,8 @@ export async function levantarApi(extra: Partial<Record<string, string>> = {}): 
   const modulo = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(CONFIG)
     .useValue(config)
+    .overrideProvider(PARAMETROS_DESPACHO)
+    .useValue({ ...DESPACHO_POR_DEFECTO, ...opciones.despacho })
     .overrideProvider(PROVEEDOR_OTP)
     .useValue(proveedor)
     .compile();
@@ -113,6 +206,9 @@ export async function levantarApi(extra: Partial<Record<string, string>> = {}): 
     return { estado: r.status, cuerpo: (texto ? JSON.parse(texto) : undefined) as T };
   }
 
+  const sockets: ClienteSocket[] = [];
+  let zonas = 0;
+
   const arnes: Arnes = {
     url,
     bd,
@@ -138,6 +234,75 @@ export async function levantarApi(extra: Partial<Record<string, string>> = {}): 
         usuarioId: r.cuerpo.usuario.id,
         nuevo: r.cuerpo.nuevo,
       };
+    },
+    nuevaZona() {
+      zonas += 1;
+      return desplazar({ lat: 5.0703, lng: -75.5138 }, 25_000 * zonas, 135);
+    },
+    async completarViaje(c, o = {}) {
+      const creado = await pedir<any>(
+        'POST',
+        '/v1/dev/pasajeros/viaje',
+        { metodoPago: o.metodoPago ?? 'efectivo' },
+        c.accessToken,
+      );
+      if (creado.estado !== 201)
+        throw new Error(`No se pudo crear el viaje: ${JSON.stringify(creado.cuerpo)}`);
+      const oferta = await c.socket.esperar(
+        'oferta:nueva',
+        (d: any) => d.viajeId === creado.cuerpo.viajeId,
+      );
+      const acept = await pedir<any>(
+        'POST',
+        `/v1/conductor/ofertas/${oferta.ofertaId}/aceptar`,
+        undefined,
+        c.accessToken,
+      );
+      const origen = desplazar(acept.cuerpo.recogida, 40, 0);
+      await pedir(
+        'POST',
+        '/v1/conductor/ubicaciones',
+        { puntos: [{ ...origen, t: Date.now(), precisionM: 5 }] },
+        c.accessToken,
+      );
+      await pedir(
+        'POST',
+        `/v1/conductor/viajes/${creado.cuerpo.viajeId}/llegue`,
+        {},
+        c.accessToken,
+      );
+      await pedir(
+        'POST',
+        `/v1/conductor/viajes/${creado.cuerpo.viajeId}/iniciar`,
+        { pin: creado.cuerpo.pin },
+        c.accessToken,
+      );
+      const fin = await pedir<any>(
+        'POST',
+        `/v1/conductor/viajes/${creado.cuerpo.viajeId}/finalizar`,
+        {
+          distanciaM: o.distanciaM ?? 3000,
+          tiempoDetenidoS: o.tiempoDetenidoS ?? 0,
+          duracionS: 20,
+        },
+        c.accessToken,
+      );
+      if (fin.estado !== 200)
+        throw new Error(`No se pudo finalizar: ${JSON.stringify(fin.cuerpo)}`);
+      return { viajeId: creado.cuerpo.viajeId, ...fin.cuerpo };
+    },
+    async conectarSocket(token) {
+      const socket = io(url, { auth: { token }, transports: ['websocket'], reconnection: false });
+      const cliente = new ClienteSocket(socket);
+      sockets.push(cliente);
+      await cliente.esperar('listo');
+      return cliente;
+    },
+    async conductorEnLinea(telefono, posicion) {
+      const c = await arnes.crearConductorHabilitado(telefono);
+      const r = await pedir<any>('POST', '/v1/conductor/conectar', posicion, c.accessToken);
+      if (r.estado !== 200) throw new Error(`No se pudo conectar: ${JSON.stringify(r.cuerpo)}`);
+      return { ...c, socket: await arnes.conectarSocket(c.accessToken) };
     },
     async crearConductorHabilitado(telefono, opciones = {}) {
       const s = await arnes.iniciarSesion(telefono, 'conductor');
@@ -203,6 +368,7 @@ export async function levantarApi(extra: Partial<Record<string, string>> = {}): 
       };
     },
     async cerrar() {
+      for (const s of sockets) s.cerrar();
       await app.close();
       await bd.eliminar();
     },

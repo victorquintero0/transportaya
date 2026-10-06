@@ -107,23 +107,7 @@ export class PerfilService {
       .orderBy(desc(vehiculo.creadoEn));
 
     const activoId = base.c.vehiculoActivoId;
-    const docs = await db
-      .select()
-      .from(documento)
-      .where(
-        activoId
-          ? sql`${documento.conductorId} = ${conductorId} or ${documento.vehiculoId} = ${activoId}`
-          : eq(documento.conductorId, conductorId),
-      );
-    const registrados: DocumentoRegistrado[] = docs.map((d) => ({
-      titular: d.titular,
-      tipo: d.tipo,
-      estado: d.estado,
-      venceEn: d.venceEn,
-      creadoEn: d.creadoEn,
-      motivoRechazo: d.motivoRechazo,
-    }));
-    const evaluacion = evaluarDocumentos(registrados, fechaBogota(new Date()));
+    const evaluacion = await this.evaluarDocumentos(conductorId, activoId);
 
     const [cuenta] = await db
       .select()
@@ -188,6 +172,32 @@ export class PerfilService {
       onboarding: { pasos, puedeEnviarRevision },
       conexion: { puedeConectarse: motivos.length === 0, motivos },
     };
+  }
+
+  /** Estado de los documentos exigidos al conductor y a su vehículo activo (RN-110 a RN-112). */
+  async evaluarDocumentos(
+    conductorId: string,
+    vehiculoActivoId: string | null,
+    hoy = fechaBogota(new Date()),
+    db: DbOTx = this.bd.db,
+  ): Promise<EvaluacionDocumentos> {
+    const docs = await db
+      .select()
+      .from(documento)
+      .where(
+        vehiculoActivoId
+          ? sql`${documento.conductorId} = ${conductorId} or ${documento.vehiculoId} = ${vehiculoActivoId}`
+          : eq(documento.conductorId, conductorId),
+      );
+    const registrados: DocumentoRegistrado[] = docs.map((d) => ({
+      titular: d.titular,
+      tipo: d.tipo,
+      estado: d.estado,
+      venceEn: d.venceEn,
+      creadoEn: d.creadoEn,
+      motivoRechazo: d.motivoRechazo,
+    }));
+    return evaluarDocumentos(registrados, hoy);
   }
 
   private async motivos(
