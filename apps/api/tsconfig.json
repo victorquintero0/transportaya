@@ -6,7 +6,7 @@
     "target": "ES2022",
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": ["node"],
+    "types": ["node", "multer"],
     "noEmit": true
   },
   "include": ["src"]

@@ -6,6 +6,7 @@ import { leerConfiguracion } from './config.js';
 async function arrancar(): Promise<void> {
   const config = leerConfiguracion();
   const app = await NestFactory.create(AppModule);
+  app.enableCors({ origin: config.CORS_ORIGENES, credentials: true });
   app.enableShutdownHooks();
   await app.listen(config.PORT);
 }

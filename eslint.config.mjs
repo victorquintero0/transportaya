@@ -25,5 +25,10 @@ export default tseslint.config(
     files: ['apps/api/**/*.ts'],
     rules: { '@typescript-eslint/consistent-type-imports': 'off' },
   },
+  {
+    // Las pruebas manejan respuestas JSON de forma dinámica.
+    files: ['**/*.test.ts', '**/test/**/*.ts'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
   prettier,
 );

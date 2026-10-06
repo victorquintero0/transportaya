@@ -92,6 +92,8 @@ export const sesion = pgTable(
       .notNull()
       .references(() => usuario.id, { onDelete: 'cascade' }),
     tokenHash: text('token_hash').notNull(),
+    /** App con la que se inició sesión: el refresco debe conservar el rol. */
+    rol: text('rol').notNull(),
     dispositivo: text('dispositivo'),
     ip: text('ip'),
     creadaEn: creadoEn(),
@@ -101,6 +103,7 @@ export const sesion = pgTable(
   (t) => [
     uniqueIndex('sesion_token_hash_uq').on(t.tokenHash),
     index('sesion_usuario_idx').on(t.usuarioId),
+    check('sesion_rol', sql`${t.rol} in ('conductor', 'pasajero', 'interno')`),
   ],
 );
 

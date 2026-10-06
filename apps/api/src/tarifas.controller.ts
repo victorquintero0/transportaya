@@ -1,4 +1,5 @@
 import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { Publico } from './auth/decoradores.js';
 import { calcularTarifaUrbana, type DesgloseTarifa } from '@transportaya/dominio';
 import { z } from 'zod';
 
@@ -26,6 +27,8 @@ const solicitud = z.object({
  */
 @Controller('v1/tarifas')
 export class TarifasController {
+  // Pública mientras no existan los usuarios internos (OPE-11): solo calcula, no lee ni escribe datos.
+  @Publico()
   @Post('simular')
   simular(@Body() cuerpo: unknown): DesgloseTarifa {
     const r = solicitud.safeParse(cuerpo);

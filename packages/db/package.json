@@ -12,6 +12,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
+    },
+    "./pruebas": {
+      "types": "./dist/pruebas.d.ts",
+      "import": "./dist/pruebas.js",
+      "require": "./dist/pruebas.cjs"
+    },
+    "./semillas": {
+      "types": "./dist/semillas.d.ts",
+      "import": "./dist/semillas.js",
+      "require": "./dist/semillas.cjs"
     }
   },
   "files": [

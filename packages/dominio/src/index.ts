@@ -5,3 +5,7 @@ export * from './tarifas.js';
 export * from './recargos.js';
 export * from './saldos.js';
 export * from './semilla-manizales-2026.js';
+export * from './geo.js';
+export * from './taximetro.js';
+export * from './tiempo.js';
+export * from './habilitacion.js';
