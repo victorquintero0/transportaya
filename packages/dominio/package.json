@@ -1,0 +1,25 @@
+{
+  "name": "@transportaya/dominio",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tipos, reglas de negocio y cálculos compartidos entre el backend y las apps",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  }
+}

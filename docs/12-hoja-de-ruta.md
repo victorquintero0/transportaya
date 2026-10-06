@@ -28,6 +28,24 @@ flowchart LR
 
 **Criterio de salida:** decisiones críticas cerradas y prueba de PWA del conductor con resultado aceptable.
 
+### Avance de la Fase 0
+
+| Tarea | Estado |
+|---|---|
+| Monorepo (pnpm + Turborepo), TypeScript, ESLint y Prettier | Hecho |
+| CI en GitHub Actions: formato, lint, tipos, pruebas y build | Hecho (se ejecuta al abrir un PR) |
+| Entorno local con Docker Compose (PostGIS, Redis, MinIO, Mailpit) | Hecho (configuración validada; no se levantó en esta sesión) |
+| Paquete `dominio`: estados del viaje, tarifa, comisión 3 % / 5 %, cierre diario | Hecho, con 34 pruebas |
+| API NestJS base con `/v1/salud` y simulador de tarifa | Hecho |
+| Esqueleto de las tres PWA con manifiesto y *service worker* | Hecho |
+| Herramienta de la prueba técnica de la PWA del conductor (ADR-0003) | Herramienta lista; **falta ejecutarla en celulares Android reales** |
+| Cargar las tarifas de taxi urbanas de Manizales | Pendiente: no se pudo leer la fuente ([D-20](13-decisiones-pendientes-y-riesgos.md)) |
+| Esquema de base de datos y migraciones | Pendiente |
+| Autenticación con OTP y usuarios internos con doble factor | Pendiente |
+| Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
+| Diseño UX/UI de los flujos críticos | Pendiente |
+| Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |
+
 ## Fase 1 · MVP
 
 **Objetivo:** operar viajes inmediatos y nacionales desde Manizales, con control total desde la torre de control 24/7.

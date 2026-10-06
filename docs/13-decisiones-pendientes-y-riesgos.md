@@ -30,7 +30,7 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-15** | Seguros para pasajeros: póliza de responsabilidad civil y de accidentes de pasajeros. El todo riesgo cubre el vehículo, no al pasajero | Legal | Definido por Legal. Mientras tanto se exigen SOAT, todo riesgo y RTM | Lanzamiento |
 | **D-18** | Proveedor de nube y región | Tecnología | Comparar en la Fase 0 por costo, latencia desde Colombia y cumplimiento de la Ley 1581 | Fase 0 |
 | **D-19** | **Tabla de tarifas de taxi vs. vehículos particulares.** La tabla se titula "tarifas sugeridas" para "vehículo de servicio público tipo taxi" (Resolución 031 de 1981). Falta definir si se usa tal cual para vehículos particulares y si varía por categoría (Media, Media Alta, Alta) | Negocio + Legal | Abierta | Fase 1 |
-| **D-20** | Tarifa urbana en Manizales y el Eje Cafetero: valores de base, km, minuto y mínima por categoría | Negocio | Abierta | Fase 1 |
+| **D-20** | Tarifa urbana en Manizales y el Eje Cafetero: valores de base, km, minuto y mínima por categoría | Negocio | **Se tomarán las tarifas de taxi de Manizales 2026** (fuente: [Centro de Información de la Alcaldía](https://centrodeinformacion.manizales.gov.co/definidas-las-tarifas-del-servicio-de-transporte-publico-colectivo-buses-busetas-y-microbuses-individual-de-pasajeros-taxi-y-cable-aereo-para-2026/)). **Sin cargar**: la red de la sesión bloqueó ese dominio y no se encontraron los valores en otra fuente. Falta pegar los valores (banderazo, valor por unidad o por km y minuto, mínima y recargos) y decidir cómo se traducen a base, km y minuto | Fase 1 |
 | **D-21** | Clasificación definitiva de cada vehículo en el catálogo | Negocio | Borrador en [catálogo](14-catalogo-de-vehiculos.md) | Fase 1 |
 
 ## Riesgos
