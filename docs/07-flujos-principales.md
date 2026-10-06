@@ -136,23 +136,22 @@ flowchart TD
 En el MVP las consultas de antecedentes, RUNT y SIMIT las hace el analista manualmente en los portales
 oficiales y adjunta el soporte. La automatización con un proveedor se evalúa en F2.
 
-## 5. Liquidación semanal
+## 5. Cierre diario y cobro de la comisión
 
 ```mermaid
 flowchart TD
-    A[Domingo 23:59 · cierre del periodo] --> B[Lunes · generar borradores por conductor]
-    B --> C{¿Alertas?}
-    C -->|Saldo atípico, ajustes o reclamos abiertos| D[Finanzas revisa]
-    C -->|No| E[Listo para aprobar]
-    D --> E
-    E --> F[Aprobación]
-    F --> G{Saldo}
-    G -->|Positivo ≥ mínimo| H[Archivo de dispersión al banco]
-    G -->|Positivo < mínimo| I[Se acumula al siguiente periodo]
-    G -->|Negativo| J[Se arrastra como deuda · aplica límite RN-063]
-    H --> K{Respuesta del banco}
-    K -->|Pagado| L[Movimiento pago_liquidacion · liquidación pagada]
-    K -->|Rechazado| M[Saldo vuelve al conductor · pedir datos bancarios]
+    A[00:00 · cierre del día del conductor] --> B[Cruce neto: ingresos electrónicos − comisiones de efectivo]
+    B --> C{Resultado}
+    C -->|A favor del conductor| D[Finanzas revisa alertas y aprueba]
+    D --> E[Pago por llave / Bre-B]
+    E -->|Pagado| F[Movimiento pago_liquidacion]
+    E -->|Rechazado| G[Saldo se conserva · pedir actualizar la llave]
+    C -->|A cargo del conductor| H[Conductor queda sin habilitar]
+    H --> I[Conductor paga la comisión por llave / Bre-B]
+    I --> J{¿Pago conciliado?}
+    J -->|Sí| K[Movimiento pago_comision · habilitación automática]
+    J -->|No llega| L[Cobranza verifica · habilitación manual si el pago está confirmado]
+    L --> K
 ```
 
 ## 6. Botón SOS

@@ -6,8 +6,8 @@
 |---|---|---|
 | **Pasajero** | App Pasajero | Persona que pide viajes y los paga con su propio método de pago. |
 | **Empleado corporativo** | App Pasajero | Pasajero vinculado a una empresa cliente; puede cargar viajes a la empresa según sus políticas. Una misma cuenta puede tener perfil personal y corporativo. |
-| **Administrador corporativo** | App Pasajero (sección Empresa) | Persona de la empresa cliente que gestiona empleados, centros de costo y consulta estados de cuenta. Ver [D-09](13-decisiones-pendientes-y-riesgos.md). |
-| **Conductor** | App Conductor | Conductor independiente con vehículo propio o a su cargo, habilitado por Transporteya. |
+| **Administrador corporativo** | App Operación (rol externo limitado) | Persona de la empresa cliente que gestiona empleados, centros de costo y consulta estados de cuenta. Ver [D-09](13-decisiones-pendientes-y-riesgos.md). |
+| **Conductor** | App Conductor | Conductor independiente con vehículo propio o a su cargo, habilitado por TransporteYa. |
 | **Contacto de confianza** | Enlace web | Persona con quien el pasajero comparte el viaje en vivo; no necesita cuenta. |
 
 ## Sistemas externos
@@ -20,7 +20,7 @@
 | Correo transaccional | Recibos, estados de cuenta, respuestas de PQRS |
 | Servicios de mapas autoalojados | Mapas base, rutas y tiempos, búsqueda de direcciones (ver [ADR-0002](adr/0002-mapas-openstreetmap-autoalojado.md)) |
 | Almacenamiento de archivos | Documentos y fotos de conductores y vehículos |
-| Banco (archivo de dispersión) | Pago de liquidaciones a conductores |
+| Llave / Bre-B | Pago del saldo diario a los conductores y cobro de su comisión |
 
 ## Roles internos (App Operación)
 
@@ -30,6 +30,7 @@
 | **Agente de soporte** | Atiende tickets y PQRS, objetos perdidos, aplica reembolsos hasta su límite. |
 | **Analista de cumplimiento** | Revisa y aprueba documentos de conductores y vehículos, suspende o bloquea conductores. |
 | **Analista financiero** | Genera, revisa y aprueba liquidaciones, registra pagos de deudas, gestiona clientes corporativos. |
+| **Administrador corporativo (externo)** | Usuario de una empresa cliente con acceso limitado a su propia empresa: empleados, centros de costo, políticas, viajes y estados de cuenta (F3). |
 | **Supervisor** | Todo lo anterior, más reembolsos sin límite, ajustes de saldo y reportes. |
 | **Administrador** | Configura tarifas, zonas, parámetros y usuarios internos. |
 
@@ -80,11 +81,11 @@ Reglas generales:
 | **Geocerca** | Zona que dispara una acción cuando un vehículo entra o sale (por ejemplo, llegada al aeropuerto). |
 | **En línea** | Conductor conectado y disponible para recibir ofertas. |
 | **Sesión** | Periodo continuo en el que un conductor está en línea. Base para medir tiempo conectado. |
-| **Comisión** | Porcentaje de la tarifa que se queda Transporteya. |
+| **Comisión** | Porcentaje de la tarifa que se queda TransporteYa: 3 % urbano, 5 % nacional. |
 | **Saldo del conductor** | Lo que la empresa le debe al conductor (positivo) o el conductor a la empresa (negativo). |
 | **Libro de movimientos** | Registro inmutable de cada crédito y débito que afecta el saldo del conductor. |
-| **Liquidación** | Cierre de un periodo (semanal) que calcula el saldo final y genera el pago o el cobro. |
-| **Dispersión** | Pago masivo a cuentas bancarias de los conductores mediante archivo del banco. |
+| **Cierre diario** | Cálculo a las 00:00 del saldo neto del conductor: lo que se le paga o la comisión que debe pagar para habilitarse. |
+| **Llave / Bre-B** | Sistema de pagos inmediatos interoperables en Colombia; se identifica a una persona con una llave (celular, correo o documento). |
 | **PQRS** | Peticiones, quejas, reclamos y sugerencias. |
 | **SOAT** | Seguro obligatorio de accidentes de tránsito. |
 | **RTM** | Revisión técnico-mecánica y de emisiones contaminantes. |

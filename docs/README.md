@@ -1,6 +1,6 @@
-# Documentación de Transporteya
+# Documentación de TransporteYa
 
-Documentación inicial de la plataforma de transporte de pasajeros de Transporteya.
+Documentación inicial de la plataforma de transporte de pasajeros de TransporteYa.
 Es un documento vivo: se debe actualizar cuando cambie una regla de negocio o una decisión técnica.
 
 ## Índice
@@ -13,27 +13,38 @@ Es un documento vivo: se debe actualizar cuando cambie una regla de negocio o un
 | 04 | [App Pasajero](04-app-pasajero.md) | Funcionalidades, pantallas e historias de usuario |
 | 05 | [App Conductor](05-app-conductor.md) | Funcionalidades, pantallas, limitaciones de la PWA |
 | 06 | [App Operación](06-app-operacion.md) | Torre de control, tiempos y movimientos, módulos administrativos |
-| 07 | [Flujos principales](07-flujos-principales.md) | Ciclo de vida del viaje, asignación, pagos, onboarding, liquidación, SOS |
+| 07 | [Flujos principales](07-flujos-principales.md) | Ciclo de vida del viaje, asignación, pagos, onboarding, cierre diario, SOS |
 | 08 | [Arquitectura](08-arquitectura.md) | Componentes, tiempo real, geoespacial, mapas, estructura del repositorio |
 | 09 | [Modelo de datos](09-modelo-de-datos.md) | Entidades principales y relaciones |
 | 10 | [API y tiempo real](10-api-y-tiempo-real.md) | Convenciones, endpoints iniciales y eventos WebSocket |
 | 11 | [Requisitos no funcionales](11-requisitos-no-funcionales.md) | Rendimiento, seguridad, privacidad, compatibilidad |
 | 12 | [Hoja de ruta](12-hoja-de-ruta.md) | Fases de entrega |
-| 13 | [Decisiones pendientes y riesgos](13-decisiones-pendientes-y-riesgos.md) | Lo que falta definir y lo que puede salir mal |
+| 13 | [Decisiones y riesgos](13-decisiones-pendientes-y-riesgos.md) | Decisiones tomadas, las que siguen abiertas y los riesgos |
+| 14 | [Catálogo de vehículos](14-catalogo-de-vehiculos.md) | Categorías Media, Media Alta y Alta y catálogo para el registro de conductores |
+| — | [Datos iniciales](datos/README.md) | Tarifas de rutas desde Manizales y catálogo de vehículos en CSV |
 | — | [Registros de decisiones (ADR)](adr/README.md) | Decisiones de arquitectura y su justificación |
 
 ## Decisiones tomadas
 
+El detalle de las 18 decisiones y de lo que queda abierto está en [13 · Decisiones y riesgos](13-decisiones-pendientes-y-riesgos.md).
+
 | Tema | Decisión |
 |---|---|
-| País de operación | Colombia (COP, zona horaria `America/Bogota`, español de Colombia) |
-| Modelo de conductores | Conductores independientes con vehículo propio; la empresa cobra una comisión por viaje |
-| Tipos de servicio | Viajes inmediatos, programados, corporativos y aeropuerto / intermunicipal |
-| Métodos de pago | Efectivo, tarjeta en la app y métodos locales (Nequi, PSE, Bre-B u otros según la pasarela) |
-| Tarifa | Base + distancia + tiempo, con tarifa mínima y multiplicador dinámico por demanda |
-| Módulos administrativos | Liquidación a conductores, documentos y vehículos, soporte y PQRS |
+| Nombre | **TransporteYa** |
+| Lanzamiento | **Manizales y el Eje Cafetero**, con cobertura nacional por rutas de tarifa fija |
+| Marco legal | Vehículos **particulares con licencia B1** (pendiente de concepto legal) |
+| Modelo de conductores | Independientes con vehículo propio; la empresa cobra comisión: **3 % urbano y 5 % nacional** |
+| Cierre y pago | **Diario**, con cruce neto; el conductor paga su comisión por **llave / Bre-B** y, si no paga, **no se habilita** |
+| Servicios | Inmediatos, programados, corporativos e intermunicipales / nacionales con tarifa fija |
+| Pagos | Efectivo y tarjeta en el MVP; métodos locales en F2. Pasarela **Wompi** |
+| Tarifa urbana | Base + distancia + tiempo, con mínima y dinámica; **recalculada al final** |
+| Categorías | **Media, Media Alta y Alta**, según un catálogo de vehículos |
+| Requisitos del vehículo | Sin límite de antigüedad; **revisión técnico-mecánica** y **seguro todo riesgo** |
+| Módulos administrativos | Cierre y pagos a conductores, documentos y vehículos, soporte y PQRS |
+| Portal corporativo | Dentro de la App Operación, con rol externo limitado |
 | Stack | TypeScript de punta a punta: React (PWA) + NestJS + PostgreSQL/PostGIS + Redis |
 | Mapas | OpenStreetMap autoalojado (MapLibre, OSRM, Photon/Nominatim) |
+| Torre de control | **24/7** desde el lanzamiento |
 
 ## Convenciones de esta documentación
 

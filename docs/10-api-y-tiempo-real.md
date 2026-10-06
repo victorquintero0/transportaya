@@ -43,6 +43,7 @@ documento OpenAPI que genera el backend.
 | GET / POST / DELETE | `/v1/lugares` | Lugares guardados |
 | GET | `/v1/direcciones/buscar?q=` | Autocompletado de direcciones |
 | GET | `/v1/direcciones/inversa?lat=&lng=` | Dirección de unas coordenadas |
+| GET | `/v1/rutas-fijas` | Destinos nacionales con tarifa fija, `solo_ida` o `ida_y_vuelta` |
 | GET / POST / DELETE | `/v1/metodos-pago` | Métodos de pago (el alta usa el token de la pasarela) |
 | POST | `/v1/cotizaciones` | Precio y ETA por categoría para origen y destino |
 | POST | `/v1/viajes` | Crear viaje desde una cotización vigente |
@@ -65,6 +66,7 @@ documento OpenAPI que genera el backend.
 | GET / PATCH | `/v1/conductor/yo` | Perfil y estado de habilitación |
 | GET / POST | `/v1/conductor/documentos` | Documentos (la carga usa URL firmada al almacenamiento) |
 | GET / POST | `/v1/conductor/vehiculos` | Vehículos y vehículo activo |
+| GET | `/v1/catalogo-vehiculos` | Marcas, líneas y años del catálogo, con su categoría |
 | POST | `/v1/conductor/conectar` | Pasar a disponible (valida documentos, deuda y vehículo) |
 | POST | `/v1/conductor/desconectar` | Pasar a desconectado |
 | POST | `/v1/conductor/ofertas/{id}/aceptar` | Aceptar oferta |
@@ -78,7 +80,7 @@ documento OpenAPI que genera el backend.
 | POST | `/v1/conductor/ubicaciones` | Envío en lote de ubicaciones guardadas sin conexión |
 | GET | `/v1/conductor/ganancias?desde=&hasta=` | Resumen y detalle de ganancias |
 | GET | `/v1/conductor/saldo` · `/v1/conductor/movimientos` | Saldo y libro de movimientos |
-| GET | `/v1/conductor/liquidaciones` | Liquidaciones |
+| GET | `/v1/conductor/cierres` · `/v1/conductor/deuda` | Cierres diarios, deuda y datos de la llave de TransporteYa |
 | GET / POST | `/v1/conductor/reservas` | Tablero de reservas y tomar una (F2) |
 
 ## App Operación
@@ -100,9 +102,9 @@ documento OpenAPI que genera el backend.
 | POST | `/v1/op/tarifas/simular` | Simulador de precio |
 | GET / POST / PATCH | `/v1/op/zonas` | Zonas y geocercas |
 | PUT | `/v1/op/dinamica/{zona}` | Fijar o desactivar dinámica manual |
-| GET / POST | `/v1/op/liquidaciones` · POST `/{id}/aprobar` | Ciclo de liquidación |
-| POST | `/v1/op/lotes-dispersion` | Generar archivo para el banco |
-| POST | `/v1/op/conductores/{id}/abonos` · `/ajustes` | Abonos y ajustes de saldo |
+| GET / POST | `/v1/op/cierres` · POST `/{id}/aprobar` | Cierre diario por conductor |
+| POST | `/v1/op/pagos-conductores` | Ejecutar o registrar pagos por llave / Bre-B |
+| POST | `/v1/op/conductores/{id}/pagos-comision` · `/habilitar` · `/ajustes` | Conciliar pago de comisión, habilitar manualmente y ajustar saldo |
 | GET / PATCH | `/v1/op/tickets` · `/v1/op/tickets/{id}` | Bandeja de soporte |
 | POST | `/v1/op/pagos/{id}/reembolsos` | Reembolso |
 | GET | `/v1/op/reportes/{tipo}?formato=csv` | Reportes de tiempos y movimientos |
@@ -129,7 +131,7 @@ Los eventos son **avisos**: al reconectar, el cliente vuelve a pedir el estado p
 | `viaje:mensaje` | Pasajero, conductor | Mensaje de chat |
 | `oferta:nueva` | Conductor | Datos de la oferta y hora de expiración |
 | `oferta:retirada` | Conductor | El pasajero canceló o expiró |
-| `conductor:estado` | Conductor | Suspensión, sin señal, límite de deuda alcanzado |
+| `conductor:estado` | Conductor | Suspensión, sin señal, bloqueo o habilitación por deuda |
 | `flota:resumen` | Operación | Posiciones y estados de la flota cada `[2 s]` |
 | `alerta:nueva` · `alerta:actualizada` | Operación | Alertas automáticas y SOS |
 | `operacion:indicadores` | Operación | KPIs del momento cada `[10 s]` |

@@ -79,7 +79,7 @@ La API y los workers son **el mismo código** con distinto punto de entrada, lo 
 | `despacho` | Búsqueda de candidatos, ofertas, tiempos de espera, ampliación de radio, despacho manual |
 | `ubicacion` | Recepción de posiciones, estado operativo, detección de `sin_senal`, alertas geográficas |
 | `pagos` | Métodos de pago, cobros, webhooks, reintentos, reembolsos |
-| `saldos` | Libro de movimientos, liquidaciones, archivos de dispersión, abonos |
+| `saldos` | Libro de movimientos, cierres diarios, pagos por llave / Bre-B, cobranza y habilitación |
 | `corporativo` | Empresas, contratos, empleados, centros de costo, políticas, estados de cuenta |
 | `soporte` | Tickets, PQRS, objetos perdidos, SLA |
 | `seguridad` | SOS, viaje compartido, PIN de inicio |
@@ -160,7 +160,7 @@ Decisión y riesgos en [ADR-0002](adr/0002-mapas-openstreetmap-autoalojado.md). 
 | Empaquetado | **Vite** + `vite-plugin-pwa` (Workbox) para *service worker* y manifiesto |
 | Estado del servidor | TanStack Query |
 | Estado local | Zustand |
-| Tiempo real | Cliente de Socket.IO desde `@transporteya/sdk` |
+| Tiempo real | Cliente de Socket.IO desde `@transportaya/sdk` |
 | Mapas | MapLibre GL JS |
 | Estilos | Tailwind CSS con un tema compartido |
 | Formularios y validación | React Hook Form + Zod (esquemas compartidos con el backend) |
@@ -176,7 +176,7 @@ Un sitio público de mercadeo, si se necesita, sería un proyecto aparte.
 | Framework | **NestJS** (REST + gateway WebSocket) |
 | Base de datos | **PostgreSQL 16+** con **PostGIS** |
 | Acceso a datos | **Drizzle ORM** y migraciones; SQL explícito para consultas geoespaciales |
-| Validación | Zod (`nestjs-zod`), esquemas compartidos en `@transporteya/dominio` |
+| Validación | Zod (`nestjs-zod`), esquemas compartidos en `@transportaya/dominio` |
 | Colas y tareas programadas | **BullMQ** sobre Redis |
 | Documentación de la API | OpenAPI generado desde el código |
 | Autenticación | JWT de corta duración `[15 min]` + *refresh token* rotativo; TOTP para usuarios internos |

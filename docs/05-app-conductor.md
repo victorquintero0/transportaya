@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| **Usuarios** | Conductores independientes habilitados por Transporteya |
+| **Usuarios** | Conductores independientes habilitados por TransporteYa |
 | **Plataforma** | PWA móvil instalable. **Android es la plataforma prioritaria** |
 | **Prioridad de diseño** | Uso con el vehículo en marcha: botones grandes, alto contraste, sonido, mínima lectura |
 | **Riesgo principal** | Las PWA no pueden enviar ubicación con la pantalla apagada o la app en segundo plano (ver [ADR-0003](adr/0003-app-conductor-como-pwa.md)) |
@@ -65,12 +65,12 @@ Mientras está **habilitado**, el conductor tiene además un **estado operativo*
 | CON-28 | Calificar al pasajero | MVP |
 | CON-29 | Botón **SOS** | MVP |
 | CON-30 | Tablero de reservas programadas: ver, tomar y confirmar | F2 |
-| CON-31 | Activar viajes intermunicipales y de categoría inferior | F2 |
+| CON-31 | Activar viajes intermunicipales/nacionales y de categoría inferior | MVP |
 | **Ganancias** | | |
 | CON-40 | Ganancias del día y de la semana; detalle por viaje (tarifa, comisión, propina, peajes) | MVP |
-| CON-41 | **Saldo** actual: lo que la empresa le debe o lo que él debe por comisiones de efectivo | MVP |
-| CON-42 | Historial de liquidaciones y pagos recibidos | MVP |
-| CON-43 | Abonar deuda desde la app con métodos locales | F2 |
+| CON-41 | **Cierre del día**: lo que TransporteYa le debe o la comisión que debe pagar, con los datos de la llave de TransporteYa | MVP |
+| CON-42 | Historial de cierres diarios y pagos recibidos | MVP |
+| CON-43 | Pagar la comisión desde la app con Bre-B y habilitación automática | F2 |
 | **Calidad y soporte** | | |
 | CON-50 | Mis indicadores: calificación, tasa de aceptación, tasa de cancelación, horas en línea | MVP |
 | CON-51 | Reportar un problema sobre un viaje u objeto encontrado | MVP |

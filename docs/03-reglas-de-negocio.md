@@ -15,11 +15,14 @@ Convenciones generales:
 ## 1. Ciudades, área de servicio y categorías
 
 - **RN-001** Cada ciudad tiene un **área de servicio** (polígono). Solo se aceptan solicitudes cuyo
-  origen esté dentro del área. El destino puede estar fuera solo para servicios aeropuerto / intermunicipal.
+  origen esté dentro del área. El destino puede estar fuera solo para servicios intermunicipales, nacionales
+  o de aeropuerto. La ciudad inicial es **Manizales**, con operación en el **Eje Cafetero** y cobertura nacional
+  mediante rutas con tarifa fija (sección 10).
 - **RN-002** Las tarifas, zonas, recargos, festivos y reglas de pico y placa se configuran **por ciudad**.
-- **RN-003** Cada vehículo pertenece a una **categoría** (propuesta inicial: *Económico* y *Confort*; ver
-  [D-07](13-decisiones-pendientes-y-riesgos.md)). Un vehículo de categoría superior puede atender
-  viajes de una categoría inferior solo si el conductor lo activa.
+- **RN-003** Cada vehículo pertenece a una de tres **categorías**: **Media**, **Media Alta** o **Alta**. La categoría
+  la asigna el [catálogo de vehículos](14-catalogo-de-vehiculos.md) según marca, línea y año, y puede corregirla
+  cumplimiento con motivo. Un vehículo de categoría superior puede atender viajes de una categoría inferior
+  solo si el conductor lo activa.
 - **RN-004** Existen **zonas restringidas** (por ejemplo, zonas con alto riesgo en ciertos horarios)
   donde se puede bloquear el origen o el destino, o exigir pago electrónico.
 
@@ -38,14 +41,15 @@ Convenciones generales:
 - **RN-011** **Recargos** configurables, fijos o porcentuales, que **no** se multiplican por la dinámica:
   nocturno `[20:00–05:59]`, dominical y festivo, aeropuerto (origen o destino dentro de la zona del
   aeropuerto) y reserva (viajes programados). Si aplican varios, se suman.
-- **RN-012** **Precio cerrado.** El precio que el pasajero acepta al confirmar es el que se cobra, salvo que:
-  1. el pasajero cambie el destino o agregue paradas (se recotiza desde la posición actual);
-  2. haya cobro por espera (RN-041);
-  3. haya peajes no incluidos en la cotización;
-  4. la ruta real sea más de `[20 %]` más larga **por solicitud del pasajero**.
-
-  En esos casos el precio final se recalcula con la distancia y el tiempo reales (trayectoria GPS
-  ajustada al mapa). Ver [D-10](13-decisiones-pendientes-y-riesgos.md).
+- **RN-012** **Precio recalculado al final** ([D-10](13-decisiones-pendientes-y-riesgos.md)). En viajes urbanos, la
+  cotización es un **estimado**: el precio que se cobra se calcula con la **distancia y el tiempo reales**
+  (trayectoria GPS ajustada al mapa) aplicando la tarifa vigente al momento de la cotización. Reglas:
+  1. La app muestra siempre un **rango** (por ejemplo, "$ 15.000 – $ 18.000") y el aviso de que el valor final
+     depende de la distancia y el tiempo reales.
+  2. El multiplicador de dinámica de la cotización (RN-022) se mantiene aunque cambie después.
+  3. Pendiente de definir con Negocio: un **tope** sobre el máximo del rango (ver [R-13](13-decisiones-pendientes-y-riesgos.md)).
+  4. Las **rutas con tarifa fija** (RN-090) **no se recalculan**: se cobra el valor de la tabla.
+  5. Peajes y cobro de espera se suman al valor final (RN-041).
 - **RN-013** Una **cotización** es válida por `[5 min]`. Pasado ese tiempo, la app debe recotizar antes de confirmar.
 - **RN-014** Toda tarifa tiene **vigencia** (desde/hasta) y **versión**. Cada viaje guarda la versión de
   tarifa con la que se cotizó para poder auditarla.
@@ -61,8 +65,8 @@ Convenciones generales:
 | × dinámica 1,2 | $ 16.320 |
 | + recargo nocturno | $ 1.000 |
 | **Total redondeado** | **$ 17.300** |
-| Comisión 20 % | $ 3.460 |
-| Neto para el conductor | $ 13.840 |
+| Comisión 3 % | $ 519 |
+| Neto para el conductor | $ 16.781 |
 
 ## 3. Dinámica
 
@@ -85,7 +89,7 @@ Convenciones generales:
   - tiene todos sus documentos y los del vehículo aprobados y vigentes (RN-111);
   - su vehículo es de la categoría solicitada (o superior, según RN-003);
   - no tiene restricción de pico y placa en ese momento y lugar (RN-115, F2);
-  - si el pago es en efectivo, su saldo deudor está dentro del límite (RN-063);
+  - no está bloqueado por deuda de comisión (RN-063);
   - no está bloqueado con ese pasajero (calificación de 1 estrella entre ambos o bloqueo por soporte).
 - **RN-031** Se buscan candidatos en un radio inicial `[3 km]` y se ordenan por **ETA real a la recogida**
   (motor de rutas), no por distancia en línea recta. En empate, gana quien lleva más tiempo disponible sin viaje.
@@ -136,13 +140,15 @@ Convenciones generales:
   | Métodos locales (Nequi, PSE, Bre-B u otros) | F2 | El pasajero confirma el pago en la app al finalizar |
   | Cuenta corporativa | F3 | A crédito; se cobra en el estado de cuenta mensual |
 
-- **RN-051** Transporteya **nunca almacena** números de tarjeta: solo el token que entrega la pasarela,
+  La pasarela es **Wompi** ([D-05](13-decisiones-pendientes-y-riesgos.md)). El pago de la comisión del conductor por llave / Bre-B (RN-063) es un flujo aparte del pago del pasajero.
+
+- **RN-051** TransporteYa **nunca almacena** números de tarjeta: solo el token que entrega la pasarela,
   la marca y los últimos 4 dígitos.
 - **RN-052** Si la pasarela lo permite, al confirmar un viaje con tarjeta se hace una **preautorización**
   por el valor cotizado y se captura el valor final al terminar.
 - **RN-053** Si un cobro electrónico falla, se reintenta `[3]` veces en `[24 h]`. Mientras tanto queda
   como **deuda del pasajero**, que no puede pedir otro viaje hasta saldarla. El conductor **recibe su
-  pago igual**: el riesgo lo asume Transporteya.
+  pago igual**: el riesgo lo asume TransporteYa.
 - **RN-054** Con métodos locales que exigen confirmación del pasajero, el conductor puede finalizar el
   viaje aunque el pago esté pendiente. Si no se paga en `[15 min]`, aplica RN-053.
 - **RN-055** En efectivo, el conductor confirma en la app el valor recibido. Si recibe menos, lo reporta
@@ -152,49 +158,57 @@ Convenciones generales:
 - **RN-057** Después de cada viaje se envía un **recibo** por correo. El recibo no es factura electrónica
   (ver [D-02](13-decisiones-pendientes-y-riesgos.md)).
 
-## 7. Comisión y saldo del conductor
+## 7. Comisión y cierre diario del conductor
 
-- **RN-060** Transporteya cobra una **comisión** `[20 %]` sobre la tarifa del viaje, los recargos, el cobro por
-  espera y las tarifas de cancelación. **No** cobra comisión sobre peajes ni propinas.
-  Ver [D-03](13-decisiones-pendientes-y-riesgos.md).
+- **RN-060** TransporteYa cobra una **comisión** sobre la tarifa del viaje, los recargos, el cobro por espera y
+  las tarifas de cancelación ([D-03](13-decisiones-pendientes-y-riesgos.md)):
+
+  | Tipo de viaje | Comisión |
+  |---|---|
+  | Dentro de la ciudad (urbano y aeropuerto urbano) | **3 %** |
+  | Nacional (intermunicipal, con tarifa fija por destino) | **5 %** |
+
+  No se cobra comisión sobre peajes ni propinas. Los porcentajes son configurables por tipo de servicio.
 - **RN-061** Cada conductor tiene un **libro de movimientos** inmutable. El saldo es la suma de sus movimientos.
   Los movimientos no se editan ni se borran: los errores se corrigen con un movimiento de ajuste.
 
   | Movimiento | Signo | Origen |
   |---|---|---|
-  | `ingreso_viaje_electronico` | + | Viaje pagado con tarjeta, método local o corporativo (tarifa − comisión) |
+  | `ingreso_viaje_electronico` | + | Viaje pagado con tarjeta o método local (tarifa − comisión) |
   | `comision_viaje_efectivo` | − | Viaje pagado en efectivo: el conductor ya tiene el dinero y debe la comisión |
   | `peaje` | + | Peajes de viajes pagados electrónicamente |
   | `propina` | + | Propina del pasajero |
   | `cancelacion` | + / − | Tarifa de cancelación o pasajero ausente (neto de comisión) |
-  | `abono_conductor` | + | El conductor paga parte de su deuda |
-  | `pago_liquidacion` | − | Transporteya le paga el saldo positivo |
+  | `pago_comision` | + | El conductor paga su comisión por llave / Bre-B |
+  | `pago_liquidacion` | − | TransporteYa le paga el saldo a favor |
   | `ajuste` | + / − | Corrección manual con motivo y doble aprobación |
 
-- **RN-062** Ejemplo: viaje de $ 20.000 en efectivo → el conductor recibe $ 20.000 del pasajero y se registra
-  `−$ 4.000`. El mismo viaje con tarjeta → se registra `+$ 16.000`.
-- **RN-063** **Límite de deuda** `[$ 150.000]`. Si el saldo es más negativo que el límite, el conductor
-  **solo recibe viajes con pago electrónico** hasta bajar del límite (así la deuda se compensa sola) y se
-  le notifica. Si la deuda supera `[2 ×]` el límite o tiene más de `[2]` liquidaciones sin pagar, el
-  conductor se suspende hasta abonar.
-- **RN-064** El conductor puede abonar su deuda en cualquier momento: en el MVP por transferencia que
-  registra finanzas; en F2 desde la app con métodos locales.
+- **RN-062** Ejemplo urbano de $ 20.000: en **efectivo**, el conductor recibe $ 20.000 del pasajero y se registra
+  `−$ 600` (3 %). Con **tarjeta**, se registra `+$ 19.400`. Un viaje nacional de $ 240.000 en efectivo registra `−$ 12.000` (5 %).
+- **RN-063** **Cierre diario y bloqueo por deuda** ([D-04](13-decisiones-pendientes-y-riesgos.md)):
+  1. A las **00:00** se cierra el día de cada conductor con un **cruce neto**: lo que TransporteYa le debe por viajes
+     electrónicos contra la comisión que él debe por viajes en efectivo.
+  2. Si el resultado es **a favor del conductor**, se le paga por llave / Bre-B (RN-070).
+  3. Si el resultado es **a cargo del conductor**, debe pagar ese valor a TransporteYa por **llave o Bre-B**.
+  4. Mientras exista una deuda del día anterior sin pagar, el conductor **queda sin habilitar para conectarse**.
+     El bloqueo empieza en el cierre de las 00:00.
+  5. El pago se concilia, se registra `pago_comision` y el conductor se **habilita automáticamente** (ver [R-14](13-decisiones-pendientes-y-riesgos.md)).
+  6. Un viaje en curso a las 00:00 se cierra en el día en que **finaliza**.
+- **RN-064** El conductor ve en la app su **deuda del día**, los datos de la llave de TransporteYa, y puede pagar
+  desde su banca móvil. Soporte o finanzas pueden **habilitarlo manualmente** si el pago está confirmado y aún no concilia.
 
-## 8. Liquidaciones
+## 8. Pagos al conductor y cuenta de cobro
 
-- **RN-070** El periodo de liquidación es **semanal**: de lunes 00:00 a domingo 23:59 (`America/Bogota`).
-  Ver [D-04](13-decisiones-pendientes-y-riesgos.md).
-- **RN-071** Cada lunes el sistema genera una **liquidación en borrador** por conductor con todos sus
-  movimientos del periodo y el saldo final.
-- **RN-072** Finanzas revisa las liquidaciones con alertas (saldos atípicos, ajustes, reclamos abiertos) y
-  las **aprueba**. Al aprobar se genera el **archivo de dispersión** para el banco.
-- **RN-073** Cuando el banco confirma el pago se registra `pago_liquidacion` y la liquidación pasa a **pagada**.
-  Si un pago es rechazado (cuenta inválida), el saldo vuelve al conductor y se le pide actualizar sus datos.
-- **RN-074** Saldos positivos menores a `[$ 20.000]` no se pagan y pasan al siguiente periodo.
-  Los saldos negativos pasan al siguiente periodo como deuda.
-- **RN-075** El conductor ve en la app el detalle de cada liquidación: viajes, comisiones, propinas, ajustes y pago.
-- **RN-076** Retenciones e impuestos sobre los pagos quedan pendientes de definición contable
-  (ver [D-06](13-decisiones-pendientes-y-riesgos.md)).
+- **RN-070** El **periodo de cierre es diario**, de 00:00 a 23:59 (`America/Bogota`). Los saldos a favor se pagan
+  al conductor por **llave / Bre-B** al día siguiente.
+- **RN-071** Cada día a las 00:00 el sistema genera el **cierre diario** por conductor con los movimientos del día y el resultado neto.
+- **RN-072** Finanzas revisa los cierres con alertas (saldos atípicos, ajustes, reclamos abiertos). Los pagos
+  se aprueban y se ejecutan por Bre-B; en el MVP pueden hacerse por lote.
+- **RN-073** Cuando el pago se confirma se registra `pago_liquidacion`. Si es rechazado (llave inválida), el saldo
+  se conserva a favor del conductor y se le pide actualizar sus datos.
+- **RN-074** Saldos a favor menores a `[$ 20.000]` se acumulan al día siguiente.
+- **RN-075** El conductor ve en la app el detalle de cada cierre diario: viajes, comisiones, propinas, ajustes y pagos.
+- **RN-076** Retenciones e impuestos sobre los pagos quedan pendientes del contador (sin supuesto, [D-06](13-decisiones-pendientes-y-riesgos.md)).
 
 ## 9. Viajes programados (F2)
 
@@ -207,10 +221,11 @@ Convenciones generales:
 - **RN-084** El pasajero puede cancelar gratis hasta `[60 min]` antes; después aplica la tarifa de cancelación.
 - **RN-085** Se recuerda al pasajero `[24 h]` y `[1 h]` antes, y al conductor `[1 h]` y `[15 min]` antes.
 
-## 10. Aeropuerto e intermunicipal (F2)
+## 10. Rutas nacionales, intermunicipales y aeropuerto (MVP)
 
-- **RN-090** La operación define **rutas con tarifa fija** (zona de origen → zona de destino), por ejemplo
-  "Zona centro → Aeropuerto". Si origen y destino coinciden con una ruta, se usa la tarifa fija en vez de RN-010.
+- **RN-090** La operación define **rutas con tarifa fija** (origen → destino, `solo_ida` o `ida_y_vuelta`).
+  La carga inicial son las [193 tarifas desde Manizales](datos/tarifas-rutas-manizales-2026.csv). Si origen y destino
+  coinciden con una ruta, se usa la tarifa fija en vez de RN-010. Pendiente: si la tarifa cambia por categoría ([D-19](13-decisiones-pendientes-y-riesgos.md)).
 - **RN-091** Los viajes intermunicipales sin ruta fija usan una **tarifa por km intermunicipal** más los
   **peajes** de la ruta calculada (tabla de peajes georreferenciados mantenida por operación).
 - **RN-092** Solo reciben ofertas intermunicipales los conductores que las **activen** en su perfil y cumplan
@@ -237,18 +252,19 @@ Convenciones generales:
   | Del conductor | Del vehículo |
   |---|---|
   | Documento de identidad: cédula de ciudadanía, cédula de extranjería o PPT | Licencia de tránsito |
-  | Licencia de conducción vigente, con la categoría que exija el modelo legal | SOAT vigente |
-  | Certificados de antecedentes: judiciales, disciplinarios, fiscales y medidas correctivas | Revisión técnico-mecánica vigente, cuando aplique por antigüedad |
-  | Consulta de multas pendientes (SIMIT) | Pólizas de responsabilidad civil, si el modelo legal las exige |
+  | Licencia de conducción vigente categoría **B1** ([D-01](13-decisiones-pendientes-y-riesgos.md)) | SOAT vigente |
+  | Certificados de antecedentes: judiciales, disciplinarios, fiscales y medidas correctivas | **Revisión técnico-mecánica** vigente |
+  | Consulta de multas pendientes (SIMIT) | **Seguro todo riesgo** vigente ([D-14](13-decisiones-pendientes-y-riesgos.md)) |
   | Foto de perfil (selfie) validada contra el documento | Fotos: frente, laterales, trasera e interior |
-  | Certificación bancaria de una cuenta a su nombre | |
+  | Llave Bre-B o certificación bancaria a su nombre | Póliza para pasajeros, si Legal la exige ([D-15](13-decisiones-pendientes-y-riesgos.md)) |
 
 - **RN-111** Un conductor solo puede conectarse si **todos** sus documentos obligatorios y los de su vehículo
   activo están **aprobados y vigentes**.
 - **RN-112** El sistema avisa al conductor `[30, 15, 7 y 1]` días antes de cada vencimiento. Al vencer, el
   conductor queda **suspendido automáticamente** hasta que se apruebe el documento nuevo.
-- **RN-113** Requisitos del vehículo por categoría (configurables): antigüedad máxima `[10 años]`, 4 puertas,
-  5 pasajeros y aire acondicionado para *Confort*.
+- **RN-113** **No hay límite de antigüedad** del vehículo ([D-14](13-decisiones-pendientes-y-riesgos.md)): lo que
+  exige la empresa es la revisión técnico-mecánica y el seguro todo riesgo vigentes. La categoría sale del
+  [catálogo de vehículos](14-catalogo-de-vehiculos.md). Otros requisitos por categoría (puertas, pasajeros) son configurables.
 - **RN-114** Un vehículo puede estar asociado a varios conductores (por ejemplo, el dueño y otro conductor),
   pero solo **uno** puede estar en línea con él a la vez. Un conductor tiene un solo vehículo activo a la vez.
 - **RN-115** **Pico y placa (F2):** por ciudad se configuran días, horarios, área y dígitos restringidos.

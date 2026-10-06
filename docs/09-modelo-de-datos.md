@@ -63,7 +63,8 @@ erDiagram
         text linea
         int modelo_anio
         text color
-        text categoria "economico, confort"
+        text categoria "media, media_alta, alta"
+        uuid catalogo_vehiculo_id FK
         text estado
     }
     CONDUCTOR_VEHICULO {
@@ -259,7 +260,7 @@ erDiagram
     VIAJE ||--o{ MOVIMIENTO_SALDO : "genera"
     LIQUIDACION ||--o{ MOVIMIENTO_SALDO : "agrupa"
     CONDUCTOR ||--o{ LIQUIDACION : "recibe"
-    LOTE_DISPERSION ||--o{ LIQUIDACION : "paga"
+    LOTE_PAGO ||--o{ LIQUIDACION : "paga"
     EMPRESA ||--o{ CENTRO_COSTO : "tiene"
     EMPRESA ||--o{ EMPLEADO_EMPRESA : "autoriza"
     EMPRESA ||--o{ ESTADO_CUENTA : "recibe"
@@ -311,14 +312,13 @@ erDiagram
     LIQUIDACION {
         uuid id PK
         uuid conductor_id FK
-        date periodo_inicio
-        date periodo_fin
+        date dia "cierre diario"
         bigint saldo_inicial
         bigint saldo_final
-        text estado "borrador, aprobada, en_pago, pagada, rechazada"
-        uuid lote_dispersion_id FK
+        text estado "borrador, aprobada, en_pago, pagada, rechazada, por_cobrar"
+        uuid lote_pago_id FK
     }
-    LOTE_DISPERSION {
+    LOTE_PAGO {
         uuid id PK
         date fecha
         text archivo_clave

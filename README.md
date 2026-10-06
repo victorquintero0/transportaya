@@ -1,7 +1,7 @@
 # transportaya
 
-Software de gestión para **Transporteya**, empresa de transporte de pasajeros en Colombia
-que conecta pasajeros con conductores independientes (modelo tipo Uber).
+Software de gestión para **TransporteYa**, empresa de transporte de pasajeros con base en Manizales y el Eje Cafetero,
+con cobertura nacional, que conecta pasajeros con conductores independientes (modelo tipo Uber).
 
 ## Aplicaciones
 
@@ -24,4 +24,5 @@ Toda la documentación funcional y técnica está en [`docs/`](docs/README.md).
 - [Visión y alcance](docs/01-vision-y-alcance.md)
 - [Reglas de negocio](docs/03-reglas-de-negocio.md)
 - [Arquitectura](docs/08-arquitectura.md)
-- [Decisiones pendientes y riesgos](docs/13-decisiones-pendientes-y-riesgos.md)
+- [Decisiones y riesgos](docs/13-decisiones-pendientes-y-riesgos.md)
+- [Catálogo de vehículos](docs/14-catalogo-de-vehiculos.md)

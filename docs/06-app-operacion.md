@@ -126,6 +126,7 @@ Todos los reportes se filtran por rango de fechas, ciudad, zona, categoría y ti
 
 - **Bandeja de onboarding:** solicitudes en revisión, ordenadas por antigüedad. El analista ve cada documento
   junto a los datos digitados, los **aprueba o rechaza con motivo** y registra la fecha de vencimiento.
+- **Catálogo de vehículos:** alta, edición y retiro de líneas, y revisión de vehículos fuera del catálogo ([catálogo](14-catalogo-de-vehiculos.md)).
 - **Ficha del conductor:** datos, vehículos, documentos y vencimientos, estado, indicadores, saldo,
   historial de viajes, tickets, alertas, calificaciones y notas internas.
 - **Vencimientos:** listado de documentos que vencen en los próximos `[30]` días.
@@ -147,13 +148,12 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 - **Dinámica:** parámetros por ciudad (tramos, tope, suavizado) y **control manual** por zona y horario.
 - **Simulador:** calcula el precio de un trayecto con la configuración vigente o con una versión futura antes de publicarla.
 
-## OPE-07 · Liquidaciones y saldos
+## OPE-07 · Cierre diario, pagos y saldos
 
-- **Saldos:** listado de conductores con saldo a favor, saldo deudor y deudores sobre el límite.
+- **Cierre diario:** listado de conductores con saldo a favor, con deuda de comisión y **bloqueados por deuda**.
 - **Libro de movimientos** por conductor, con filtros y enlace al viaje que originó cada movimiento.
-- **Ciclo semanal:** generar borradores → revisar alertas → aprobar → **exportar archivo de dispersión**
-  en el formato del banco → registrar confirmación o rechazos.
-- **Abonos:** registrar pagos de deuda hechos por transferencia, con soporte adjunto.
+- **Ciclo diario:** cierre a las 00:00 → revisar alertas → aprobar pagos por llave / Bre-B → registrar confirmación o rechazos.
+- **Cobranza:** conciliar los pagos de comisión por llave / Bre-B y **habilitar manualmente** a un conductor con pago confirmado.
 - **Ajustes:** propuestos por finanzas y aprobados por un supervisor (doble aprobación).
 
 ## OPE-08 · Soporte y PQRS
@@ -173,8 +173,8 @@ asignación manual y alertas de reservas en riesgo.
 
 ## OPE-10 · Clientes corporativos (F3)
 
-Empresas, contratos (tarifa pactada, dinámica, cupo, día de corte), administradores, empleados, centros de
-costo, políticas, consumo frente al cupo y **estados de cuenta** mensuales con su estado de pago.
+Empresas, contratos (tarifa pactada, dinámica, cupo, día de corte), administradores (**usuarios externos con rol
+limitado, que solo ven los datos de su empresa**), empleados, centros de costo, políticas, consumo frente al cupo y **estados de cuenta** mensuales con su estado de pago.
 
 ## OPE-11 · Usuarios internos y auditoría
 

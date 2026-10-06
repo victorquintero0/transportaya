@@ -21,7 +21,7 @@
 | PAS-05 | Eliminar cuenta y descargar mis datos | MVP |
 | **Métodos de pago** | | |
 | PAS-10 | Efectivo como método por defecto | MVP |
-| PAS-11 | Agregar, quitar y elegir tarjeta (formulario de la pasarela; Transporteya solo guarda el token) | MVP |
+| PAS-11 | Agregar, quitar y elegir tarjeta (formulario de la pasarela; TransporteYa solo guarda el token) | MVP |
 | PAS-12 | Métodos locales (Nequi, PSE, Bre-B u otros según la pasarela) | F2 |
 | PAS-13 | Ver y pagar deudas pendientes (cobros fallidos, pasajero ausente) | MVP |
 | **Pedir un viaje** | | |
@@ -31,7 +31,7 @@
 | PAS-23 | Nota para el conductor (por ejemplo, "portería 2") | MVP |
 | PAS-24 | Confirmar viaje y ver el estado de la búsqueda de conductor | MVP |
 | PAS-25 | Programar viaje para una fecha y hora futura | F2 |
-| PAS-26 | Viaje al aeropuerto o intermunicipal con tarifa de ruta y peajes visibles | F2 |
+| PAS-26 | Viaje intermunicipal o nacional: elegir destino de la lista de rutas con tarifa fija, `solo ida` o `ida y vuelta`, con el valor visible antes de confirmar | MVP |
 | **Durante el viaje** | | |
 | PAS-30 | Ver conductor asignado: nombre, foto, calificación, vehículo, color y **placa** | MVP |
 | PAS-31 | Seguimiento en vivo del conductor y ETA actualizado | MVP |
