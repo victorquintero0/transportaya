@@ -1,7 +1,9 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { noAutenticado, prohibido } from '../comun/errores.js';
-import { PUBLICO, ROLES, type UsuarioAutenticado } from './decoradores.js';
+import { tienePermiso } from '@transportaya/dominio';
+import { PERMISO, PUBLICO, ROLES, type UsuarioAutenticado } from './decoradores.js';
+import type { Permiso } from '@transportaya/dominio';
 import type { PayloadAcceso } from './jwt.js';
 import { TokensService } from './tokens.service.js';
 
@@ -37,6 +39,12 @@ export class GuardAutenticacion implements CanActivate {
     );
     if (roles && !roles.includes(usuario.rol)) {
       throw prohibido('ROL_NO_PERMITIDO', 'Esta acción no está disponible para tu tipo de cuenta.');
+    }
+    const permiso = this.reflector.getAllAndOverride<Permiso | undefined>(PERMISO, objetivos);
+    if (permiso) {
+      if (usuario.rol !== 'interno' || !tienePermiso(usuario.roles ?? [], permiso)) {
+        throw prohibido('SIN_PERMISO', 'Tu rol no tiene permiso para esta acción.');
+      }
     }
     req.usuario = usuario;
     return true;

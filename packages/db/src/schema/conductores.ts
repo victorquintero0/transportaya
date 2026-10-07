@@ -71,6 +71,8 @@ export const conductor = pgTable(
     aceptaIntermunicipal: boolean('acepta_intermunicipal').notNull().default(false),
     /** RN-063: deuda de comisión sin pagar tras el cierre diario. Lo fija el cierre y lo libera el pago. */
     bloqueadoPorDeuda: boolean('bloqueado_por_deuda').notNull().default(false),
+    /** La operación lo suspendió a mano: la revisión diaria de documentos no lo reactiva sola. */
+    suspensionManual: boolean('suspension_manual').notNull().default(false),
     /** RUT configurable (D-06): se guarda si el conductor lo entrega. */
     rut: text('rut'),
     calificacionPromedio: numeric('calificacion_promedio', {

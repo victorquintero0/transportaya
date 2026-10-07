@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { sesion, usuario } from '@transportaya/db';
+import { empleado, sesion, usuario, usuarioRol } from '@transportaya/db';
+import type { RolInterno } from '@transportaya/dominio';
 import { and, eq, isNull } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { noAutenticado } from '../comun/errores.js';
@@ -12,6 +13,8 @@ import { sha256 } from './otp.service.js';
 /** Tokens de acceso de corta vida (RNF-41). */
 export const TTL_ACCESO_S = 15 * 60;
 const TTL_REFRESCO_MS = 30 * 24 * 60 * 60_000;
+/** El personal interno vuelve a ingresar con su segundo factor al menos cada turno largo. */
+const TTL_REFRESCO_INTERNO_MS = 12 * 60 * 60_000;
 
 export interface Tokens {
   accessToken: string;
@@ -46,7 +49,9 @@ export class TokensService {
         tokenHash: sha256(refreshToken),
         dispositivo: meta.dispositivo ?? null,
         ip: meta.ip ?? null,
-        expiraEn: new Date(Date.now() + TTL_REFRESCO_MS),
+        expiraEn: new Date(
+          Date.now() + (rol === 'interno' ? TTL_REFRESCO_INTERNO_MS : TTL_REFRESCO_MS),
+        ),
       })
       .returning({ id: sesion.id });
     const accessToken = firmarJwt(
@@ -123,6 +128,24 @@ export class TokensService {
       fila.estado !== 'activo'
     )
       return null;
+    if (payload.rol === 'interno') {
+      // El personal interno puede perder el acceso o cambiar de rol en cualquier momento: se consulta en cada petición.
+      const [emp] = await this.bd.db
+        .select({ activo: empleado.activo })
+        .from(empleado)
+        .where(eq(empleado.usuarioId, payload.sub));
+      if (!emp?.activo) return null;
+      const roles = await this.bd.db
+        .select({ rol: usuarioRol.rol })
+        .from(usuarioRol)
+        .where(eq(usuarioRol.usuarioId, payload.sub));
+      return {
+        id: payload.sub,
+        sesionId: payload.sid,
+        rol: payload.rol,
+        roles: roles.map((r) => r.rol as RolInterno),
+      };
+    }
     return { id: payload.sub, sesionId: payload.sid, rol: payload.rol };
   }
 }

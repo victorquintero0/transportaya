@@ -224,3 +224,45 @@ export const movimientoSaldo = pgTable(
     ),
   ],
 );
+
+/**
+ * Ajuste manual de saldo con doble aprobación (RN-061, docs/02): quien lo propone no puede aprobarlo. Al aprobarse
+ * se escribe el movimiento `ajuste` en el libro, que es inmutable.
+ */
+export const ajusteSaldo = pgTable(
+  'ajuste_saldo',
+  {
+    id: id(),
+    conductorId: uuid('conductor_id')
+      .notNull()
+      .references(() => conductor.usuarioId),
+    /** Con signo: positivo a favor del conductor, negativo a su cargo. */
+    monto: cop('monto').notNull(),
+    motivo: text('motivo').notNull(),
+    viajeId: uuid('viaje_id').references(() => viaje.id),
+    estado: text('estado').notNull().default('pendiente'),
+    propuestoPor: uuid('propuesto_por')
+      .notNull()
+      .references(() => usuario.id),
+    resueltoPor: uuid('resuelto_por').references(() => usuario.id),
+    resueltoEn: marca('resuelto_en'),
+    motivoResolucion: text('motivo_resolucion'),
+    /** Sin clave foránea a propósito: el libro es inmutable y nada puede referenciarlo (así `TRUNCATE` sigue bloqueado por su disparador). */
+    movimientoId: uuid('movimiento_id'),
+    creadoEn: creadoEn(),
+  },
+  (t) => [
+    index('ajuste_saldo_estado_idx').on(t.estado, t.creadoEn),
+    index('ajuste_saldo_conductor_idx').on(t.conductorId, t.creadoEn),
+    check('ajuste_saldo_monto', sql`${t.monto} <> 0`),
+    check('ajuste_saldo_estado_valido', sql`${t.estado} in ('pendiente', 'aprobado', 'rechazado')`),
+    check(
+      'ajuste_saldo_doble_control',
+      sql`${t.resueltoPor} is null or ${t.resueltoPor} <> ${t.propuestoPor}`,
+    ),
+    check(
+      'ajuste_saldo_resuelto',
+      sql`${t.estado} = 'pendiente' or (${t.resueltoPor} is not null and ${t.resueltoEn} is not null)`,
+    ),
+  ],
+);

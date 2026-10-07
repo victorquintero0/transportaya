@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import type { Server, Socket } from 'socket.io';
 import { z } from 'zod';
+import { tienePermiso } from '@transportaya/dominio';
 import type { UsuarioAutenticado } from '../auth/decoradores.js';
 import { TokensService } from '../auth/tokens.service.js';
 import { UbicacionesService } from '../conductor/ubicaciones.service.js';
@@ -50,13 +51,16 @@ export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection {
     const token =
       typeof socket.handshake.auth?.['token'] === 'string' ? socket.handshake.auth['token'] : '';
     const usuario = token ? await this.tokens.autenticar(token) : null;
-    if (!usuario || (usuario.rol !== 'conductor' && usuario.rol !== 'pasajero')) {
+    if (!usuario) {
       socket.emit('error:autenticacion', { codigo: 'SESION_INVALIDA' });
       socket.disconnect(true);
       return;
     }
     socket.data['usuario'] = usuario;
     await socket.join(`${usuario.rol}:${usuario.id}`);
+    // El personal interno que puede ver la torre de control recibe sus avisos (sala `operacion`).
+    if (usuario.rol === 'interno' && tienePermiso(usuario.roles ?? [], 'torre.ver'))
+      await socket.join('operacion');
     socket.emit('listo', { conductorId: usuario.id });
   }
 

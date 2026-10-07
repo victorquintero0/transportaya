@@ -40,6 +40,7 @@ export class VencimientosService {
         id: conductor.usuarioId,
         estado: conductor.estadoHabilitacion,
         vehiculoId: conductor.vehiculoActivoId,
+        manual: conductor.suspensionManual,
       })
       .from(conductor)
       .where(inArray(conductor.estadoHabilitacion, ['habilitado', 'suspendido']));
@@ -70,7 +71,8 @@ export class VencimientosService {
           motivo: 'documento_vencido',
         });
         suspendidos.push(c.id);
-      } else if (c.estado === 'suspendido' && evaluacion.habilitado) {
+      } else if (c.estado === 'suspendido' && !c.manual && evaluacion.habilitado) {
+        // una suspensión puesta a mano por la operación no se levanta sola
         await db
           .update(conductor)
           .set({ estadoHabilitacion: 'habilitado' })

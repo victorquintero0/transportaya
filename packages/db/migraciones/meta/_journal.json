@@ -43,6 +43,13 @@
       "when": 1791375896779,
       "tag": "0005_terminos_pasajero",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791380957172,
+      "tag": "0006_operacion",
+      "breakpoints": true
     }
   ]
 }

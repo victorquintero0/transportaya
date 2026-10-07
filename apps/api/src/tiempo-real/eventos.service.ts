@@ -76,11 +76,29 @@ export class Eventos {
     this.server = server;
   }
 
+  private torrePendiente = false;
+
+  /** Avisa a la torre de control que algo cambió. Se agrupa: como mucho un aviso por segundo. */
+  avisarTorre(): void {
+    if (!this.server || this.torrePendiente) return;
+    this.torrePendiente = true;
+    setTimeout(() => {
+      this.torrePendiente = false;
+      this.server?.to('operacion').emit('torre:cambio', { t: Date.now() });
+    }, 700).unref();
+  }
+
+  /** Eventos hacia la App Operación (sala `operacion`). */
+  aOperacion(evento: string, datos: unknown): void {
+    this.server?.to('operacion').emit(evento, datos);
+  }
+
   aConductor<E extends keyof EventosAConductor>(
     conductorId: string,
     evento: E,
     datos: EventosAConductor[E],
   ): void {
+    this.avisarTorre();
     if (!this.server) return;
     this.server.to(`conductor:${conductorId}`).emit(evento, datos);
     this.log.debug(`${evento} → conductor ${conductorId}`);
@@ -91,6 +109,7 @@ export class Eventos {
     evento: E,
     datos: EventosAPasajero[E],
   ): void {
+    this.avisarTorre();
     if (!this.server) return;
     this.server.to(`pasajero:${pasajeroId}`).emit(evento, datos);
     this.log.debug(`${evento} → pasajero ${pasajeroId}`);

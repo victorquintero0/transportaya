@@ -16,7 +16,7 @@ import { ViajesService } from './viajes.service.js';
     ViajesService,
     CancelacionPasajeroService,
     MensajesViajeService,
-    { provide: PARAMETROS_DESPACHO, useValue: DESPACHO_POR_DEFECTO },
+    { provide: PARAMETROS_DESPACHO, useFactory: () => ({ ...DESPACHO_POR_DEFECTO }) },
   ],
   exports: [
     DespachoService,

@@ -3,9 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { noEncontrado } from '../comun/errores.js';
-
-/** Tiempos de respuesta iniciales por prioridad: valores de trabajo a ajustar con el equipo de soporte (docs/06). */
-const SLA_HORAS = { alta: 2, normal: 24 } as const;
+import { ParametrosService } from '../operacion/parametros.service.js';
 
 export type TipoSoportePasajero =
   | 'cobro_incorrecto'
@@ -17,7 +15,10 @@ export type TipoSoportePasajero =
 
 @Injectable()
 export class SoportePasajeroService {
-  constructor(@Inject(BaseDeDatos) private readonly bd: BaseDeDatos) {}
+  constructor(
+    @Inject(BaseDeDatos) private readonly bd: BaseDeDatos,
+    @Inject(ParametrosService) private readonly parametros: ParametrosService,
+  ) {}
 
   /** PAS-50 y PAS-51: reportar un problema o un objeto perdido, ligado al viaje (RN-142). */
   async reportar(
@@ -38,7 +39,10 @@ export class SoportePasajeroService {
       if (!v) throw noEncontrado('VIAJE_NO_ENCONTRADO', 'No encontramos ese viaje');
     }
     const urgente = d.tipo === 'incidente_seguridad';
-    const horas = urgente ? SLA_HORAS.alta : SLA_HORAS.normal;
+    // Tiempos de respuesta editables desde la App Operación (OPE-12).
+    const horas = await this.parametros.numero(
+      urgente ? 'soporte.sla_alta_h' : 'soporte.sla_normal_h',
+    );
     return db.transaction(async (tx) => {
       const [t] = await tx
         .insert(ticket)

@@ -100,6 +100,7 @@ export interface Arnes {
   post<T = any>(ruta: string, cuerpo?: unknown, token?: string): Promise<Respuesta<T>>;
   put<T = any>(ruta: string, cuerpo?: unknown, token?: string): Promise<Respuesta<T>>;
   patch<T = any>(ruta: string, cuerpo?: unknown, token?: string): Promise<Respuesta<T>>;
+  delete<T = any>(ruta: string, cuerpo?: unknown, token?: string): Promise<Respuesta<T>>;
   /** Envía un formulario con archivo (multipart). */
   postForm<T = any>(ruta: string, formulario: FormData, token?: string): Promise<Respuesta<T>>;
   /** Pide un servicio de la aplicación para probarlo directamente. */
@@ -131,13 +132,17 @@ export interface Arnes {
   /** Lleva a un conductor por todo el registro real, hasta quedar habilitado. */
   crearConductorHabilitado(
     telefono: string,
-    opciones?: { nombre?: string },
+    opciones?: { nombre?: string; sinAprobar?: boolean },
   ): Promise<ConductorListo>;
   /** Pide el OTP, inicia sesión y devuelve los tokens. */
   iniciarSesion(
     telefono: string,
     app?: 'conductor' | 'pasajero',
   ): Promise<{ accessToken: string; refreshToken: string; usuarioId: string; nuevo: boolean }>;
+  /** Entra a la App Operación con la cuenta de demostración de ese rol (con su segundo factor). */
+  ingresarOperacion(
+    rol: string,
+  ): Promise<{ accessToken: string; refreshToken: string; usuarioId: string }>;
   cerrar(): Promise<void>;
 }
 
@@ -207,6 +212,10 @@ export async function levantarApi(
   }
 
   const sockets: ClienteSocket[] = [];
+  const sesionesOperacion = new Map<
+    string,
+    { accessToken: string; refreshToken: string; usuarioId: string }
+  >();
   let zonas = 0;
 
   const arnes: Arnes = {
@@ -218,6 +227,7 @@ export async function levantarApi(
     post: (ruta, cuerpo, token) => pedir('POST', ruta, cuerpo, token),
     put: (ruta, cuerpo, token) => pedir('PUT', ruta, cuerpo, token),
     patch: (ruta, cuerpo, token) => pedir('PATCH', ruta, cuerpo, token),
+    delete: (ruta, cuerpo, token) => pedir('DELETE', ruta, cuerpo, token),
     postForm: pedirForm,
     servicio: (token) => app.get(token as never) as never,
     async iniciarSesion(telefono, app = 'conductor') {
@@ -359,13 +369,36 @@ export async function levantarApi(
         'cuenta',
       );
       ok(await arnes.post('/v1/conductor/enviar-revision', undefined, token), 'revisión');
-      ok(await arnes.post('/v1/dev/conductor/aprobar', undefined, token), 'aprobación');
+      if (!opciones.sinAprobar)
+        ok(await arnes.post('/v1/dev/conductor/aprobar', undefined, token), 'aprobación');
       return {
         accessToken: token,
         refreshToken: s.refreshToken,
         usuarioId: s.usuarioId,
         vehiculoId: vehiculo.id,
       };
+    },
+    async ingresarOperacion(rol) {
+      // Un código TOTP solo sirve una vez: se reutiliza la sesión de ese rol dentro de la misma API.
+      const guardada = sesionesOperacion.get(rol);
+      if (guardada) return guardada;
+      const demo = await pedir<any>('GET', '/v1/op/auth/demo');
+      const cuenta = demo.cuerpo.cuentas.find((c: any) => c.rol === rol);
+      if (!cuenta) throw new Error(`No hay cuenta de demostración para ${rol}`);
+      const r = await pedir<any>('POST', '/v1/op/auth/ingresar', {
+        email: cuenta.email,
+        contrasena: demo.cuerpo.contrasena,
+        codigo: cuenta.codigo,
+      });
+      if (r.estado !== 200)
+        throw new Error(`No se pudo ingresar como ${rol}: ${JSON.stringify(r.cuerpo)}`);
+      const sesion = {
+        accessToken: r.cuerpo.accessToken,
+        refreshToken: r.cuerpo.refreshToken,
+        usuarioId: r.cuerpo.usuario.id,
+      };
+      sesionesOperacion.set(rol, sesion);
+      return sesion;
     },
     async cerrar() {
       for (const s of sockets) s.cerrar();

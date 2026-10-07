@@ -24,6 +24,7 @@ import { VencimientosService } from './vencimientos.service.js';
     { provide: ALMACENAMIENTO, useClass: AlmacenamientoLocal },
   ],
   exports: [
+    ALMACENAMIENTO,
     CifradoService,
     PerfilService,
     ConexionService,

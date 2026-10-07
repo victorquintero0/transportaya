@@ -13,6 +13,9 @@ const esquema = z
     OTP_PROVEEDOR: z.enum(['simulador']).default('simulador'),
     /** Habilita el simulador de pasajeros y los atajos de desarrollo (cierre diario, pago Bre-B). Nunca en producción. */
     SIMULADOR: booleano.optional(),
+    /** Primera cuenta de administración (se crea al arrancar si no existe ningún empleado). */
+    ADMIN_INICIAL_EMAIL: z.string().email().optional(),
+    ADMIN_INICIAL_CONTRASENA: z.string().min(10).optional(),
     ALMACENAMIENTO_DIR: z.string().default('.almacenamiento'),
     /** Llave Bre-B de TransporteYa a la que los conductores pagan su comisión (D-04). Pendiente de definir por Finanzas. */
     LLAVE_BRE_B_EMPRESA: z.string().trim().min(3).optional(),

@@ -27,6 +27,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
+import { ParametrosService } from '../operacion/parametros.service.js';
 import { Eventos, type OfertaParaConductor } from '../tiempo-real/eventos.service.js';
 import { primerNombre, registrarEvento, zonaDeDireccion } from './eventos-viaje.js';
 
@@ -77,10 +78,31 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
     @Inject(UbicacionStore) private readonly ubicaciones: UbicacionStore,
     @Inject(Eventos) private readonly eventos: Eventos,
     @Inject(PARAMETROS_DESPACHO) private readonly p: ParametrosDespacho,
+    @Inject(ParametrosService) private readonly parametros: ParametrosService,
   ) {}
+
+  /**
+   * Pone en uso los valores que la operación cambió desde la App Operación (OPE-12). Solo toca lo que alguien
+   * personalizó: lo demás conserva su valor.
+   */
+  async aplicarParametros(): Promise<void> {
+    const v = await this.parametros.personalizados('despacho.');
+    const ms = (k: string) => (v[k] === undefined ? undefined : v[k] * 1000);
+    const nuevos: Partial<ParametrosDespacho> = {};
+    const poner = <K extends keyof ParametrosDespacho>(k: K, valor: number | undefined) => {
+      if (valor !== undefined) nuevos[k] = valor;
+    };
+    poner('ofertaMs', ms('despacho.oferta_s'));
+    poner('reintentoMs', ms('despacho.reintento_s'));
+    poner('presupuestoMs', ms('despacho.presupuesto_s'));
+    poner('radioMaximoM', v['despacho.radio_m']);
+    poner('edadMaximaPosicionMs', ms('despacho.edad_posicion_s'));
+    Object.assign(this.p, nuevos);
+  }
 
   /** Tras un reinicio: vence las ofertas que quedaron colgadas y retoma los viajes que buscaban conductor. */
   async onApplicationBootstrap(): Promise<void> {
+    await this.aplicarParametros();
     const colgadas = await this.bd.db
       .update(oferta)
       .set({ resultado: 'expirada', respondidaEn: new Date() })
@@ -502,6 +524,118 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       estado: 'asignado',
     });
     return { viajeId: resultado.viajeId };
+  }
+
+  /** Un parámetro de despacho vuelve a su valor por defecto sin reiniciar. */
+  restablecerParametro(clave: string, valor: number): void {
+    const campos: Record<string, [keyof ParametrosDespacho, number]> = {
+      'despacho.oferta_s': ['ofertaMs', 1000],
+      'despacho.reintento_s': ['reintentoMs', 1000],
+      'despacho.presupuesto_s': ['presupuestoMs', 1000],
+      'despacho.radio_m': ['radioMaximoM', 1],
+      'despacho.edad_posicion_s': ['edadMaximaPosicionMs', 1000],
+    };
+    const c = campos[clave];
+    if (c) this.p[c[0]] = valor * c[1];
+  }
+
+  /**
+   * Despacho manual desde la App Operación (OPE-01): la operación elige el conductor sin esperar la oferta. Solo
+   * funciona mientras el viaje sigue buscando conductor. Retira las ofertas abiertas y asigna de forma atómica.
+   */
+  async asignarManual(viajeId: string, conductorId: string, operadorId: string): Promise<void> {
+    const { db } = this.bd;
+    const pendientes = await db
+      .select({ id: oferta.id, conductorId: oferta.conductorId })
+      .from(oferta)
+      .where(and(eq(oferta.viajeId, viajeId), eq(oferta.resultado, 'pendiente')));
+    for (const p of pendientes) {
+      await this.cerrarOferta(p.id, 'retirada');
+      this.eventos.aConductor(p.conductorId, 'oferta:retirada', {
+        ofertaId: p.id,
+        viajeId,
+        motivo: 'tomada',
+      });
+    }
+    clearTimeout(this.reintentos.get(viajeId));
+    this.reintentos.delete(viajeId);
+
+    try {
+      const pasajeroId = await db.transaction(async (tx) => {
+        const [v] = await tx.select().from(viaje).where(eq(viaje.id, viajeId)).for('update');
+        if (!v) throw noEncontrado('VIAJE_NO_ENCONTRADO', 'No encontramos ese viaje');
+        if (v.estado !== 'buscando_conductor')
+          throw conflicto(
+            'ESTADO_INVALIDO',
+            'Este viaje ya no está buscando conductor, no se puede despachar a mano.',
+          );
+        const [c] = await tx
+          .select({
+            vehiculoId: conductor.vehiculoActivoId,
+            habilitacion: conductor.estadoHabilitacion,
+            deuda: conductor.bloqueadoPorDeuda,
+          })
+          .from(conductor)
+          .where(eq(conductor.usuarioId, conductorId))
+          .for('update');
+        if (!c) throw noEncontrado('CONDUCTOR_NO_ENCONTRADO', 'No encontramos a ese conductor');
+        if (c.habilitacion !== 'habilitado' || c.deuda || !c.vehiculoId)
+          throw conflicto(
+            'CONDUCTOR_NO_HABILITADO',
+            'Ese conductor no está habilitado para trabajar.',
+          );
+        const tomado = await tx
+          .update(conductor)
+          .set({ estadoOperativo: 'en_camino' })
+          .where(
+            and(eq(conductor.usuarioId, conductorId), eq(conductor.estadoOperativo, 'disponible')),
+          )
+          .returning({ id: conductor.usuarioId });
+        if (tomado.length === 0)
+          throw conflicto(
+            'CONDUCTOR_NO_DISPONIBLE',
+            'Ese conductor ya no está disponible. Elige otro.',
+          );
+        const [{ ronda }] = (
+          await tx.execute<{ ronda: number }>(
+            sql`select coalesce(max(ronda), 0)::int + 1 as ronda from oferta where viaje_id = ${viajeId}`,
+          )
+        ).rows as [{ ronda: number }];
+        const ahora = new Date();
+        await tx.insert(oferta).values({
+          viajeId,
+          conductorId,
+          ronda,
+          ofrecidaEn: ahora,
+          expiraEn: new Date(ahora.getTime() + 1000),
+          respondidaEn: ahora,
+          resultado: 'aceptada',
+        });
+        await tx
+          .update(viaje)
+          .set({
+            estado: 'asignado',
+            conductorId,
+            vehiculoId: c.vehiculoId,
+            aceptadoEn: ahora,
+          })
+          .where(eq(viaje.id, viajeId));
+        await registrarEvento(tx, {
+          viajeId,
+          tipo: 'asignado',
+          actorTipo: 'operacion',
+          actorId: operadorId,
+          datos: { manual: true, conductorId },
+        });
+        return v.pasajeroId;
+      });
+      this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId, estado: 'asignado' });
+      this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'en_camino' });
+      this.eventos.aPasajero(pasajeroId, 'viaje:estado', { viajeId, estado: 'asignado' });
+    } catch (e) {
+      void this.intentar(viajeId); // si no se pudo asignar, el despacho automático sigue buscando
+      throw e;
+    }
   }
 
   /** El pasajero canceló mientras se buscaba conductor: se retira la oferta abierta. */
