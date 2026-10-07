@@ -1,18 +1,27 @@
+import { api, useSesion } from '@transportaya/ui';
 import { io, type Socket } from 'socket.io-client';
-import { api } from '@transportaya/ui';
-import { useSesion } from '@transportaya/ui';
-import type { Mensaje, Oferta } from '../lib/tipos.ts';
+import type { Mensaje } from '../lib/tipos.ts';
 
-/** Eventos que manda el servidor (docs/10). */
+/** Eventos que manda el servidor al pasajero (docs/10). */
 export interface EventosServidor {
-  'oferta:nueva': (o: Oferta) => void;
-  'oferta:retirada': (d: {
-    ofertaId: string;
+  'viaje:estado': (d: {
     viajeId: string;
-    motivo: 'expirada' | 'cancelada' | 'tomada';
+    estado: string;
+    reasignando?: boolean;
+    canceladoPor?: string;
+    costo?: number;
+    precioFinal?: number;
   }) => void;
-  'viaje:estado': (d: { viajeId: string; estado: string }) => void;
-  'conductor:estado': (d: { estadoOperativo: string; motivo?: string }) => void;
+  'viaje:ubicacion_conductor': (d: {
+    viajeId: string;
+    lat: number;
+    lng: number;
+    rumbo: number | null;
+    etaS: number;
+    distanciaM: number;
+    hacia: 'recogida' | 'destino';
+    t: number;
+  }) => void;
   'viaje:mensaje': (m: Mensaje) => void;
 }
 
@@ -41,7 +50,7 @@ export function conectarEnVivo(
   s.on('error:autenticacion', () => {
     // el token venció: una petición cualquiera lo refresca y luego se reconecta
     void api
-      .get('/v1/conductor/yo')
+      .get('/v1/pasajero/yo')
       .catch(() => undefined)
       .finally(() => {
         if (socket === s && useSesion.getState().accessToken) s.connect();

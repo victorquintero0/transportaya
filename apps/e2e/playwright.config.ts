@@ -3,6 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const API = process.env['E2E_API_PUERTO'] ?? '3100';
 const WEB = 5182;
+const WEB_PASAJERO = 5181;
 
 // En esta máquina el navegador viene preinstalado; en otras, Playwright usa el suyo.
 const chromium = process.env['PLAYWRIGHT_CHROMIUM_PATH'] ?? '/opt/pw-browsers/chromium';
@@ -17,7 +18,6 @@ export default defineConfig({
   reporter: [['list']],
   outputDir: 'test-results',
   use: {
-    baseURL: `http://localhost:${WEB}`,
     ...devices['Pixel 7'],
     locale: 'es-CO',
     timezoneId: 'America/Bogota',
@@ -26,6 +26,18 @@ export default defineConfig({
     actionTimeout: 15_000,
     trace: 'retain-on-failure',
   },
+  projects: [
+    {
+      name: 'conductor',
+      testMatch: /conductor\.spec\.ts/,
+      use: { baseURL: `http://localhost:${WEB}` },
+    },
+    {
+      name: 'pasajero',
+      testMatch: /pasajero\.spec\.ts/,
+      use: { baseURL: `http://localhost:${WEB_PASAJERO}` },
+    },
+  ],
   webServer: [
     {
       command: 'node scripts/arrancar-api.mjs',
@@ -37,6 +49,13 @@ export default defineConfig({
     {
       command: `pnpm --filter @transportaya/conductor dev --port ${WEB} --strictPort`,
       url: `http://localhost:${WEB}`,
+      timeout: 120_000,
+      reuseExistingServer: false,
+      env: { API_URL: `http://localhost:${API}` },
+    },
+    {
+      command: `pnpm --filter @transportaya/pasajero dev --port ${WEB_PASAJERO} --strictPort`,
+      url: `http://localhost:${WEB_PASAJERO}`,
       timeout: 120_000,
       reuseExistingServer: false,
       env: { API_URL: `http://localhost:${API}` },

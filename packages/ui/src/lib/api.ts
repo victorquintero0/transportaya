@@ -117,6 +117,7 @@ export const api = {
   post: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('POST', ruta, cuerpo),
   put: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('PUT', ruta, cuerpo),
   patch: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('PATCH', ruta, cuerpo),
+  delete: <T = void>(ruta: string) => pedir<T>('DELETE', ruta),
   postForm: <T>(ruta: string, form: FormData) => pedir<T>('POST', ruta, undefined, form),
 };
 

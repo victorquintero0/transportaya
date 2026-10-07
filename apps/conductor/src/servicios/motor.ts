@@ -1,9 +1,10 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { useAjustes } from '../estado/ajustes.ts';
 import { avisar } from '@transportaya/ui';
+import { useChat } from '../estado/chat.ts';
 import { useJornada } from '../estado/jornada.ts';
 import { api } from '@transportaya/ui';
-import { alerta, desbloquearAudio, iniciarTimbreOferta } from '@transportaya/ui';
+import { alerta, desbloquearAudio, ding, iniciarTimbreOferta } from '@transportaya/ui';
 import { mantenerPantallaEncendida } from '../lib/pantalla-activa.ts';
 import type { Oferta, Perfil, ViajeActual } from '../lib/tipos.ts';
 import { vibrar } from '@transportaya/ui';
@@ -146,6 +147,15 @@ export function iniciarMotor(qc: QueryClient): () => void {
         avisar('El pasajero canceló el viaje', 'error');
       }
       void refrescarViaje(qc);
+    },
+    'viaje:mensaje': (m) => {
+      const abierto = useChat.getState().abierto;
+      useChat.getState().llego(m);
+      if (m.deQuien === 'pasajero' && !abierto) {
+        ding();
+        vibrar('oferta');
+        avisar(`Pasajero: ${m.cuerpo}`, 'info');
+      }
     },
     'conductor:estado': (d) => {
       void qc.invalidateQueries({ queryKey: ['perfil'] });

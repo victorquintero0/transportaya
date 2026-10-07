@@ -47,6 +47,9 @@ flowchart LR
 | API del conductor: registro, documentos, conexión, ubicaciones, despacho, ofertas, viaje con taxímetro, ganancias, saldo, cierre y pagos de comisión | Hecho, con 135 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
 | App del conductor completa con identidad de marca, y simuladores para probarla | Hecho ([docs/05](05-app-conductor.md)) |
 | Prueba de punta a punta con navegador real (Playwright): registro, viaje con taxímetro, cobro y pago de comisión | Hecho; corre en CI |
+| API del pasajero: lugares, cotización, viaje, seguimiento en vivo, cancelación, tarjetas, deuda, propina, chat, enlace compartido, SOS y soporte | Hecho, con 30 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
+| App del pasajero completa, con conductores simulados para probarla | Hecho ([docs/04](04-app-pasajero.md)) |
+| Componentes compartidos de las apps (`packages/ui`) | Hecho |
 | Usuarios internos con doble factor | Pendiente |
 | Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |

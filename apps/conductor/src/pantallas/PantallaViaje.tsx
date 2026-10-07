@@ -16,6 +16,8 @@ import { Numero } from '@transportaya/ui';
 import { Tarjeta } from '@transportaya/ui';
 import { Teclado } from '@transportaya/ui';
 import { avisar } from '@transportaya/ui';
+import { Chat } from '../componentes/Chat.tsx';
+import { useChat } from '../estado/chat.ts';
 import { useDemo } from '../estado/demo.ts';
 import { useJornada } from '../estado/jornada.ts';
 import { api, ErrorApi, mensajeDe } from '@transportaya/ui';
@@ -72,8 +74,38 @@ function Cabecera({ viaje, etapa }: { viaje: ViajeActual; etapa: string }) {
         <Icono nombre={viaje.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'} tamano={14} />
         {viaje.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}
       </Chip>
+      <BotonChat viaje={viaje} />
       <BotonSos />
     </header>
+  );
+}
+
+function BotonChat({ viaje }: { viaje: ViajeActual }) {
+  const [abierto, setAbierto] = useState(false);
+  const noLeidos = useChat((s) => s.noLeidos);
+  return (
+    <>
+      <button
+        type="button"
+        id="boton-chat"
+        aria-label="Chat con el pasajero"
+        onClick={() => setAbierto(true)}
+        className="relative grid size-12 place-items-center rounded-full bg-superficie-2"
+      >
+        <Icono nombre="mensaje" tamano={22} />
+        {noLeidos > 0 && (
+          <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-peligro text-xs font-black text-white">
+            {noLeidos}
+          </span>
+        )}
+      </button>
+      <Chat
+        viajeId={viaje.id}
+        abierto={abierto}
+        alCerrar={() => setAbierto(false)}
+        nombre={viaje.pasajero.nombre}
+      />
+    </>
   );
 }
 

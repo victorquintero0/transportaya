@@ -37,27 +37,38 @@ documento OpenAPI que genera el backend.
 
 ## App Pasajero
 
+Todas las rutas requieren el rol `pasajero` (el celular entra con `app: "pasajero"` en la verificación del OTP).
+
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET / PATCH | `/v1/yo` | Perfil |
-| GET / POST / DELETE | `/v1/lugares` | Lugares guardados |
-| GET | `/v1/direcciones/buscar?q=` | Autocompletado de direcciones |
-| GET | `/v1/direcciones/inversa?lat=&lng=` | Dirección de unas coordenadas |
-| GET | `/v1/rutas-fijas` | Destinos nacionales con tarifa fija, `solo_ida` o `ida_y_vuelta` |
-| GET / POST / DELETE | `/v1/metodos-pago` | Métodos de pago (el alta usa el token de la pasarela) |
-| POST | `/v1/cotizaciones` | Precio y ETA por categoría para origen y destino |
-| POST | `/v1/viajes` | Crear viaje desde una cotización vigente |
-| GET | `/v1/viajes/{id}` | Estado actual del viaje |
-| GET | `/v1/viajes` | Historial |
-| POST | `/v1/viajes/{id}/cancelar` | Cancelar (responde el costo si aplica) |
-| POST | `/v1/viajes/{id}/destino` | Cambiar destino (F2) |
-| POST | `/v1/viajes/{id}/compartir` | Crear enlace de viaje compartido |
-| POST | `/v1/viajes/{id}/sos` | Activar SOS |
-| POST | `/v1/viajes/{id}/calificacion` | Calificar al conductor |
-| POST | `/v1/viajes/{id}/propina` | Dar propina |
-| GET / POST | `/v1/viajes/{id}/mensajes` | Chat |
-| GET | `/v1/deudas` · POST `/v1/deudas/{id}/pagar` | Deudas pendientes |
-| GET / POST | `/v1/tickets` | Soporte y PQRS |
+| GET / PATCH | `/v1/pasajero/yo` | Perfil: nombre, correo, deuda, términos aceptados, contactos, lugares y tarjetas |
+| POST | `/v1/pasajero/terminos` | Aceptar los términos y la autorización de datos (versión vigente) |
+| GET | `/v1/pasajero/mis-datos` · DELETE `/v1/pasajero/cuenta` | Descargar mis datos · eliminar la cuenta (anonimiza; no con viaje activo o deuda) |
+| POST / DELETE | `/v1/pasajero/contactos[/{id}]` | Contactos de confianza (hasta 5) |
+| POST / DELETE | `/v1/pasajero/lugares-guardados[/{id}]` | Lugares guardados; "Casa" y "Trabajo" se reemplazan |
+| GET | `/v1/pasajero/lugares/buscar?q=&lat=&lng=` | Lugares y direcciones (`Cra 23 # 62-14`) y destinos recientes |
+| GET | `/v1/pasajero/lugares/inversa?lat=&lng=` | Nombre del punto del mapa |
+| GET | `/v1/pasajero/rutas` | Destinos con tarifa fija y su precio `solo_ida` / `ida_y_vuelta` |
+| POST | `/v1/pasajero/cotizaciones` | Precio por categoría (rango), recargos, dinámica y ETA; o la tarifa fija de una ruta |
+| POST | `/v1/pasajero/viajes` | Crear el viaje desde una cotización vigente, con PIN; empieza a buscar conductor |
+| GET | `/v1/pasajero/viaje-actual` | El viaje activo, o el que acaba de terminar y falta calificar |
+| GET | `/v1/pasajero/viajes[?estado=&antes=]` · `/{id}` · `/{id}/recibo` | Historial, detalle y recibo con cada concepto del precio |
+| POST | `/v1/pasajero/viajes/{id}/cancelar` | Cancelar (gratis al buscar y 2 min tras la asignación; después, tarifa de cancelación) |
+| POST | `/v1/pasajero/viajes/{id}/calificacion` · `/propina` | Calificar al conductor; propina (solo viajes pagados con tarjeta, completa al conductor) |
+| GET / POST | `/v1/pasajero/viajes/{id}/mensajes` | Chat con el conductor, solo durante el viaje |
+| POST / DELETE | `/v1/pasajero/viajes/{id}/compartir` | Crear o revocar el enlace del viaje |
+| GET | `/v1/compartido/{token}` | **Público.** Lo que ve quien recibe el enlace: conductor, vehículo, placa, posición y barrio de destino |
+| POST | `/v1/pasajero/sos` | SOS: alerta crítica con el viaje y la ubicación; avisa cuántos contactos de confianza hay |
+| POST | `/v1/pasajero/metodos-pago` | Agregar tarjeta con el token de la pasarela; `PUT .../{id}/predeterminado`, `DELETE .../{id}` |
+| POST | `/v1/pasajero/deuda/pagar` | Pagar la deuda con una tarjeta |
+| GET / POST | `/v1/pasajero/soporte/tickets` | Reportar un problema u objeto perdido ligado a un viaje; ver mis reportes |
+
+### Modo demostración para el pasajero
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST / DELETE | `/v1/dev/conductores-simulados` | Crea conductores de mentira cerca de un punto, que atienden el viaje de punta a punta (oferta, llegada, PIN, taxímetro, cobro); los quita |
+| POST | `/v1/dev/tarjetas/tokenizar` | Hace de Wompi: recibe la tarjeta y devuelve solo un token. Un número que termina en `0002` queda como tarjeta que el banco rechaza al cobrar |
 
 ## App Conductor
 

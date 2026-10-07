@@ -229,3 +229,11 @@ export interface Cierre {
   resultado: 'a_favor' | 'a_cargo' | 'en_cero';
   estado: string;
 }
+
+export interface Mensaje {
+  id: string;
+  viajeId: string;
+  deQuien: 'pasajero' | 'conductor';
+  cuerpo: string;
+  creadoEn: string;
+}

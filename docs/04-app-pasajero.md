@@ -124,3 +124,31 @@ flowchart LR
 - **Ubicación:** pedir el permiso solo al momento de fijar el origen, explicando para qué se usa.
 - **Datos móviles:** mapas vectoriales en caché y actualizaciones de posición del conductor limitadas
   a lo necesario para no consumir el plan del usuario.
+
+## Estado de la implementación
+
+La app está construida y probada de punta a punta en **modo demostración** (ver [D-25 y D-26](13-decisiones-pendientes-y-riesgos.md)):
+un pasajero nuevo pide un viaje, un conductor simulado lo atiende de verdad, el pasajero lo sigue en vivo, paga y califica.
+Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
+
+| Pantalla | Qué hace |
+|---|---|
+| **Entrar** y **Bienvenida** | Celular + código (simulado), nombre y **autorización de datos** (PAS-01, PAS-02). Sin aceptar no se puede pedir |
+| **Inicio** | Mapa, "te recogemos en…" con la ubicación del teléfono (solo se pide al fijar la recogida, PAS-20), "¿A dónde vas?", Casa y Trabajo, recientes y viajes a otras ciudades |
+| **Buscar destino** | Lugares y barrios (sin importar tildes), direcciones al estilo colombiano (`Cra 23 # 62-14`, marcadas como aproximadas), lugares guardados y recientes (PAS-21) |
+| **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor (PAS-22, PAS-23) |
+| **Otra ciudad** | Destinos con tarifa fija, solo ida o ida y vuelta, con el valor cerrado antes de confirmar (PAS-26) |
+| **Buscando** | Radar sobre la recogida, cuenta regresiva de los 2 minutos y cancelar sin costo. Si nadie acepta, lo explica y deja reintentar sin volver a escribir el destino |
+| **Conductor en camino / en viaje** | Mapa con el carro en vivo y el tiempo que falta, **PIN** grande, conductor con calificación, vehículo y **placa**, chat con respuestas rápidas, compartir el viaje, **SOS** (mantener 2 s) y cancelar con el costo claro antes de confirmar (PAS-30 a PAS-36) |
+| **Resumen** | Precio final, calificación con etiquetas, propina para viajes con tarjeta y recibo con cada concepto (PAS-40 a PAS-43) |
+| **Mis viajes** | Historial con filtros, detalle, recibo (se guarda como PDF desde el navegador), pedir de nuevo y reportar un problema (PAS-44, PAS-50, PAS-51) |
+| **Pagos** | Tarjetas (la tarjeta nunca se guarda: solo el token), predeterminada, y pago de la deuda (PAS-10, PAS-11, PAS-13) |
+| **Cuenta** | Datos, lugares, contactos de confianza, preferencias, **descargar mis datos** y **eliminar la cuenta** (PAS-03 a PAS-05) |
+| **Enlace compartido** (`/c/…`) | Página pública, sin cuenta: conductor, placa, posición y barrio de destino; se apaga al terminar el viaje (PAS-34) |
+
+**Cobros rechazados (HU-PAS-04).** Si el banco rechaza la tarjeta al terminar, el viaje queda como **deuda del pasajero**, el conductor cobra igual
+y el pasajero no puede pedir otro viaje hasta pagarla con otra tarjeta (ver D-30).
+
+**Pendiente.** Mapa de calles propio y direcciones reales (D-27), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
+notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, viajes programados (F2), llamada enmascarada (F2) y la parte corporativa (F3).
+

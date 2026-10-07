@@ -12,6 +12,7 @@ que reemplaza al anterior y se actualiza el estado del viejo.
 | [0004](0004-postgresql-postgis-y-redis.md) | PostgreSQL + PostGIS como base principal y Redis para tiempo real | Aceptada |
 | [0005](0005-esquema-con-drizzle-e-integridad-en-la-base.md) | Esquema con Drizzle y reglas de integridad en la base de datos | Aceptada |
 | [0006](0006-app-conductor-react-y-modo-demostracion.md) | App del conductor con React y modo demostración | Aceptada |
+| [0007](0007-app-pasajero-mapa-esquematico-y-buscador-local.md) | App del pasajero: mapa esquemático y buscador local mientras llega OpenStreetMap | Aceptada |
 
 ## Plantilla
 
