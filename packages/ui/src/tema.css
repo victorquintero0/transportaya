@@ -1,0 +1,139 @@
+/*
+ * Sistema de diseño de TransporteYa. Los colores salen del logo:
+ *   verde  #07D507   fondo oscuro #101010   blanco #FFFFFF
+ * Todo el color pasa por variables, así el tema oscuro (por defecto, para manejar de noche) y el
+ * claro (para el día) comparten los mismos componentes. Cambia con [data-tema="claro" | "oscuro"].
+ */
+@import 'tailwindcss';
+@import '@fontsource-variable/nunito';
+
+@source './componentes';
+
+@theme {
+  --font-sans: 'Nunito Variable', ui-rounded, 'Segoe UI', system-ui, sans-serif;
+
+  /* Marca */
+  --color-ty: #07d507;
+  --color-ty-claro: #5cf05c;
+  --color-ty-oscuro: #04a004;
+
+  /* Colores de apoyo: solo para dar vida (estrellas, alertas, logros). El verde manda. */
+  --color-sol: #ffd60a;
+  --color-mandarina: #ff8a00;
+  --color-peligro: #ff3b30;
+  --color-cielo: #3da9fc;
+  --color-uva: #9b6bff;
+
+  /* Semánticos: cambian con el tema */
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-suave: var(--suave);
+  --color-sobre-ty: #07110a;
+
+  --radius-tarjeta: 1.5rem;
+  --shadow-brillo: 0 0 0 1px rgb(7 213 7 / 0.35), 0 8px 40px rgb(7 213 7 / 0.28);
+
+  --animate-pulso-suave: pulso-suave 2.4s ease-in-out infinite;
+  --animate-flotar: flotar 3.2s ease-in-out infinite;
+  --animate-radar: radar 2.8s ease-out infinite;
+  --animate-brillo: brillo 2.2s linear infinite;
+
+  @keyframes pulso-suave {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.04);
+      opacity: 0.92;
+    }
+  }
+  @keyframes flotar {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+  @keyframes radar {
+    0% {
+      transform: scale(0.4);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+  @keyframes brillo {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+}
+
+:root,
+[data-tema='oscuro'] {
+  --fondo: #101010;
+  --superficie: #1a1a1a;
+  --superficie-2: #242424;
+  --borde: #2e2e2e;
+  --texto: #ffffff;
+  --suave: #a6a6a6;
+  color-scheme: dark;
+}
+
+[data-tema='claro'] {
+  --fondo: #f6f8f6;
+  --superficie: #ffffff;
+  --superficie-2: #edf1ed;
+  --borde: #dbe2db;
+  --texto: #0e140e;
+  --suave: #5b675b;
+  color-scheme: light;
+}
+
+html {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--fondo);
+}
+
+/* Respeta a quien prefiere menos movimiento. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* El logo tiene dos versiones: la del tema oscuro y la del claro. Solo se ve la que corresponde. */
+.logo-sobre-claro {
+  display: none;
+}
+[data-tema='claro'] .logo-sobre-claro {
+  display: inline-block;
+}
+[data-tema='claro'] .logo-sobre-oscuro {
+  display: none;
+}

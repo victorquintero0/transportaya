@@ -1,0 +1,86 @@
+@import '@transportaya/ui/tema.css';
+
+/* La app se usa en la calle y con una mano: nada de seleccionar texto por accidente ni zoom con doble toque. */
+html {
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+#raiz {
+  min-height: 100dvh;
+}
+
+/* Respeta las zonas seguras (muescas y barras de gestos). */
+.area-segura-arriba {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+.area-segura-abajo {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.75rem);
+}
+
+.fondo-calles {
+  background-image:
+    linear-gradient(
+      120deg,
+      transparent 49.4%,
+      color-mix(in oklab, var(--texto) 5%, transparent) 49.5% 50.5%,
+      transparent 50.6%
+    ),
+    linear-gradient(
+      30deg,
+      transparent 49.4%,
+      color-mix(in oklab, var(--texto) 4%, transparent) 49.5% 50.5%,
+      transparent 50.6%
+    );
+  background-size:
+    140px 140px,
+    190px 190px;
+}
+
+.texto-marca {
+  background: linear-gradient(90deg, var(--color-ty-claro), var(--color-ty));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Dígitos de ancho fijo para que los números que cambian no "bailen". */
+.numeros {
+  font-variant-numeric: tabular-nums;
+}
+
+/* El trazo punteado de la ruta "corre" hacia el destino. */
+@keyframes ruta-fluye {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+
+/* Al guardar el recibo como PDF solo se imprime el recibo. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #recibo-imprimible,
+  #recibo-imprimible * {
+    visibility: visible;
+  }
+  #recibo-imprimible {
+    position: absolute;
+    inset: 0;
+    padding: 24px;
+    background: #fff;
+    color: #000;
+  }
+  #recibo-imprimible * {
+    color: #000 !important;
+    border-color: #999 !important;
+    background: transparent !important;
+  }
+}

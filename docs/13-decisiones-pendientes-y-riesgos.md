@@ -1,0 +1,70 @@
+# 13 · Decisiones y riesgos
+
+## Decisiones tomadas
+
+Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
+
+| Código | Decisión | Resultado | Pendiente de validar |
+|---|---|---|---|
+| **D-01** | Marco legal | Vehículos **particulares con licencia B1** | Concepto de Legal: ver [R-01](#riesgos) y la nota sobre la tabla de tarifas de taxi |
+| **D-02** | Facturación electrónica DIAN | **Proveedor tecnológico externo** integrado por API | Elegir proveedor en la Fase 0 |
+| **D-03** | Comisión | **3 %** en viajes dentro de la ciudad y **5 %** en viajes nacionales (intermunicipales) | Verificar que cubra el costo de la pasarela (ver [R-12](#riesgos)) |
+| **D-04** | Liquidación | **Diaria**, con cruce neto. El conductor paga la comisión por **llave / Bre-B**; si no paga, **no se habilita** al día siguiente. Ver [RN-060 a RN-076](03-reglas-de-negocio.md) | Cómo concilia Wompi los pagos por Bre-B |
+| **D-05** | Pasarela de pagos | **Wompi** | Tokenización, reembolsos, webhooks y Bre-B |
+| **D-06** | Retenciones e impuestos | **Sin supuesto**: lo define el contador. RUT configurable, cálculo de impuestos fuera del MVP | Concepto del contador |
+| **D-07** | Categorías de vehículo | **Media, Media Alta y Alta**, con un **catálogo de vehículos** de Colombia. Ver [catálogo](14-catalogo-de-vehiculos.md) | Validar la clasificación del catálogo |
+| **D-08** | Ciudad de lanzamiento | **Manizales y el Eje Cafetero, con cobertura nacional**. Tarifas fijas por destino desde Manizales ([datos](datos/tarifas-rutas-manizales-2026.csv)) | Validar la tabla de tarifas (ver [datos/README](datos/README.md)) |
+| **D-09** | Portal del administrador corporativo | **Dentro de la App Operación**, con rol externo limitado y aislamiento por empresa | — |
+| **D-10** | Precio urbano | **Siempre recalculado al final** con distancia y tiempo reales; la cotización es un estimado. Las rutas con tarifa fija no se recalculan | — |
+| **D-11** | Destino visible en la oferta | **Zona aproximada y distancia** | — |
+| **D-12** | Espera y cancelación | 3 min de espera gratis, $250 por minuto, cancelación $4.000, pasajero ausente a los 5 min. Ajustables en el piloto | — |
+| **D-13** | Canal de OTP | **WhatsApp con SMS de respaldo** | Elegir proveedor de WhatsApp Business API |
+| **D-14** | Requisitos del vehículo | **Sin límite de antigüedad**. Exige **revisión técnico-mecánica** y **seguro todo riesgo** vigentes | — |
+| **D-16** | Nombre comercial | **TransporteYa** | Dominio |
+| **D-17** | Torre de control | **24/7 desde el lanzamiento** | Turnos y protocolo de emergencias |
+| **D-20** | Tarifa urbana de Manizales | **Tarifas de taxi con taxímetro 2026** (Decreto 0641 del 31/12/2025): banderazo $3.700, $1.784 por km, $223 por tiempo detenido, mínima $6.300 y los recargos de [RN-011](03-reglas-de-negocio.md). Cargadas en `packages/dominio` como semilla | Ver D-19, D-22 y D-23 |
+| **D-25** | Proveedor de OTP | **Simulador por ahora**: no hay proveedor de WhatsApp Business ni de SMS. El servidor genera y valida el código con las mismas reglas (expiración, límite de intentos) y, solo en modo demostración, lo devuelve para mostrarlo en la app. El simulador **no puede usarse en producción** (la API no arranca así). D-13 sigue vigente para el canal real | Conectar el proveedor real detrás de `ProveedorOtp` |
+| **D-26** | Modo demostración | Con `SIMULADOR=true` (por defecto fuera de producción) la API ofrece `/v1/dev/*`: un **pasajero de mentira** que pide viajes, el **cierre diario** a demanda, el **banco** que consigna pagos y el pago de la comisión por Bre-B, y la app del conductor puede usar un **GPS simulado**. Permite probar toda la jornada del conductor sin otros teléfonos. Prohibido en producción | Retirar de los entornos reales |
+| **D-22** | Tarifa por categoría | **Media Alta suma $1.000 y Alta suma $2.000** a la carrera. Se interpretó como un recargo fijo sobre la tarifa (no sobre el banderazo ni el mínimo), sin multiplicar por la dinámica y dentro de la base de la comisión | Confirmar esa interpretación |
+| **D-23** | Tiempo detenido | **$223 por minuto**, medido por un **taxímetro con GPS en la app del conductor** que mide distancia y tiempos ([RN-015](03-reglas-de-negocio.md)) | Ver D-24 |
+| **D-31** | Ingreso del personal interno | Correo + contraseña (scrypt) + **TOTP** (RFC 6238, app de autenticación). El secreto TOTP se guarda cifrado; un código no se acepta dos veces; 5 fallos bloquean el correo 15 min. Los roles se leen de la base en cada petición. La sesión interna dura 12 h (las de las apps, 30 días). Con `SIMULADOR=true` y sin empleados se crean seis cuentas de demostración (una por rol) y `GET /v1/op/auth/demo` muestra su código; **nunca en producción**. En producción la primera cuenta sale de `ADMIN_INICIAL_EMAIL` y `ADMIN_INICIAL_CONTRASENA` | Tomada |
+| **D-32** | Alcance de la App Operación | Hecho: OPE-01 a OPE-08, OPE-11 y OPE-12. **Pendiente:** OPE-09 reservas (F2), OPE-10 corporativos (F3), el CRUD del catálogo de vehículos y la revisión de vehículos fuera del catálogo, la tabla de peajes, el mapa de calor y los filtros por zona o categoría de los reportes. Las zonas se crean escribiendo sus vértices (el dibujo en el mapa llega con el mapa propio, ADR-0002) | Tomada |
+| **D-33** | Cambios de dinero hechos por operación | El libro del conductor es inmutable, así que ninguna corrección lo edita: **ajustar el precio de un viaje finalizado** recalcula la comisión del viaje y deja la diferencia del conductor como un *ajuste de saldo pendiente* que aprueba otra persona. Una tarjeta ya cobrada solo puede bajar de precio (genera reembolso). Un ajuste aprobado que deja el saldo en cero o a favor habilita al conductor bloqueado por deuda | Tomada |
+| **D-34** | Despacho manual | Solo mientras el viaje **busca conductor** (hasta 120 s por defecto, parámetro `despacho.presupuesto_s`). Un viaje que ya quedó "sin conductor" es terminal en la base y no se revive: soporte contacta al pasajero. El monitor puede suspender (temporal) pero no bloquear; la suspensión manual no la levanta la revisión diaria de documentos | Tomada |
+| **D-35** | Parámetros editables y reembolsos | Solo son editables los parámetros que el sistema realmente lee: despacho, semáforo de la torre, plazos de soporte, límite de reembolso de soporte y días de aviso de vencimientos. **Valores iniciales de trabajo, a ajustar con Operación:** plazo de respuesta 24 h (2 h si es de seguridad), reembolso de soporte hasta $ 30.000, semáforo ámbar a 45 s y rojo a 90 s buscando conductor | Valores a confirmar |
+
+## Decisiones que siguen abiertas
+
+| Código | Decisión | Responsable | Estado | Bloquea |
+|---|---|---|---|---|
+| **D-15** | Seguros para pasajeros: póliza de responsabilidad civil y de accidentes de pasajeros. El todo riesgo cubre el vehículo, no al pasajero | Legal | Definido por Legal. Mientras tanto se exigen SOAT, todo riesgo y RTM | Lanzamiento |
+| **D-18** | Proveedor de nube y región | Tecnología | Comparar en la Fase 0 por costo, latencia desde Colombia y cumplimiento de la Ley 1581 | Fase 0 |
+| **D-19** | **Marco de las tarifas.** Las rutas desde Manizales se titulan "tarifas sugeridas" para taxis de servicio público (Resolución 031 de 1981), y el Decreto 0641 regula taxis **con taxímetro**. Falta confirmar con Legal si se pueden aplicar a vehículos particulares, si la **dinámica** (RN-020 a RN-025) es compatible con una tarifa regulada, y que el decreto no prevé recargo de reserva ni otros recargos | Negocio + Legal | Abierta | Fase 1 |
+| **D-24** | **Parámetros del taxímetro.** Velocidad y duración que definen "detenido" (propuesta: menos de 3 km/h durante 10 s), tolerancia de diferencia entre el taxímetro y la trayectoria del servidor (propuesta: 10 %), cuál valor se cobra si difieren, y la fracción de tiempo detenido para estimar la cotización | Negocio + Tecnología | Abierta. Se calibra con datos del piloto | Fase 1 |
+| **D-21** | Clasificación definitiva de cada vehículo en el catálogo | Negocio | Borrador en [catálogo](14-catalogo-de-vehiculos.md) | Fase 1 |
+| **D-27** | **Mapas y direcciones de las apps.** La app del conductor muestra un radar estilizado y abre Waze o Google Maps; la del pasajero, un mapa esquemático con la cuadrícula de Manizales, un buscador de lugares conocidos y direcciones ubicadas de forma aproximada. El mapa de calles, el buscador de direcciones y las rutas con OpenStreetMap (ADR-0002, ADR-0007) están pendientes | Tecnología | Abierta | Fase 1 |
+| **D-28** | **Logo vectorial.** Los logos entregados son imágenes PNG; se usan tal cual. Conviene recibir el SVG original (o el archivo del diseñador) para que se vea nítido en cualquier tamaño y para generar iconos finales de la PWA | Marca | Abierta | Lanzamiento |
+| **D-29** | **Ubicación de los destinos con tarifa fija.** Las 193 rutas traen el nombre del destino pero no su ubicación. Hay coordenadas aproximadas de unos 100 destinos (ciudades, municipios y sitios conocidos); los demás (veredas, retenes, puntos de carretera) no se ofrecen en la app hasta tener la ubicación verificada, que se cargará en `ruta_fija.destino_ubicacion` desde la App Operación | Operación | Abierta | Fase 1 |
+| **D-30** | **Cobro de tarjeta rechazado.** Hoy el viaje queda como deuda del pasajero, que no puede pedir otro hasta pagarla, y el conductor cobra igual (el riesgo lo asume TransporteYa). Falta definir reintentos automáticos, plazo, qué hacer si no paga y cuándo se escala a cobranza | Negocio + Finanzas | Abierta | Lanzamiento |
+
+## Riesgos
+
+Escala: **Alto / Medio / Bajo** para probabilidad e impacto.
+
+| Código | Riesgo | Prob. | Impacto | Mitigación |
+|---|---|---|---|---|
+| **R-01** | **Regulatorio:** el transporte de pasajeros con vehículos particulares tiene un marco legal discutido en Colombia; puede haber sanciones a conductores o a la empresa. La tabla de tarifas usada es de taxis de servicio público | Alta | Alto | Concepto legal (D-01, D-19) antes de construir; tarifas, documentos y servicios configurables para adaptarse a cambios |
+| **R-02** | **Laboral:** que los conductores independientes sean considerados empleados. El bloqueo diario por no pagar la comisión es una condición que Legal debe revisar | Media | Alto | No imponer turnos, no sancionar rechazos (RN-035), libertad de conexión; revisar reglamentos y contratos con Legal |
+| **R-03** | **PWA del conductor:** pérdida de ubicación u ofertas con la pantalla apagada o en segundo plano. Aún más grave en viajes largos intermunicipales | Alta | Alto | Prueba técnica en Fase 0, pantalla activa, estado `sin_senal`, plan B con Capacitor (ADR-0003) |
+| **R-04** | **Búsqueda de direcciones con OpenStreetMap** de baja calidad en algunas zonas, sobre todo en municipios pequeños | Alta | Medio | Intérprete de nomenclatura colombiana, capa propia de lugares, pin en el mapa, prueba de calidad en Fase 0 (ADR-0002) |
+| **R-05** | **Deuda de conductores** por comisiones de viajes en efectivo | Media | Bajo | Con comisiones del 3 % y 5 %, la deuda por viaje es pequeña; el bloqueo diario la limita (RN-063) |
+| **R-06** | **Fraude:** cuentas falsas, GPS falso, viajes ficticios, tarjetas robadas, conductor y pasajero coludidos | Media | Medio | Verificación documental, validación de ubicaciones, reglas de detección (RNF-50), límites para cuentas nuevas |
+| **R-07** | **Seguridad física** de pasajeros y conductores, con viajes largos y nocturnos | Media | Alto | SOS, PIN, viaje compartido, alertas automáticas, torre de control 24/7, verificación de antecedentes |
+| **R-08** | **Costo y mantenimiento** de los servicios de mapas autoalojados | Media | Medio | Automatizar la actualización mensual; interfaces para cambiar a un proveedor comercial |
+| **R-09** | **Notificaciones en iOS** solo con la PWA instalada | Alta | Bajo | Guiar la instalación; conexión en tiempo real mientras la app está abierta |
+| **R-10** | **Facturación electrónica** sin proveedor elegido | Media | Medio | Elegir proveedor en la Fase 0 (D-02) |
+| **R-11** | **Concentración en una pasarela de pagos** (Wompi) | Baja | Medio | Interfaz de pagos desacoplada; evaluar una segunda pasarela en F2 |
+| **R-12** | **Margen insuficiente:** una comisión del 3 % puede ser menor que el costo de la pasarela en viajes con tarjeta (porcentaje más un valor fijo por transacción) | Alta | Alto | Obtener las tarifas de Wompi en la Fase 0 y modelar el margen por método de pago; si no alcanza, trasladar el costo al pasajero, limitar la tarjeta a viajes de cierto valor o ajustar la comisión |
+| **R-13** | **Recálculo del precio al final (D-10):** el pasajero puede sentir que paga más de lo esperado, y la normativa de protección al consumidor exige información clara | Media | Medio | Mostrar siempre un rango estimado y el aviso de que el valor final depende de distancia y tiempo reales; poner un tope sobre el estimado, a definir con Negocio |
+| **R-14** | **Cobro de la comisión por Bre-B:** conciliación manual o errores pueden bloquear a conductores que sí pagaron | Media | Medio | Conciliación automática por webhook si Wompi lo permite; si no, un monitor de cobranza y habilitación manual el mismo día |
+| **R-15** | **Taxímetro por software:** la precisión del GPS del celular, las zonas sin señal o un GPS falso alteran la distancia y el tiempo detenido, y con ello el cobro. Además, el decreto de taxis exige taxímetro electrónico calibrado, y el de la app no es un dispositivo homologado (ver D-19) | Media | Alto | Verificar con la trayectoria del servidor, alerta `diferencia_taximetro`, filtrado de posiciones imprecisas (RNF-50), límites de diferencia y revisión de los viajes con diferencias grandes |

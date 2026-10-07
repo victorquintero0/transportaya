@@ -1,0 +1,66 @@
+marca,linea,carroceria,categoria_propuesta
+Chevrolet,Spark GT,hatchback,media
+Chevrolet,Onix,hatchback,media
+Chevrolet,Sail,sedan,media
+Chevrolet,Aveo,sedan,media
+Chevrolet,Beat,hatchback,media
+Renault,Kwid,hatchback,media
+Renault,Sandero,hatchback,media
+Renault,Logan,sedan,media
+Kia,Picanto,hatchback,media
+Kia,Rio,sedan,media
+Hyundai,Grand i10,sedan,media
+Hyundai,Accent,sedan,media
+Nissan,March,hatchback,media
+Nissan,Versa,sedan,media
+Suzuki,Swift,hatchback,media
+Suzuki,Celerio,hatchback,media
+Mazda,2,hatchback,media
+Mazda,2 Sedan,sedan,media
+Volkswagen,Gol,hatchback,media
+Volkswagen,Polo,hatchback,media
+Chevrolet,Tracker,suv,media_alta
+Chevrolet,Cruze,sedan,media_alta
+Renault,Duster,suv,media_alta
+Renault,Captur,suv,media_alta
+Renault,Koleos,suv,media_alta
+Kia,Cerato,sedan,media_alta
+Kia,Seltos,suv,media_alta
+Kia,Sonet,suv,media_alta
+Hyundai,Elantra,sedan,media_alta
+Hyundai,Creta,suv,media_alta
+Nissan,Kicks,suv,media_alta
+Nissan,Sentra,sedan,media_alta
+Suzuki,Vitara,suv,media_alta
+Suzuki,S-Cross,suv,media_alta
+Mazda,3,sedan,media_alta
+Mazda,3 Sport,hatchback,media_alta
+Mazda,CX-30,suv,media_alta
+Toyota,Corolla,sedan,media_alta
+Toyota,Corolla Cross,suv,media_alta
+Toyota,Yaris,sedan,media_alta
+Volkswagen,Jetta,sedan,media_alta
+Volkswagen,T-Cross,suv,media_alta
+Honda,Civic,sedan,media_alta
+Honda,HR-V,suv,media_alta
+Ford,Escape,suv,media_alta
+Toyota,Fortuner,suv,alta
+Toyota,Prado,suv,alta
+Toyota,Camry,sedan,alta
+Toyota,RAV4,suv,alta
+Mazda,CX-5,suv,alta
+Mazda,CX-9,suv,alta
+Hyundai,Tucson,suv,alta
+Hyundai,Santa Fe,suv,alta
+Kia,Sportage,suv,alta
+Kia,Sorento,suv,alta
+Nissan,X-Trail,suv,alta
+Honda,CR-V,suv,alta
+Chevrolet,Captiva,suv,alta
+Chevrolet,Traverse,suv,alta
+Ford,Explorer,suv,alta
+Volkswagen,Tiguan,suv,alta
+Mercedes-Benz,Clase C,sedan,alta
+BMW,Serie 3,sedan,alta
+Audi,A4,sedan,alta
+Volvo,XC60,suv,alta

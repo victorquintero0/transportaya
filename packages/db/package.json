@@ -1,0 +1,50 @@
+{
+  "name": "@transportaya/db",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Esquema de PostgreSQL + PostGIS, migraciones y acceso a datos de TransporteYa",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./pruebas": {
+      "types": "./dist/pruebas.d.ts",
+      "import": "./dist/pruebas.js",
+      "require": "./dist/pruebas.cjs"
+    },
+    "./semillas": {
+      "types": "./dist/semillas.d.ts",
+      "import": "./dist/semillas.js",
+      "require": "./dist/semillas.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "migraciones"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "generar": "drizzle-kit generate && node scripts/corregir-migraciones.mjs",
+    "migrar": "tsx src/cli-migrar.ts",
+    "semilla": "tsx src/cli-semilla.ts"
+  },
+  "dependencies": {
+    "@transportaya/dominio": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15"
+  }
+}

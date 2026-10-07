@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    # Las pruebas de integridad de la base de datos corren contra un PostgreSQL con PostGIS real,
+    # la misma imagen de infra/docker/docker-compose.yml.
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: transportaya
+          POSTGRES_PASSWORD: transportaya
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U transportaya"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      REQUIRE_DB: '1'
+      TEST_DATABASE_URL: postgres://transportaya:transportaya@localhost:5432/postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Formato
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Tipos
+        run: pnpm typecheck
+
+      - name: Pruebas
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      # Prueba de punta a punta con un navegador real: registro, viaje con taxímetro, cobro y pago de comisión.
+      - name: Navegador para las pruebas de punta a punta
+        run: pnpm --filter @transportaya/e2e exec playwright install --with-deps chromium
+
+      - name: Pruebas de punta a punta
+        run: pnpm --filter @transportaya/e2e e2e
+
+      - name: Capturas de pantalla de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-e2e
+          path: |
+            apps/e2e/capturas
+            apps/e2e/test-results
+          if-no-files-found: ignore

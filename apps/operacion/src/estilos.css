@@ -1,0 +1,43 @@
+@import '@transportaya/ui/tema.css';
+
+/* Es una herramienta de escritorio de uso largo: texto compacto y legible, sin zoom ni gestos táctiles. */
+html {
+  font-size: 15px;
+}
+#raiz {
+  min-height: 100dvh;
+}
+.numeros {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Barras de desplazamiento discretas dentro de los paneles. */
+.scroll-fino {
+  scrollbar-width: thin;
+  scrollbar-color: var(--borde) transparent;
+}
+
+@keyframes parpadeo {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.parpadeo {
+  animation: parpadeo 1.1s ease-in-out infinite;
+}
+
+/* El trazo de la ruta "corre" hacia el destino. */
+@keyframes ruta-fluye {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+
+/* Los iconos del mapa no capturan el puntero salvo los botones. */
+.marca-mapa {
+  cursor: pointer;
+}
