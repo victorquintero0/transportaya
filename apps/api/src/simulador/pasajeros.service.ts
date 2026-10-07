@@ -2,7 +2,6 @@ import { randomInt } from 'node:crypto';
 import {
   conductor,
   cotizacion,
-  movimientoSaldo,
   oferta,
   pasajero,
   rutaFija,
@@ -14,10 +13,7 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 import {
   aproximarPorDefecto,
-  ambitoComision,
-  calcularComision,
   calcularTarifaUrbana,
-  COMISION_PUNTOS_BASICOS,
   desplazar,
   distanciaMetros,
   estimarTiempoDetenido,
@@ -27,7 +23,7 @@ import { and, desc, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
-import { Eventos } from '../tiempo-real/eventos.service.js';
+import { CancelacionPasajeroService } from '../viajes/cancelacion-pasajero.service.js';
 import { DespachoService } from '../viajes/despacho.service.js';
 import { registrarEvento } from '../viajes/eventos-viaje.js';
 import { PrecioService } from '../viajes/precio.service.js';
@@ -90,7 +86,7 @@ export class PasajerosSimuladosService {
     @Inject(UbicacionStore) private readonly ubicaciones: UbicacionStore,
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(PrecioService) private readonly precios: PrecioService,
-    @Inject(Eventos) private readonly eventos: Eventos,
+    @Inject(CancelacionPasajeroService) private readonly cancelacion: CancelacionPasajeroService,
   ) {}
 
   async crearViaje(conductorId: string, o: OpcionesViajeDemo = {}) {
@@ -273,10 +269,7 @@ export class PasajerosSimuladosService {
     };
   }
 
-  /**
-   * El pasajero cancela (RN-042): gratis mientras se busca conductor o durante los primeros 2 minutos tras la asignación;
-   * después, tarifa de cancelación que va al conductor menos la comisión.
-   */
+  /** El pasajero de mentira cancela: mismas reglas que cuando cancela un pasajero de verdad (RN-042). */
   async cancelar(conductorId: string, viajeId: string) {
     const { db } = this.bd;
     const [v] = await db.select().from(viaje).where(eq(viaje.id, viajeId));
@@ -286,86 +279,7 @@ export class PasajerosSimuladosService {
       .where(and(eq(oferta.viajeId, viajeId), eq(oferta.conductorId, conductorId)));
     if (!v || (v.conductorId !== conductorId && !ofertado))
       throw noEncontrado('VIAJE_NO_ENCONTRADO', 'No encontramos ese viaje');
-
-    if (v.estado === 'buscando_conductor') {
-      await db
-        .update(viaje)
-        .set({
-          estado: 'cancelado',
-          canceladoEn: new Date(),
-          canceladoPor: 'pasajero',
-          motivoCancelacion: 'cancelado_buscando',
-        })
-        .where(eq(viaje.id, v.id));
-      await registrarEvento(db, {
-        viajeId: v.id,
-        tipo: 'cancelado',
-        actorTipo: 'pasajero',
-        actorId: v.pasajeroId,
-      });
-      await this.despacho.retirarOfertas(v.id);
-      return { costo: 0 };
-    }
-    if (v.conductorId !== conductorId || !['asignado', 'en_sitio'].includes(v.estado)) {
-      throw conflicto('ESTADO_INVALIDO', 'Este viaje ya no se puede cancelar.');
-    }
-
-    const gratis =
-      v.estado === 'asignado' && Date.now() - (v.aceptadoEn?.getTime() ?? 0) <= 120_000;
-    const [t] = v.tarifaId ? await db.select().from(tarifa).where(eq(tarifa.id, v.tarifaId)) : [];
-    const costo = gratis ? 0 : (t?.cancelacion ?? 4000);
-    const ambito = ambitoComision(v.tipoServicio);
-    const comision = calcularComision({ totalRedondeado: 0, tarifaCancelacion: costo }, ambito);
-
-    await db.transaction(async (tx) => {
-      await tx
-        .update(viaje)
-        .set({
-          estado: 'cancelado',
-          canceladoEn: new Date(),
-          canceladoPor: 'pasajero',
-          motivoCancelacion: 'cancelado_por_pasajero',
-          ...(costo > 0
-            ? {
-                precioFinal: costo,
-                totalCarrera: costo,
-                comision,
-                comisionPb: COMISION_PUNTOS_BASICOS[ambito],
-                estadoPago: v.metodoPago === 'efectivo' ? 'pendiente' : 'pagado',
-              }
-            : { estadoPago: 'no_aplica' }),
-        })
-        .where(eq(viaje.id, v.id));
-      if (costo > 0) {
-        await tx
-          .insert(movimientoSaldo)
-          .values({ conductorId, tipo: 'cancelacion', monto: costo - comision, viajeId: v.id });
-        if (v.metodoPago === 'efectivo') {
-          await tx
-            .update(pasajero)
-            .set({ deudaPendiente: sql`${pasajero.deudaPendiente} + ${costo}` })
-            .where(eq(pasajero.usuarioId, v.pasajeroId));
-        }
-      }
-      await tx
-        .update(conductor)
-        .set({ estadoOperativo: 'disponible' })
-        .where(eq(conductor.usuarioId, conductorId));
-      await registrarEvento(tx, {
-        viajeId: v.id,
-        tipo: 'cancelado',
-        actorTipo: 'pasajero',
-        actorId: v.pasajeroId,
-        datos: { costo },
-      });
-    });
-    this.eventos.aConductor(conductorId, 'viaje:estado', {
-      viajeId: v.id,
-      estado: 'cancelado',
-      canceladoPor: 'pasajero',
-      costo,
-    });
-    this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'disponible' });
-    return { costo, gananciaNeta: costo - comision };
+    const r = await this.cancelacion.cancelar(viajeId);
+    return { costo: r.costo, gananciaNeta: r.gananciaNeta };
   }
 }

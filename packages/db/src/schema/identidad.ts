@@ -137,6 +137,9 @@ export const pasajero = pgTable(
     calificacionesTotal: integer('calificaciones_total').notNull().default(0),
     /** Cobros fallidos y tarifas de cancelación por pagar (RN-053). */
     deudaPendiente: cop('deuda_pendiente').notNull().default(0),
+    /** Autorización de tratamiento de datos y términos (Ley 1581 de 2012, PAS-02): cuándo y qué versión aceptó. */
+    aceptoTerminosEn: marca('acepto_terminos_en'),
+    versionTerminos: text('version_terminos'),
     creadoEn: creadoEn(),
   },
   (t) => [

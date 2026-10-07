@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { RequiereRol, UsuarioActual, type UsuarioAutenticado } from '../auth/decoradores.js';
 import { validar } from '../comun/zod.js';
 import { DespachoService } from './despacho.service.js';
+import { MensajesViajeService } from './mensajes.service.js';
 import { ViajesService } from './viajes.service.js';
 
 const entero = z.number().int().min(0).max(2_000_000);
@@ -44,6 +45,7 @@ export class ViajesController {
   constructor(
     @Inject(ViajesService) private readonly viajes: ViajesService,
     @Inject(DespachoService) private readonly despacho: DespachoService,
+    @Inject(MensajesViajeService) private readonly mensajes: MensajesViajeService,
   ) {}
 
   @Get('oferta-actual')
@@ -145,6 +147,27 @@ export class ViajesController {
     @Body() cuerpo: unknown,
   ) {
     return this.viajes.calificar(u.id, id, validar(calificar, cuerpo));
+  }
+
+  @Get('viajes/:id/mensajes')
+  async mensajesDelViaje(
+    @UsuarioActual() u: UsuarioAutenticado,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    return { mensajes: await this.mensajes.listar(u.id, id) };
+  }
+
+  @Post('viajes/:id/mensajes')
+  enviarMensaje(
+    @UsuarioActual() u: UsuarioAutenticado,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() cuerpo: unknown,
+  ) {
+    return this.mensajes.enviar(
+      u.id,
+      id,
+      validar(z.object({ cuerpo: z.string().trim().min(1).max(500) }), cuerpo).cuerpo,
+    );
   }
 
   @Post('sos')

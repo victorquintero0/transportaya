@@ -113,6 +113,31 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
     return this.intentar(viajeId);
   }
 
+  /**
+   * Cuántos conductores podrían atender un viaje desde ese punto y en cuánto llegaría el más cercano. Es lo que
+   * ve el pasajero al cotizar (PAS-22); no reserva a nadie.
+   */
+  async disponibilidad(
+    ciudadId: string,
+    origen: { lat: number; lng: number },
+    categoria: CategoriaVehiculo,
+    tipoServicio: 'inmediato' | 'intermunicipal',
+  ): Promise<{ conductores: number; etaS: number | null }> {
+    const cercanos = await this.candidatos(
+      { origen, categoria, tipoServicio },
+      ciudadId,
+      new Set(),
+    );
+    if (cercanos.length === 0) return { conductores: 0, etaS: null };
+    const masCercano = cercanos[0]!;
+    return {
+      conductores: cercanos.length,
+      etaS: Math.round(
+        (masCercano.distanciaM * this.p.factorRuta) / ((this.p.velocidadMediaKmh * 1000) / 3600),
+      ),
+    };
+  }
+
   /** Ofrece el viaje al siguiente mejor candidato. Si no hay, reintenta hasta agotar el tiempo. */
   async intentar(viajeId: string): Promise<void> {
     if (this.cerrando) return;
@@ -170,7 +195,7 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
    * empate, por quien lleva más tiempo conectado (RN-031).
    */
   private async candidatos(
-    v: typeof viaje.$inferSelect,
+    v: Pick<typeof viaje.$inferSelect, 'origen' | 'categoria' | 'tipoServicio'>,
     ciudadId: string,
     excluidos: Set<string>,
   ): Promise<Candidato[]> {
@@ -449,7 +474,7 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
         actorId: conductorId,
         datos: { ofertaId },
       });
-      return { viajeId: v.id };
+      return { viajeId: v.id, pasajeroId: v.pasajeroId };
     });
 
     clearTimeout(this.expiraciones.get(ofertaId));
@@ -472,7 +497,11 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       estado: 'asignado',
     });
     this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'en_camino' });
-    return resultado;
+    this.eventos.aPasajero(resultado.pasajeroId, 'viaje:estado', {
+      viajeId: resultado.viajeId,
+      estado: 'asignado',
+    });
+    return { viajeId: resultado.viajeId };
   }
 
   /** El pasajero canceló mientras se buscaba conductor: se retira la oferta abierta. */
@@ -500,9 +529,13 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       .update(viaje)
       .set({ estado: 'sin_conductor' })
       .where(and(eq(viaje.id, viajeId), eq(viaje.estado, 'buscando_conductor')))
-      .returning({ id: viaje.id });
+      .returning({ id: viaje.id, pasajeroId: viaje.pasajeroId });
     if (r.length) {
       await registrarEvento(this.bd.db, { viajeId, tipo: 'sin_conductor', actorTipo: 'sistema' });
+      this.eventos.aPasajero(r[0]!.pasajeroId, 'viaje:estado', {
+        viajeId,
+        estado: 'sin_conductor',
+      });
       this.log.warn(
         `Viaje ${viajeId}: sin conductor tras ${Math.round(this.p.presupuestoMs / 1000)} s`,
       );
@@ -530,6 +563,11 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       fila.o.etaRecogidaS ?? 0,
       fila.o.expiraEn,
     );
+  }
+
+  /** Cuánto tiempo se busca conductor antes de dar el viaje por "sin conductor". */
+  get presupuestoBusquedaMs(): number {
+    return this.p.presupuestoMs;
   }
 
   /** Cantidad de ofertas con temporizador activo (para pruebas). */

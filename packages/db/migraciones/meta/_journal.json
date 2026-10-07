@@ -36,6 +36,13 @@
       "when": 1791328038487,
       "tag": "0004_transicion_en_sitio",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791375896779,
+      "tag": "0005_terminos_pasajero",
+      "breakpoints": true
     }
   ]
 }

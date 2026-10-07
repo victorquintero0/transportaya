@@ -3,6 +3,7 @@ import {
   calificacion,
   conductor,
   cotizacion,
+  metodoPago,
   movimientoSaldo,
   oferta,
   pago,
@@ -35,6 +36,7 @@ import { UbicacionStore } from '../conductor/ubicacion.store.js';
 import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from './despacho.service.js';
 import { primerNombre, registrarEvento } from './eventos-viaje.js';
+import { cobroSimulado } from '../comun/tarjetas.js';
 import { PrecioService } from './precio.service.js';
 
 const ESTADOS_ACTIVOS = ['asignado', 'en_sitio', 'en_curso'] as const;
@@ -191,6 +193,7 @@ export class ViajesService {
       });
     });
     this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId: v.id, estado: 'en_sitio' });
+    this.eventos.aPasajero(v.pasajeroId, 'viaje:estado', { viajeId: v.id, estado: 'en_sitio' });
     return this.actual(conductorId);
   }
 
@@ -238,6 +241,7 @@ export class ViajesService {
       });
     });
     this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId: v.id, estado: 'en_curso' });
+    this.eventos.aPasajero(v.pasajeroId, 'viaje:estado', { viajeId: v.id, estado: 'en_curso' });
     return this.actual(conductorId);
   }
 
@@ -247,8 +251,10 @@ export class ViajesService {
    */
   async finalizar(conductorId: string, viajeId: string, taximetro: MedicionTaximetro) {
     const ahora = new Date();
+    let pasajeroDelViaje = '';
     const resultado = await this.bd.db.transaction(async (tx) => {
       const { v, ciudadId } = await this.cargar(conductorId, viajeId, tx);
+      pasajeroDelViaje = v.pasajeroId;
       if (v.estado !== 'en_curso')
         throw conflicto('ESTADO_INVALIDO', 'Este viaje no está en curso.');
       const iniciadoEn = v.iniciadoEn!;
@@ -349,7 +355,20 @@ export class ViajesService {
       const comision = calcularComision({ totalRedondeado: totalCarrera, cobroEspera }, ambito);
       const precioFinal = totalCarrera + cobroEspera;
       const efectivo = v.metodoPago === 'efectivo';
-      const estadoPago = efectivo ? 'pendiente' : this.config.SIMULADOR ? 'pagado' : 'pendiente';
+      // Con tarjeta, el cobro lo resuelve la pasarela. Mientras no hay Wompi, el simulador aprueba todo salvo las
+      // tarjetas de prueba rechazadas; en ese caso el viaje queda como deuda del pasajero (RN-053, HU-PAS-04).
+      let tarjetaRechazada = false;
+      if (!efectivo && this.config.SIMULADOR && v.metodoPagoId) {
+        const [m] = await tx.select().from(metodoPago).where(eq(metodoPago.id, v.metodoPagoId));
+        tarjetaRechazada = cobroSimulado(m?.tokenProveedor) === 'rechazado';
+      }
+      const estadoPago = efectivo
+        ? 'pendiente'
+        : tarjetaRechazada
+          ? 'fallido'
+          : this.config.SIMULADOR
+            ? 'pagado'
+            : 'pendiente';
 
       await tx
         .update(viaje)
@@ -391,6 +410,12 @@ export class ViajesService {
         estado: estadoPago,
         claveIdempotencia: `viaje:${v.id}:cobro`,
       });
+      if (tarjetaRechazada) {
+        await tx
+          .update(pasajero)
+          .set({ deudaPendiente: sql`${pasajero.deudaPendiente} + ${precioFinal}` })
+          .where(eq(pasajero.usuarioId, v.pasajeroId));
+      }
       const movimientos = movimientosDeViaje({
         metodo: efectivo ? 'efectivo' : 'electronico',
         base: { totalRedondeado: totalCarrera, cobroEspera },
@@ -448,6 +473,11 @@ export class ViajesService {
       };
     });
     this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId, estado: 'finalizado' });
+    this.eventos.aPasajero(pasajeroDelViaje, 'viaje:estado', {
+      viajeId,
+      estado: 'finalizado',
+      precioFinal: resultado.precioFinal,
+    });
     this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'disponible' });
     return resultado;
   }
@@ -578,6 +608,12 @@ export class ViajesService {
       });
       this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId: v.id, estado: 'cancelado' });
       this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'disponible' });
+      this.eventos.aPasajero(v.pasajeroId, 'viaje:estado', {
+        viajeId: v.id,
+        estado: 'cancelado',
+        canceladoPor: 'conductor',
+        costo: tarifaCancelacion,
+      });
       return { reasignado: false, tarifaCancelacion, gananciaNeta: tarifaCancelacion - comision };
     }
 
@@ -610,6 +646,11 @@ export class ViajesService {
     });
     this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId: v.id, estado: 'cancelado' });
     this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'disponible' });
+    this.eventos.aPasajero(v.pasajeroId, 'viaje:estado', {
+      viajeId: v.id,
+      estado: 'buscando_conductor',
+      reasignando: true,
+    });
     await this.alertarCancelacionesRepetidas(conductorId);
     void this.despacho.intentar(v.id); // vuelve a buscar conductor, sin ofrecérselo otra vez a quien canceló
     return { reasignado: true };

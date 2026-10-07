@@ -11,6 +11,33 @@ export interface EventosAConductor {
   };
   'viaje:estado': { viajeId: string; estado: string; [clave: string]: unknown };
   'conductor:estado': { estadoOperativo: string; motivo?: string };
+  'viaje:mensaje': MensajeDeViaje;
+}
+
+/** Eventos del servidor hacia el pasajero (docs/10). */
+export interface EventosAPasajero {
+  'viaje:estado': { viajeId: string; estado: string; [clave: string]: unknown };
+  /** Posición del conductor asignado, con lo que falta para llegar a la recogida o al destino. */
+  'viaje:ubicacion_conductor': {
+    viajeId: string;
+    lat: number;
+    lng: number;
+    rumbo: number | null;
+    /** Segundos y metros que faltan hasta el punto al que va (recogida o destino). */
+    etaS: number;
+    distanciaM: number;
+    hacia: 'recogida' | 'destino';
+    t: number;
+  };
+  'viaje:mensaje': MensajeDeViaje;
+}
+
+export interface MensajeDeViaje {
+  id: string;
+  viajeId: string;
+  deQuien: 'pasajero' | 'conductor';
+  cuerpo: string;
+  creadoEn: string;
 }
 
 /** Lo que ve el conductor de una oferta (RN-034): suficiente para decidir, sin el destino exacto (D-11). */
@@ -57,5 +84,15 @@ export class Eventos {
     if (!this.server) return;
     this.server.to(`conductor:${conductorId}`).emit(evento, datos);
     this.log.debug(`${evento} → conductor ${conductorId}`);
+  }
+
+  aPasajero<E extends keyof EventosAPasajero>(
+    pasajeroId: string,
+    evento: E,
+    datos: EventosAPasajero[E],
+  ): void {
+    if (!this.server) return;
+    this.server.to(`pasajero:${pasajeroId}`).emit(evento, datos);
+    this.log.debug(`${evento} → pasajero ${pasajeroId}`);
   }
 }

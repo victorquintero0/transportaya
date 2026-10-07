@@ -7,6 +7,7 @@ import { FiltroProblemas } from './comun/errores.js';
 import { DineroModule } from './dinero/dinero.module.js';
 import { ConductorModule } from './conductor/conductor.module.js';
 import { ConfigModule } from './config.module.js';
+import { PasajeroModule } from './pasajero/pasajero.module.js';
 import { SimuladorModule } from './simulador/simulador.module.js';
 import { TareasService } from './tareas.service.js';
 import { TiempoRealModule } from './tiempo-real/tiempo-real.module.js';
@@ -24,6 +25,7 @@ import { TarifasController } from './tarifas.controller.js';
     ConductorModule,
     ViajesModule,
     DineroModule,
+    PasajeroModule,
     SimuladorModule,
   ],
   controllers: [SaludController, TarifasController],

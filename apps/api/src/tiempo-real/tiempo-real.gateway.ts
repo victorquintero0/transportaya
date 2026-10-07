@@ -50,13 +50,13 @@ export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection {
     const token =
       typeof socket.handshake.auth?.['token'] === 'string' ? socket.handshake.auth['token'] : '';
     const usuario = token ? await this.tokens.autenticar(token) : null;
-    if (!usuario || usuario.rol !== 'conductor') {
+    if (!usuario || (usuario.rol !== 'conductor' && usuario.rol !== 'pasajero')) {
       socket.emit('error:autenticacion', { codigo: 'SESION_INVALIDA' });
       socket.disconnect(true);
       return;
     }
     socket.data['usuario'] = usuario;
-    await socket.join(`conductor:${usuario.id}`);
+    await socket.join(`${usuario.rol}:${usuario.id}`);
     socket.emit('listo', { conductorId: usuario.id });
   }
 
@@ -64,7 +64,7 @@ export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection {
   @SubscribeMessage('conductor:ubicacion')
   async ubicacion(@ConnectedSocket() socket: Socket, @MessageBody() cuerpo: unknown) {
     const usuario = socket.data['usuario'] as UsuarioAutenticado | undefined;
-    if (!usuario) return { error: 'SESION_INVALIDA' };
+    if (!usuario || usuario.rol !== 'conductor') return { error: 'SESION_INVALIDA' };
     const r = mensajeUbicacion.safeParse(cuerpo);
     if (!r.success) return { error: 'SOLICITUD_INVALIDA' };
     try {
