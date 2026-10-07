@@ -1,0 +1,18 @@
+{
+  "name": "@transportaya/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pruebas de punta a punta de TransporteYa con un navegador real",
+  "scripts": {
+    "e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^26.6.4",
+    "@transportaya/db": "workspace:*",
+    "pg": "^8.23.1",
+    "@types/pg": "^8.15.5"
+  }
+}

@@ -23,6 +23,8 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-16** | Nombre comercial | **TransporteYa** | Dominio |
 | **D-17** | Torre de control | **24/7 desde el lanzamiento** | Turnos y protocolo de emergencias |
 | **D-20** | Tarifa urbana de Manizales | **Tarifas de taxi con taxímetro 2026** (Decreto 0641 del 31/12/2025): banderazo $3.700, $1.784 por km, $223 por tiempo detenido, mínima $6.300 y los recargos de [RN-011](03-reglas-de-negocio.md). Cargadas en `packages/dominio` como semilla | Ver D-19, D-22 y D-23 |
+| **D-25** | Proveedor de OTP | **Simulador por ahora**: no hay proveedor de WhatsApp Business ni de SMS. El servidor genera y valida el código con las mismas reglas (expiración, límite de intentos) y, solo en modo demostración, lo devuelve para mostrarlo en la app. El simulador **no puede usarse en producción** (la API no arranca así). D-13 sigue vigente para el canal real | Conectar el proveedor real detrás de `ProveedorOtp` |
+| **D-26** | Modo demostración | Con `SIMULADOR=true` (por defecto fuera de producción) la API ofrece `/v1/dev/*`: un **pasajero de mentira** que pide viajes, el **cierre diario** a demanda, el **banco** que consigna pagos y el pago de la comisión por Bre-B, y la app del conductor puede usar un **GPS simulado**. Permite probar toda la jornada del conductor sin otros teléfonos. Prohibido en producción | Retirar de los entornos reales |
 | **D-22** | Tarifa por categoría | **Media Alta suma $1.000 y Alta suma $2.000** a la carrera. Se interpretó como un recargo fijo sobre la tarifa (no sobre el banderazo ni el mínimo), sin multiplicar por la dinámica y dentro de la base de la comisión | Confirmar esa interpretación |
 | **D-23** | Tiempo detenido | **$223 por minuto**, medido por un **taxímetro con GPS en la app del conductor** que mide distancia y tiempos ([RN-015](03-reglas-de-negocio.md)) | Ver D-24 |
 
@@ -35,6 +37,8 @@ Resueltas el 2026-10-06. Cada una indica qué documento se ajustó.
 | **D-19** | **Marco de las tarifas.** Las rutas desde Manizales se titulan "tarifas sugeridas" para taxis de servicio público (Resolución 031 de 1981), y el Decreto 0641 regula taxis **con taxímetro**. Falta confirmar con Legal si se pueden aplicar a vehículos particulares, si la **dinámica** (RN-020 a RN-025) es compatible con una tarifa regulada, y que el decreto no prevé recargo de reserva ni otros recargos | Negocio + Legal | Abierta | Fase 1 |
 | **D-24** | **Parámetros del taxímetro.** Velocidad y duración que definen "detenido" (propuesta: menos de 3 km/h durante 10 s), tolerancia de diferencia entre el taxímetro y la trayectoria del servidor (propuesta: 10 %), cuál valor se cobra si difieren, y la fracción de tiempo detenido para estimar la cotización | Negocio + Tecnología | Abierta. Se calibra con datos del piloto | Fase 1 |
 | **D-21** | Clasificación definitiva de cada vehículo en el catálogo | Negocio | Borrador en [catálogo](14-catalogo-de-vehiculos.md) | Fase 1 |
+| **D-27** | **Mapa de la app del conductor.** Hoy la app muestra un radar estilizado (rumbo y distancia al punto) y abre Waze o Google Maps para navegar. El mapa propio con OpenStreetMap (ADR-0002) está pendiente | Tecnología | Abierta | Fase 1 |
+| **D-28** | **Logo vectorial.** Los logos entregados son imágenes PNG; se usan tal cual. Conviene recibir el SVG original (o el archivo del diseñador) para que se vea nítido en cualquier tamaño y para generar iconos finales de la PWA | Marca | Abierta | Lanzamiento |
 
 ## Riesgos
 

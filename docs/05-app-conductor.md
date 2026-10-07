@@ -142,3 +142,31 @@ Este es el punto técnico más delicado del proyecto. Detalle y alternativa en [
 
 **Plan B:** si las pruebas piloto muestran que la PWA pierde demasiadas ubicaciones u ofertas, se empaqueta
 la misma aplicación con **Capacitor** para obtener ubicación en segundo plano nativa en Android, sin reescribir la interfaz.
+
+## Estado de la implementación
+
+La app está construida y probada de punta a punta en **modo demostración** (ver [D-25 y D-26](13-decisiones-pendientes-y-riesgos.md)).
+Código en `apps/conductor`; la prueba con navegador real está en `apps/e2e`.
+
+| Pantalla | Qué hace |
+|---|---|
+| **Entrar** | Celular + código de 6 dígitos. Mientras no hay proveedor de OTP, muestra el código para usarlo con un toque |
+| **Registro** | Asistente de 5 pasos: datos, vehículo del catálogo (la categoría y su recargo se muestran al elegir), 9 documentos con fecha de vencimiento, llave Bre-B y envío a revisión |
+| **Inicio** | Botón grande de conexión con anillos tipo radar, meta diaria en un anillo, viajes, tiempo conectado, efectivo y logros del día. Si no puede conectarse, dice por qué y lleva a resolverlo (deuda, documentos) |
+| **Oferta** | Pantalla completa con cuenta regresiva, sonido y vibración: precio estimado en rango, ganancia aprox., recogida (distancia y ETA), **destino solo como zona** (D-11), método de pago y calificación del pasajero |
+| **Viaje** | *En camino* (radar con rumbo y distancia, Waze / Google Maps, "Ya llegué" solo a menos de 150 m) → *Esperando* (cronómetro con minutos gratis, PIN con teclado numérico, cancelar por pasajero ausente a los 5 min) → *En viaje* (**taxímetro en vivo**) |
+| **Resumen** | Ganancia neta con confeti, desglose (valor, espera, comisión), mediciones verificadas, cobro de efectivo (completo u otro valor) y calificación |
+| **Ganancias** | Hoy, ayer, semana y mes con gráfico de barras; cuenta con TransporteYa (debe / al día / a favor); flujo para **pagar la comisión** por llave y avisar el comprobante; cierres diarios y movimientos |
+| **Perfil** | Vehículo, documentos (los que vencen o faltan arriba, para renovarlos), cuenta de pago, preferencias (sonido, vibración, categoría inferior, viajes entre ciudades, tema, meta), historial y herramientas de demostración |
+
+**Taxímetro.** Mide con el GPS del teléfono usando la misma clase `Taximetro` del paquete `dominio` que el servidor usa para verificar:
+descarta lecturas imprecisas y saltos imposibles, cuenta como tiempo detenido lo que está por debajo de 3 km/h durante 10 s o más y estima los tramos sin señal.
+El valor en pantalla usa la misma fórmula de tarifa del servidor (`calcularTarifaUrbana`). Cada lectura se guarda en el dispositivo: si la app se cierra a mitad del viaje, al abrirla retoma la medición.
+
+**Conectividad.** Las posiciones se envían en lotes por el canal en tiempo real y, si no hay conexión, quedan en el dispositivo y se envían todas al volver (RNF-31).
+Al reconectar o volver a la app, esta recupera su oferta y su viaje desde el servidor. La pantalla se mantiene encendida mientras el conductor está en línea.
+
+**Gamificación.** Solo refuerzos positivos y personales (meta del día que el propio conductor fija, logros, racha). No hay rankings ni castigos por rechazar ofertas, para no crear una relación de subordinación (R-02, RN-035).
+
+**Pendiente.** Mapa propio (D-27), proveedor real de OTP, notificaciones *push*, pago por Wompi / Bre-B reales, y la prueba del ADR-0003 en celulares Android reales (la pantalla encendida y la ubicación en segundo plano siguen siendo el riesgo R-03).
+

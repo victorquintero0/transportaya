@@ -5,8 +5,8 @@
   "type": "module",
   "description": "App para conductores de TransporteYa",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node scripts/copiar-marca.mjs && vite",
+    "build": "node scripts/copiar-marca.mjs && tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"

@@ -417,7 +417,7 @@ describe.skipIf(!hayBase)('ganancias, saldo, cierre diario y pagos', () => {
     it('al vencer el SOAT se suspende al conductor, se le desconecta y se avisa; renovado, vuelve a habilitarse', async () => {
       const c = await registrar(await enLinea('3004000041'));
       await api.bd.db.execute(
-        sql`update documento set vence_en = current_date - 1 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
+        sql`update documento set vence_en = (now() at time zone 'America/Bogota')::date - 1 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
       );
 
       const r = await api.servicio(VencimientosService).revisar();
@@ -456,7 +456,7 @@ describe.skipIf(!hayBase)('ganancias, saldo, cierre diario y pagos', () => {
     it('un documento por vencer en menos de 30 días no suspende, solo avisa en la app', async () => {
       const c = await registrar(await enLinea('3004000042'));
       await api.bd.db.execute(
-        sql`update documento set vence_en = current_date + 10 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
+        sql`update documento set vence_en = (now() at time zone 'America/Bogota')::date + 10 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
       );
       expect((await api.servicio(VencimientosService).revisar()).suspendidos).not.toContain(
         c.usuarioId,

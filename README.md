@@ -23,12 +23,14 @@ está en la [hoja de ruta](docs/12-hoja-de-ruta.md#avance-de-la-fase-0).
 
 ```text
 apps/
-  api/          Backend NestJS (API REST; WebSocket y workers vendrán después)
+  api/          Backend NestJS: API REST, WebSocket y tareas programadas
   pasajero/     PWA de pasajeros (React + Vite)
-  conductor/    PWA de conductores, incluye la prueba técnica del ADR-0003
+  conductor/    PWA de conductores (completa) e incluye la prueba técnica del ADR-0003 en /diagnostico
   operacion/    App web de operación
+  e2e/          Pruebas de punta a punta con un navegador real (Playwright)
 packages/
-  dominio/      Reglas de negocio compartidas: estados del viaje, tarifa, comisión y cierre diario
+  dominio/      Reglas de negocio compartidas: estados del viaje, tarifa, comisión, cierre diario y taxímetro
+  ui/           Identidad de marca: logos, iconos y tokens de diseño (Tailwind)
   db/           Esquema de PostgreSQL + PostGIS (Drizzle), migraciones, carga inicial y pruebas de integridad
 infra/docker/   Servicios locales: PostgreSQL + PostGIS, Redis, MinIO y Mailpit
 docs/           Documentación funcional y técnica
@@ -57,6 +59,18 @@ pnpm --filter @transportaya/api dev        # API en http://localhost:3000/v1/sal
 pnpm --filter @transportaya/pasajero dev   # http://localhost:5171
 pnpm --filter @transportaya/conductor dev  # http://localhost:5172
 pnpm --filter @transportaya/operacion dev  # http://localhost:5173
+```
+
+### Probar la app del conductor (modo demostración)
+
+Con la API y la app del conductor en marcha, abre <http://localhost:5172> en el navegador (idealmente con el modo móvil de las herramientas
+de desarrollo). Aún no hay proveedor de OTP: la app muestra el código para usarlo con un toque. En **Perfil → Modo demostración**
+hay un pasajero de mentira, un GPS simulado y atajos para el cierre diario y los bancos. El camino completo (registro → conexión →
+oferta → viaje con taxímetro → cobro → pago de comisión) lo recorre la prueba de punta a punta:
+
+```bash
+# necesita PostgreSQL con PostGIS (como las pruebas de la API) y un Chromium; deja capturas en apps/e2e/capturas
+pnpm --filter @transportaya/e2e e2e
 ```
 
 ## Documentación

@@ -60,3 +60,20 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Prueba de punta a punta con un navegador real: registro, viaje con taxímetro, cobro y pago de comisión.
+      - name: Navegador para las pruebas de punta a punta
+        run: pnpm --filter @transportaya/e2e exec playwright install --with-deps chromium
+
+      - name: Pruebas de punta a punta
+        run: pnpm --filter @transportaya/e2e e2e
+
+      - name: Capturas de pantalla de la prueba
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-e2e
+          path: |
+            apps/e2e/capturas
+            apps/e2e/test-results
+          if-no-files-found: ignore

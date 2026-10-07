@@ -42,8 +42,12 @@ flowchart LR
 | Tarifas urbanas de Manizales (Decreto 0641 de 2025) | Hecho en el dominio, con pruebas. Quedan abiertas D-19, D-22 y D-23 |
 | Esquema de base de datos y migraciones (43 tablas, PostGIS, integridad en la base) | Hecho, con 64 pruebas contra PostgreSQL real ([docs/09](09-modelo-de-datos.md)) |
 | Carga inicial de Manizales: tarifa, 193 rutas y catálogo de vehículos | Hecho (`pnpm semilla` en `packages/db`) |
-| Trabajo programado de particiones de posiciones y cierre diario | Pendiente |
-| Autenticación con OTP y usuarios internos con doble factor | Pendiente |
+| Trabajo programado del cierre diario (00:00) y de vencimientos de documentos (00:05) | Hecho. Las particiones de posiciones siguen pendientes |
+| Autenticación con OTP simulado, sesiones con rotación de *refresh token* | Hecho con simulador (D-25); falta el proveedor real |
+| API del conductor: registro, documentos, conexión, ubicaciones, despacho, ofertas, viaje con taxímetro, ganancias, saldo, cierre y pagos de comisión | Hecho, con 135 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
+| App del conductor completa con identidad de marca, y simuladores para probarla | Hecho ([docs/05](05-app-conductor.md)) |
+| Prueba de punta a punta con navegador real (Playwright): registro, viaje con taxímetro, cobro y pago de comisión | Hecho; corre en CI |
+| Usuarios internos con doble factor | Pendiente |
 | Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |
 | Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |

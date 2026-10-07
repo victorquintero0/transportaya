@@ -437,7 +437,7 @@ describe.skipIf(!hayBase)('conductor: registro, documentos y conexión', () => {
       const c = await api.crearConductorHabilitado('3001160004');
       await api.bd.db.execute(
         (await import('drizzle-orm'))
-          .sql`update documento set vence_en = current_date - 1 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
+          .sql`update documento set vence_en = (now() at time zone 'America/Bogota')::date - 1 where tipo = 'soat' and vehiculo_id = ${c.vehiculoId}`,
       );
       const r = await api.post('/v1/conductor/conectar', {}, c.accessToken);
       expect(r.estado).toBe(409);

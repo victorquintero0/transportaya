@@ -61,27 +61,50 @@ documento OpenAPI que genera el backend.
 
 ## App Conductor
 
+Todas las rutas requieren el rol `conductor`. Los errores siguen RFC 9457 con un `codigo` estable.
+
 | Método | Ruta | Descripción |
 |---|---|---|
-| GET / PATCH | `/v1/conductor/yo` | Perfil y estado de habilitación |
-| GET / POST | `/v1/conductor/documentos` | Documentos (la carga usa URL firmada al almacenamiento) |
-| GET / POST | `/v1/conductor/vehiculos` | Vehículos y vehículo activo |
+| GET / PATCH | `/v1/conductor/yo` | Perfil, vehículos, documentos requeridos con su estado, pasos del registro y si puede conectarse (con los motivos si no) |
 | GET | `/v1/catalogo-vehiculos` | Marcas, líneas y años del catálogo, con su categoría |
-| POST | `/v1/conductor/conectar` | Pasar a disponible (valida documentos, deuda y vehículo) |
+| POST | `/v1/conductor/vehiculos` | Registrar vehículo (del catálogo, o manual: queda en revisión) |
+| PUT | `/v1/conductor/vehiculo-activo` | Elegir con cuál trabaja |
+| GET / POST | `/v1/conductor/documentos` | Estado de cada requisito · subir documento (`multipart`; el servidor valida el tipo real del archivo y que lo vigente no se pierda al renovar) |
+| GET | `/v1/conductor/documentos/{id}/archivo` | Ver un documento propio |
+| PUT | `/v1/conductor/cuenta-pago` | Llave Bre-B o cuenta bancaria (se guarda cifrada) |
+| POST | `/v1/conductor/enviar-revision` | Pasar el registro a revisión de cumplimiento |
+| POST | `/v1/conductor/conectar` | Pasar a disponible (valida habilitación, vehículo, deuda y documentos vigentes) |
 | POST | `/v1/conductor/desconectar` | Pasar a desconectado |
-| POST | `/v1/conductor/ofertas/{id}/aceptar` | Aceptar oferta |
-| POST | `/v1/conductor/ofertas/{id}/rechazar` | Rechazar oferta |
-| GET | `/v1/conductor/viaje-actual` | Viaje activo (para recuperar estado al reconectar) |
-| POST | `/v1/conductor/viajes/{id}/llegue` | Marcar llegada (valida distancia) |
-| POST | `/v1/conductor/viajes/{id}/iniciar` | Iniciar viaje (con PIN si aplica) |
-| POST | `/v1/conductor/viajes/{id}/finalizar` | Finalizar con las mediciones del taxímetro (distancia, duración y tiempo detenido); el servidor las verifica y calcula el precio final |
-| POST | `/v1/conductor/viajes/{id}/efectivo-recibido` | Confirmar valor recibido |
-| POST | `/v1/conductor/viajes/{id}/cancelar` | Cancelar con motivo |
-| POST | `/v1/conductor/ubicaciones` | Envío en lote de ubicaciones guardadas sin conexión |
-| GET | `/v1/conductor/ganancias?desde=&hasta=` | Resumen y detalle de ganancias |
-| GET | `/v1/conductor/saldo` · `/v1/conductor/movimientos` | Saldo y libro de movimientos |
-| GET | `/v1/conductor/cierres` · `/v1/conductor/deuda` | Cierres diarios, deuda y datos de la llave de TransporteYa |
+| POST | `/v1/conductor/ubicaciones` | Posiciones en lote (también las guardadas sin conexión); reenviar es seguro |
+| GET | `/v1/conductor/oferta-actual` | Oferta pendiente (recuperar al reconectar) |
+| POST | `/v1/conductor/ofertas/{id}/aceptar` | Aceptar oferta; devuelve el viaje con destino exacto y la tarifa para el taxímetro |
+| POST | `/v1/conductor/ofertas/{id}/rechazar` | Rechazar oferta (sin penalidad, RN-035) |
+| GET | `/v1/conductor/viaje-actual` | Viaje activo (recuperar estado) |
+| GET | `/v1/conductor/viajes` | Historial reciente |
+| POST | `/v1/conductor/viajes/{id}/llegue` | Marcar llegada (solo a menos de 150 m de la recogida) |
+| POST | `/v1/conductor/viajes/{id}/iniciar` | Iniciar viaje (con PIN si el pasajero lo eligió) |
+| POST | `/v1/conductor/viajes/{id}/finalizar` | Finalizar con las mediciones del taxímetro (`distanciaM`, `tiempoDetenidoS`, `duracionS`); el servidor las compara con la trayectoria que recibió, aplica la tarifa y registra el dinero |
+| POST | `/v1/conductor/viajes/{id}/efectivo-recibido` | Confirmar el efectivo recibido (si fue menos, queda deuda del pasajero y un caso de soporte) |
+| POST | `/v1/conductor/viajes/{id}/cancelar` | Cancelar con motivo (pasajero ausente solo tras 5 min en sitio) |
+| POST | `/v1/conductor/viajes/{id}/calificacion` | Calificar al pasajero |
+| POST | `/v1/conductor/sos` | Alerta de emergencia a la torre de control |
+| GET | `/v1/conductor/ganancias?periodo=` | Resumen por `hoy`, `ayer`, `semana`, `mes` (o `desde` y `hasta`) |
+| GET | `/v1/conductor/saldo` · `movimientos` · `cierres` | Saldo y deuda, libro de movimientos, cierres diarios; el saldo incluye la llave a la que se paga la comisión (D-04) |
+| POST | `/v1/conductor/pagos-comision` | Avisar que pagó la comisión (queda en revisión hasta conciliar) |
 | GET / POST | `/v1/conductor/reservas` | Tablero de reservas y tomar una (F2) |
+
+### Modo demostración (`/v1/dev/*`)
+
+Solo existen con `SIMULADOR=true` y la API se niega a arrancar así en producción (D-26).
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | `/v1/dev/conductor/aprobar` | Hace de cumplimiento: aprueba los documentos y habilita al conductor |
+| POST | `/v1/dev/pasajeros/viaje` | Un pasajero de mentira pide un viaje cerca (urbano o ruta nacional); devuelve el PIN |
+| POST | `/v1/dev/pasajeros/viaje/{id}/cancelar` | El pasajero de mentira cancela |
+| POST | `/v1/dev/cierre` | Adelanta el cierre diario de hoy |
+| POST | `/v1/dev/pagos/entregar` | Hace de banco: consigna los pagos pendientes al conductor |
+| POST | `/v1/dev/pagos-comision/simular` | Paga y concilia la comisión adeudada por Bre-B |
 
 ## App Operación
 
@@ -119,7 +142,7 @@ documento OpenAPI que genera el backend.
 
 ## Eventos WebSocket
 
-Conexión Socket.IO autenticada con el mismo token. Cada evento lleva `id`, `ocurrido_en` y, si aplica, `viaje_id`.
+Conexión Socket.IO autenticada con el mismo token de acceso (`auth: { token }`); el servidor responde `listo` o `error:autenticacion`. El conductor entra a su sala y solo recibe lo suyo. Cada evento lleva `id`, `ocurrido_en` y, si aplica, `viaje_id`.
 Los eventos son **avisos**: al reconectar, el cliente vuelve a pedir el estado por REST.
 
 ### Del servidor al cliente
