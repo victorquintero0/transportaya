@@ -270,6 +270,13 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
     const expiraEn = new Date(Date.now() + this.p.ofertaMs);
 
     const creada = await db.transaction(async (tx) => {
+      // Si mientras tanto la operación asignó el viaje a mano (o se canceló), ya no hay nada que ofrecer.
+      const [actual] = await tx
+        .select({ estado: viaje.estado })
+        .from(viaje)
+        .where(eq(viaje.id, v.id))
+        .for('update');
+      if (actual?.estado !== 'buscando_conductor') return null;
       // Solo se ofrece a quien sigue disponible: si otro despacho se le adelantó, se pasa al siguiente.
       const bloqueado = await tx
         .update(conductor)
@@ -632,6 +639,19 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId, estado: 'asignado' });
       this.eventos.aConductor(conductorId, 'conductor:estado', { estadoOperativo: 'en_camino' });
       this.eventos.aPasajero(pasajeroId, 'viaje:estado', { viajeId, estado: 'asignado' });
+      // Una oferta que se haya colado entre el primer barrido y la asignación se retira ahora.
+      const sobrantes = await db
+        .select({ id: oferta.id, conductorId: oferta.conductorId })
+        .from(oferta)
+        .where(and(eq(oferta.viajeId, viajeId), eq(oferta.resultado, 'pendiente')));
+      for (const p of sobrantes) {
+        await this.cerrarOferta(p.id, 'retirada');
+        this.eventos.aConductor(p.conductorId, 'oferta:retirada', {
+          ofertaId: p.id,
+          viajeId,
+          motivo: 'tomada',
+        });
+      }
     } catch (e) {
       void this.intentar(viajeId); // si no se pudo asignar, el despacho automático sigue buscando
       throw e;
