@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { distancia } from '../lib/formato.ts';
+import { distancia } from '@transportaya/ui';
 
 interface Props {
   /** Hacia dónde está el objetivo, en grados desde el norte; `null` si no hay objetivo. */

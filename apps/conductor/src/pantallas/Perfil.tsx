@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Boton } from '../componentes/ui/Boton.tsx';
-import { Chip } from '../componentes/ui/Chip.tsx';
-import { Icono } from '../componentes/ui/Icono.tsx';
-import { Interruptor } from '../componentes/ui/Interruptor.tsx';
-import { Tarjeta } from '../componentes/ui/Tarjeta.tsx';
-import { avisar } from '../estado/avisos.ts';
+import { Boton } from '@transportaya/ui';
+import { Chip } from '@transportaya/ui';
+import { Icono } from '@transportaya/ui';
+import { Interruptor } from '@transportaya/ui';
+import { Tarjeta } from '@transportaya/ui';
+import { avisar } from '@transportaya/ui';
 import { useAjustes, type Tema } from '../estado/ajustes.ts';
 import { useDemo } from '../estado/demo.ts';
-import { useSesion } from '../estado/sesion.ts';
-import { api, auth, mensajeDe } from '../lib/api.ts';
+import { useSesion } from '@transportaya/ui';
+import { api, auth, mensajeDe } from '@transportaya/ui';
 import { usePerfil, useSimulador } from '../lib/consultas.ts';
-import { distancia, duracion, hora, pesos, primerNombre, telefonoLegible } from '../lib/formato.ts';
+import { distancia, duracion, hora, pesos, primerNombre, telefonoLegible } from '@transportaya/ui';
 import type { Perfil as PerfilTipo, ViajeHistorial } from '../lib/tipos.ts';
-import { ding } from '../lib/sonido.ts';
+import { ding } from '@transportaya/ui';
 import { FilaDocumento } from './Registro.tsx';
 
 const CATEGORIA = {

@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { vibrar } from '../../lib/vibrar.ts';
+import { vibrar } from '../lib/vibrar.ts';
 import { Icono } from './Icono.tsx';
 
 interface Props {

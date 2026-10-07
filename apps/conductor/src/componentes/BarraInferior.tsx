@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import { NavLink } from 'react-router-dom';
-import { vibrar } from '../lib/vibrar.ts';
-import { Icono, type NombreIcono } from './ui/Icono.tsx';
+import { vibrar } from '@transportaya/ui';
+import { Icono, type NombreIcono } from '@transportaya/ui';
 
 const PESTANAS: { ruta: string; texto: string; icono: NombreIcono }[] = [
   { ruta: '/', texto: 'Inicio', icono: 'inicio' },

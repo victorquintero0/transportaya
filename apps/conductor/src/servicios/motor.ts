@@ -1,12 +1,12 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { useAjustes } from '../estado/ajustes.ts';
-import { avisar } from '../estado/avisos.ts';
+import { avisar } from '@transportaya/ui';
 import { useJornada } from '../estado/jornada.ts';
-import { api } from '../lib/api.ts';
-import { alerta, desbloquearAudio, iniciarTimbreOferta } from '../lib/sonido.ts';
+import { api } from '@transportaya/ui';
+import { alerta, desbloquearAudio, iniciarTimbreOferta } from '@transportaya/ui';
 import { mantenerPantallaEncendida } from '../lib/pantalla-activa.ts';
 import type { Oferta, Perfil, ViajeActual } from '../lib/tipos.ts';
-import { vibrar } from '../lib/vibrar.ts';
+import { vibrar } from '@transportaya/ui';
 import { detenerEnvio, iniciarEnvio, ponerEnViaje } from './envio-ubicaciones.ts';
 import { apagarGps, encenderGps, simuladorActivo, useUbicacion } from './gps.ts';
 import { conectarEnVivo, desconectarEnVivo } from './tiempo-real.ts';

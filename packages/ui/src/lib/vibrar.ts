@@ -1,4 +1,4 @@
-import { useAjustes } from '../estado/ajustes.ts';
+import { preferencias } from '../estado/preferencias.ts';
 
 type Patron = 'toque' | 'oferta' | 'exito' | 'alerta';
 
@@ -10,7 +10,7 @@ const PATRONES: Record<Patron, number[]> = {
 };
 
 export function vibrar(patron: Patron = 'toque'): void {
-  if (!useAjustes.getState().vibracion) return;
+  if (!preferencias().vibracion) return;
   try {
     navigator.vibrate?.(PATRONES[patron]);
   } catch {

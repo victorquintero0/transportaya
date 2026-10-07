@@ -1,4 +1,4 @@
-import { useAjustes } from '../estado/ajustes.ts';
+import { preferencias } from '../estado/preferencias.ts';
 
 /**
  * Sonidos sintetizados con WebAudio: no hay archivos que descargar y funcionan sin conexión.
@@ -7,7 +7,7 @@ import { useAjustes } from '../estado/ajustes.ts';
 let ctx: AudioContext | null = null;
 
 function contexto(): AudioContext | null {
-  if (!useAjustes.getState().sonido) return null;
+  if (!preferencias().sonido) return null;
   try {
     ctx ??= new AudioContext();
     if (ctx.state === 'suspended') void ctx.resume();

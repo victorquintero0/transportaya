@@ -1,14 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
-import { Anillo } from '../componentes/ui/Anillo.tsx';
-import { Boton } from '../componentes/ui/Boton.tsx';
-import { Chip } from '../componentes/ui/Chip.tsx';
-import { Icono } from '../componentes/ui/Icono.tsx';
-import { avisar } from '../estado/avisos.ts';
-import { api, mensajeDe } from '../lib/api.ts';
-import { distancia, duracion, pesos } from '../lib/formato.ts';
-import { ding } from '../lib/sonido.ts';
+import { Anillo } from '@transportaya/ui';
+import { Boton } from '@transportaya/ui';
+import { Chip } from '@transportaya/ui';
+import { Icono } from '@transportaya/ui';
+import { avisar } from '@transportaya/ui';
+import { api, mensajeDe } from '@transportaya/ui';
+import { distancia, duracion, pesos } from '@transportaya/ui';
+import { ding } from '@transportaya/ui';
 import type { Oferta, ViajeActual } from '../lib/tipos.ts';
 import { quitarOferta, tomarViaje } from '../servicios/motor.ts';
 

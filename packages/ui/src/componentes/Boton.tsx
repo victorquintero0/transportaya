@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 import type { ReactNode } from 'react';
-import { toque } from '../../lib/sonido.ts';
-import { vibrar } from '../../lib/vibrar.ts';
+import { toque } from '../lib/sonido.ts';
+import { vibrar } from '../lib/vibrar.ts';
 import { Icono, type NombreIcono } from './Icono.tsx';
 
 type Variante = 'primario' | 'secundario' | 'peligro' | 'fantasma' | 'oscuro';

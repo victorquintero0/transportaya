@@ -1,4 +1,4 @@
-import { api, ErrorApi } from '../lib/api.ts';
+import { api, ErrorApi } from '@transportaya/ui';
 import { alRecibirPosicion, type Posicion } from './gps.ts';
 import { socketEnVivo } from './tiempo-real.ts';
 

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useAvisos } from '../../estado/avisos.ts';
+import { useAvisos } from '../estado/avisos.ts';
 import { Icono } from './Icono.tsx';
 
 export function Avisos() {

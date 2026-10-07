@@ -1,12 +1,13 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'motion/react';
 import { useEffect } from 'react';
+import { useTemaDocumento } from '@transportaya/ui';
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { BarraInferior } from './componentes/BarraInferior.tsx';
-import { Avisos } from './componentes/ui/Avisos.tsx';
+import { Avisos } from '@transportaya/ui';
 import { useAjustes } from './estado/ajustes.ts';
 import { useJornada } from './estado/jornada.ts';
-import { useSesion } from './estado/sesion.ts';
+import { useSesion } from '@transportaya/ui';
 import { usePerfil } from './lib/consultas.ts';
 import { PruebaPwa } from './diagnostico/PruebaPwa.tsx';
 import { Entrar } from './pantallas/Entrar.tsx';
@@ -18,26 +19,6 @@ import { Perfil } from './pantallas/Perfil.tsx';
 import { Registro } from './pantallas/Registro.tsx';
 import { Resumen } from './pantallas/Resumen.tsx';
 import { iniciarMotor } from './servicios/motor.ts';
-
-/** Aplica el tema elegido (o el del sistema) al documento. */
-function useTema(): void {
-  const tema = useAjustes((s) => s.tema);
-  useEffect(() => {
-    const aplicar = () => {
-      const claro =
-        tema === 'claro' ||
-        (tema === 'auto' && window.matchMedia('(prefers-color-scheme: light)').matches);
-      document.documentElement.dataset['tema'] = claro ? 'claro' : 'oscuro';
-      document
-        .querySelector('meta[name="theme-color"]')
-        ?.setAttribute('content', claro ? '#f6f8f6' : '#101010');
-    };
-    aplicar();
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    mq.addEventListener('change', aplicar);
-    return () => mq.removeEventListener('change', aplicar);
-  }, [tema]);
-}
 
 /** Pantalla principal con el motor de la jornada encendido: solo existe con la sesión iniciada y el conductor habilitado. */
 function Jornada() {
@@ -88,7 +69,7 @@ function Cargando() {
 }
 
 export function App() {
-  useTema();
+  useTemaDocumento(useAjustes((s) => s.tema));
   const token = useSesion((s) => s.accessToken);
   return (
     <>

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { useSesion } from '../estado/sesion.ts';
-import { api } from './api.ts';
+import { useSesion } from '@transportaya/ui';
+import { api } from '@transportaya/ui';
 import type { Perfil } from './tipos.ts';
 
 export function usePerfil() {

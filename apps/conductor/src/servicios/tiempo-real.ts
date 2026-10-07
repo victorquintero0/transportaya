@@ -1,6 +1,6 @@
 import { io, type Socket } from 'socket.io-client';
-import { api } from '../lib/api.ts';
-import { useSesion } from '../estado/sesion.ts';
+import { api } from '@transportaya/ui';
+import { useSesion } from '@transportaya/ui';
 import type { Oferta } from '../lib/tipos.ts';
 
 /** Eventos que manda el servidor (docs/10). */

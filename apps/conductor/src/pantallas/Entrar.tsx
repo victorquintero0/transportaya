@@ -2,14 +2,14 @@ import { useMutation } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Boton } from '../componentes/ui/Boton.tsx';
-import { Icono } from '../componentes/ui/Icono.tsx';
-import { Logo } from '../componentes/ui/Logo.tsx';
-import { useSesion } from '../estado/sesion.ts';
-import { auth, mensajeDe } from '../lib/api.ts';
-import { telefonoLegible } from '../lib/formato.ts';
-import { ding } from '../lib/sonido.ts';
-import { vibrar } from '../lib/vibrar.ts';
+import { Boton } from '@transportaya/ui';
+import { Icono } from '@transportaya/ui';
+import { Logo } from '@transportaya/ui';
+import { useSesion } from '@transportaya/ui';
+import { auth, mensajeDe } from '@transportaya/ui';
+import { telefonoLegible } from '@transportaya/ui';
+import { ding } from '@transportaya/ui';
+import { vibrar } from '@transportaya/ui';
 
 /** "300 123 4567" mientras se escribe */
 function formatear(digitos: string): string {

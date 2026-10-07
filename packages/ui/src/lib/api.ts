@@ -1,5 +1,12 @@
 import { useSesion } from '../estado/sesion.ts';
 
+export type AppCliente = 'conductor' | 'pasajero';
+let appActual: AppCliente = 'conductor';
+/** Cada app dice quién es al arrancar: el servidor entrega el rol según la app con la que se inició sesión. */
+export function configurarApi(o: { app: AppCliente }): void {
+  appActual = o.app;
+}
+
 /** Error de la API con el código estable que devuelve el servidor (docs/10). */
 export class ErrorApi extends Error {
   constructor(
@@ -128,13 +135,13 @@ export const auth = {
     api.post<InicioSesion>('/v1/auth/otp/verificar', {
       telefono,
       codigo,
-      app: 'conductor',
+      app: appActual,
       dispositivo: navigator.userAgent.slice(0, 120),
     }),
   salir: () => api.post('/v1/auth/salir'),
 };
 
-/** Mensaje amable para mostrar al conductor ante cualquier error. */
+/** Mensaje amable para mostrar ante cualquier error. */
 export function mensajeDe(error: unknown): string {
   if (error instanceof ErrorApi) return error.detalle;
   if (error instanceof TypeError) return 'No hay conexión con TransporteYa. Revisa tu internet.';

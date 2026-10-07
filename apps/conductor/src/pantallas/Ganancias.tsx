@@ -1,27 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'motion/react';
 import { useState } from 'react';
-import { Boton } from '../componentes/ui/Boton.tsx';
-import { Chip } from '../componentes/ui/Chip.tsx';
-import { Hoja } from '../componentes/ui/Hoja.tsx';
-import { Icono, type NombreIcono } from '../componentes/ui/Icono.tsx';
-import { Numero } from '../componentes/ui/Numero.tsx';
-import { Tarjeta } from '../componentes/ui/Tarjeta.tsx';
-import { avisar } from '../estado/avisos.ts';
-import { api, mensajeDe } from '../lib/api.ts';
-import { celebrar } from '../lib/confeti.ts';
+import { Boton } from '@transportaya/ui';
+import { Chip } from '@transportaya/ui';
+import { Hoja } from '@transportaya/ui';
+import { Icono, type NombreIcono } from '@transportaya/ui';
+import { Numero } from '@transportaya/ui';
+import { Tarjeta } from '@transportaya/ui';
+import { avisar } from '@transportaya/ui';
+import { api, mensajeDe } from '@transportaya/ui';
+import { celebrar } from '@transportaya/ui';
 import { useSimulador } from '../lib/consultas.ts';
-import {
-  diaCorto,
-  diaLargo,
-  distancia,
-  duracion,
-  hora,
-  pesos,
-  pesosCorto,
-} from '../lib/formato.ts';
+import { diaCorto, diaLargo, distancia, duracion, hora, pesos, pesosCorto } from '@transportaya/ui';
 import type { Cierre, Movimiento, Saldo } from '../lib/tipos.ts';
-import { ding } from '../lib/sonido.ts';
+import { ding } from '@transportaya/ui';
 import { useGanancias } from './Inicio.tsx';
 
 type Periodo = 'hoy' | 'ayer' | 'semana' | 'mes';

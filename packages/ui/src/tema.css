@@ -7,6 +7,8 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/nunito';
 
+@source './componentes';
+
 @theme {
   --font-sans: 'Nunito Variable', ui-rounded, 'Segoe UI', system-ui, sans-serif;
 
@@ -123,4 +125,15 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* El logo tiene dos versiones: la del tema oscuro y la del claro. Solo se ve la que corresponde. */
+.logo-sobre-claro {
+  display: none;
+}
+[data-tema='claro'] .logo-sobre-claro {
+  display: inline-block;
+}
+[data-tema='claro'] .logo-sobre-oscuro {
+  display: none;
 }
