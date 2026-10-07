@@ -50,7 +50,9 @@ flowchart LR
 | API del pasajero: lugares, cotización, viaje, seguimiento en vivo, cancelación, tarjetas, deuda, propina, chat, enlace compartido, SOS y soporte | Hecho, con 30 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
 | App del pasajero completa, con conductores simulados para probarla | Hecho ([docs/04](04-app-pasajero.md)) |
 | Componentes compartidos de las apps (`packages/ui`) | Hecho |
-| Usuarios internos con doble factor | Pendiente |
+| Usuarios internos con doble factor (correo, contraseña y TOTP), roles y permisos | Hecho (D-31, [ADR-0008](adr/0008-app-operacion-web-con-segundo-factor.md)) |
+| API de la App Operación: torre, viajes, conductores, tarifas, finanzas, soporte, reportes, usuarios, auditoría y parámetros | Hecho, con 56 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
+| App Operación de escritorio, con prueba de punta a punta con navegador real | Hecho ([docs/06](06-app-operacion.md)); alcance en D-32 |
 | Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |
 | Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |

@@ -27,7 +27,7 @@ export default tseslint.config(
   },
   {
     // Las pruebas manejan respuestas JSON de forma dinámica.
-    files: ['**/*.test.ts', '**/test/**/*.ts'],
+    files: ['**/*.test.ts', '**/test/**/*.ts', 'apps/e2e/tests/**/*.ts'],
     rules: { '@typescript-eslint/no-explicit-any': 'off' },
   },
   prettier,

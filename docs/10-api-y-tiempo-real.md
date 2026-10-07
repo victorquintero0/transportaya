@@ -33,7 +33,9 @@ documento OpenAPI que genera el backend.
 | POST | `/v1/auth/otp/verificar` | Verifica el código y devuelve tokens |
 | POST | `/v1/auth/refrescar` | Rota el *refresh token* |
 | POST | `/v1/auth/salir` | Revoca la sesión |
-| POST | `/v1/op/auth/ingresar` | Ingreso de usuarios internos (correo + contraseña + TOTP) |
+| POST | `/v1/op/auth/ingresar` | Ingreso de usuarios internos: correo + contraseña + código TOTP (RFC 6238). Un código no sirve dos veces; 5 intentos fallidos bloquean el correo 15 min |
+| POST | `/v1/op/auth/enrolar` | Primer ingreso: con correo y contraseña entrega el secreto TOTP para la app de autenticación. Solo si el segundo factor aún no está activo |
+| GET | `/v1/op/auth/demo` | Cuentas de demostración (una por rol) con su código vigente. **Solo existe con `SIMULADOR=true`** |
 
 ## App Pasajero
 
@@ -119,30 +121,49 @@ Solo existen con `SIMULADOR=true` y la API se niega a arrancar así en producci�
 
 ## App Operación
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| GET | `/v1/op/flota` | Foto actual de conductores en línea (al abrir la torre de control) |
-| GET | `/v1/op/viajes` · `/v1/op/viajes/{id}` | Búsqueda y detalle con eventos y ofertas |
-| GET | `/v1/op/viajes/{id}/recorrido` | Trayectoria GPS del viaje |
-| POST | `/v1/op/viajes/{id}/despachar` | Despacho manual a un conductor |
-| POST | `/v1/op/viajes/{id}/cancelar` | Cancelar con motivo |
-| POST | `/v1/op/viajes/{id}/ajustar-precio` | Ajuste de tarifa con motivo |
-| GET / PATCH | `/v1/op/alertas` · `/v1/op/alertas/{id}` | Tomar y cerrar alertas |
-| GET | `/v1/op/conductores` · `/v1/op/conductores/{id}` | Búsqueda y ficha |
-| POST | `/v1/op/documentos/{id}/aprobar` · `/rechazar` | Revisión de documentos |
-| POST | `/v1/op/conductores/{id}/suspender` · `/bloquear` · `/reactivar` | Cambios de estado |
-| GET | `/v1/op/pasajeros` · `/v1/op/pasajeros/{id}` | Búsqueda y ficha |
-| GET / POST | `/v1/op/tarifas` · POST `/v1/op/tarifas/{id}/publicar` | Versiones de tarifa |
-| POST | `/v1/op/tarifas/simular` | Simulador de precio |
-| GET / POST / PATCH | `/v1/op/zonas` | Zonas y geocercas |
-| PUT | `/v1/op/dinamica/{zona}` | Fijar o desactivar dinámica manual |
-| GET / POST | `/v1/op/cierres` · POST `/{id}/aprobar` | Cierre diario por conductor |
-| POST | `/v1/op/pagos-conductores` | Ejecutar o registrar pagos por llave / Bre-B |
-| POST | `/v1/op/conductores/{id}/pagos-comision` · `/habilitar` · `/ajustes` | Conciliar pago de comisión, habilitar manualmente y ajustar saldo |
-| GET / PATCH | `/v1/op/tickets` · `/v1/op/tickets/{id}` | Bandeja de soporte |
-| POST | `/v1/op/pagos/{id}/reembolsos` | Reembolso |
-| GET | `/v1/op/reportes/{tipo}?formato=csv` | Reportes de tiempos y movimientos |
-| GET | `/v1/op/auditoria` | Consulta de auditoría |
+Todas las rutas exigen sesión de personal interno (`rol: interno`) y un **permiso** concreto, que sale de la matriz de
+[docs/02](02-actores-roles-y-glosario.md#roles-internos-app-operación) implementada en `@transportaya/dominio` (`permisos.ts`). Los roles de la
+persona se leen de la base **en cada petición**: quitarlos o desactivar la cuenta rige de inmediato. Toda acción que cambia datos
+guarda su registro en la auditoría dentro de la misma transacción. Las listas aceptan `limite` (máx. 200) y `desplazar`.
+
+| Método | Ruta | Permiso | Descripción |
+|---|---|---|---|
+| GET | `/v1/op/yo` | sesión interna | Nombre, roles y permisos de quien ingresó |
+| POST | `/v1/op/yo/contrasena` | sesión interna | Cambia la contraseña propia |
+| GET | `/v1/op/torre` | `torre.ver` | Foto de la operación: KPIs, flota con posición, viajes activos con semáforo, sin asignar y alertas |
+| GET | `/v1/op/alertas?estado=` | `torre.ver` | Alertas, las críticas primero |
+| POST | `/v1/op/alertas/{id}/tomar` · `/cerrar` | `torre.operar` | Tomar una alerta; cerrarla con nota (solo quien la tomó) |
+| GET | `/v1/op/viajes?q=&estado=&desde=&hasta=` · `/{id}` · `/{id}/recorrido` | `viajes.ver` | Búsqueda, detalle (línea de tiempo, ofertas, pagos, chat, tickets, alertas) y posiciones del conductor |
+| POST | `/v1/op/viajes/{id}/despachar` | `viajes.despachar` | Despacho manual a un conductor disponible (solo mientras el viaje busca conductor) |
+| POST | `/v1/op/viajes/{id}/reasignar` · `/cancelar` | `viajes.despachar` | Reasignar (a un conductor o a búsqueda automática) y cancelar, siempre con motivo |
+| POST | `/v1/op/viajes/{id}/ajustar-precio` | `viajes.ajustar_tarifa` | Corrige el precio de un viaje finalizado; la diferencia del conductor queda como ajuste de saldo pendiente |
+| GET | `/v1/op/conductores?estado=&q=` · `/{id}` · `/v1/op/vencimientos` | `conductores.ver` | Cola de revisión, ficha completa y documentos por vencer |
+| GET | `/v1/op/documentos/{id}/archivo` | `conductores.aprobar` | Imagen del documento (queda en la auditoría) |
+| POST | `/v1/op/documentos/{id}/aprobar` · `/rechazar` | `conductores.aprobar` | Revisión de documentos; rechazar exige motivo |
+| POST | `/v1/op/conductores/{id}/habilitar` · `/rechazar-registro` | `conductores.aprobar` | Aprobar el registro (con todos los documentos aprobados) o devolverlo |
+| POST | `/v1/op/conductores/{id}/suspender` · `/reactivar` | `conductores.suspender` | Suspensión manual (no la levanta la revisión diaria) y reactivación |
+| POST | `/v1/op/conductores/{id}/bloquear` | `conductores.bloquear` | Bloqueo: cierra sus sesiones |
+| GET | `/v1/op/pasajeros` · `/{id}` | `pasajeros.ver` | Búsqueda y ficha |
+| POST | `/v1/op/pasajeros/{id}/bloquear` · `/desbloquear` | `pasajeros.bloquear` | Con motivo; no se bloquea a quien tiene un viaje activo |
+| GET | `/v1/op/tarifas` · POST `/v1/op/tarifas` | `tarifas.ver` · `tarifas.editar` | Versiones con sus recargos; crear una versión (se puede programar a futuro) |
+| POST | `/v1/op/tarifas/simular` | `tarifas.ver` | Simulador con la lógica de la cotización, con la versión vigente o una futura |
+| GET / POST / DELETE | `/v1/op/festivos` | `tarifas.ver` · `tarifas.editar` | Calendario de festivos |
+| GET / PATCH | `/v1/op/rutas-fijas` | `tarifas.ver` · `tarifas.editar` | Rutas con tarifa fija; cambiar el valor crea una vigencia nueva |
+| GET / POST / PATCH | `/v1/op/zonas` | `tarifas.ver` · `tarifas.editar` | Zonas con su polígono |
+| GET / POST | `/v1/op/dinamica` · POST `/{id}/desactivar` | `tarifas.ver` · `dinamica.activar` | Dinámica manual por zona (hasta 12 h, entre ×1,05 y ×3) |
+| GET | `/v1/op/finanzas/resumen` · `/cierres` · `/cobranza` · `/conductores/{id}/movimientos` | `finanzas.ver` | Cierres del día, cobranza y libro de movimientos |
+| POST | `/v1/op/finanzas/cierres/ejecutar` | `finanzas.operar` | Corre el cierre de un día (idempotente por conductor) |
+| POST | `/v1/op/finanzas/pagos-comision/{id}/conciliar` · `/rechazar` | `finanzas.operar` | Conciliar el pago de comisión (acredita y habilita) o rechazarlo |
+| POST | `/v1/op/finanzas/conductores/{id}/habilitar` | `finanzas.operar` | Habilitar a mano a quien está bloqueado por deuda, con motivo |
+| GET / POST | `/v1/op/finanzas/pagos-conductor` · `/{id}/enviar` · `/confirmar` · `/rechazar` | `finanzas.ver` · `finanzas.operar` | Pagos a conductores por llave o Bre-B |
+| GET / POST | `/v1/op/finanzas/ajustes` · `/{id}/aprobar` · `/rechazar` | `finanzas.ver` · `finanzas.proponer_ajuste` · `finanzas.aprobar_ajuste` | Ajustes de saldo con **doble aprobación**: quien propone no aprueba |
+| GET / POST / PATCH | `/v1/op/tickets` · `/{id}` · `/{id}/mensajes` | `tickets.ver` · `tickets.gestionar` | Bandeja con plazo (SLA), respuestas y notas internas |
+| POST | `/v1/op/tickets/{id}/reembolso` | `reembolsos.crear` | Reembolso; soporte hasta su límite, por encima finanzas o supervisión |
+| GET | `/v1/op/reportes/tiempos` · `/viajes.csv` · `/tiempos.csv` | `reportes.ver` | Tiempos y movimientos y exportación a CSV (queda en la auditoría) |
+| GET / POST / PATCH | `/v1/op/usuarios` · `/{id}` | `usuarios.ver` · `usuarios.gestionar` | Personal interno, roles y estado |
+| POST | `/v1/op/usuarios/{id}/reiniciar-segundo-factor` · `/restablecer-contrasena` | `usuarios.gestionar` | Para quien perdió su dispositivo o su contraseña; cierra sus sesiones |
+| GET | `/v1/op/auditoria?accion=&entidad=&desde=` | `usuarios.ver` | Consulta del registro de auditoría |
+| GET / PUT / DELETE | `/v1/op/parametros` · `/{clave}` | `config.ver` · `config.editar` | Parámetros operativos; los de despacho rigen en caliente |
 
 ## Integraciones entrantes
 
@@ -166,9 +187,8 @@ Los eventos son **avisos**: al reconectar, el cliente vuelve a pedir el estado p
 | `oferta:nueva` | Conductor | Datos de la oferta y hora de expiración |
 | `oferta:retirada` | Conductor | El pasajero canceló o expiró |
 | `conductor:estado` | Conductor | Suspensión, sin señal, bloqueo o habilitación por deuda |
-| `flota:resumen` | Operación | Posiciones y estados de la flota cada `[2 s]` |
-| `alerta:nueva` · `alerta:actualizada` | Operación | Alertas automáticas y SOS |
-| `operacion:indicadores` | Operación | KPIs del momento cada `[10 s]` |
+| `torre:cambio` | Operación | Algo cambió en la operación (viaje, oferta, conductor, alerta); se agrupa a como mucho un aviso por segundo y la pantalla vuelve a pedir `/v1/op/torre` |
+| `alerta:nueva` · `alerta:actualizada` | Operación | Alertas automáticas y SOS (el servidor las detecta cada 2 s) |
 
 ### Del cliente al servidor
 

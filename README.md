@@ -26,7 +26,7 @@ apps/
   api/          Backend NestJS: API REST, WebSocket y tareas programadas
   pasajero/     PWA de pasajeros (completa)
   conductor/    PWA de conductores (completa) e incluye la prueba técnica del ADR-0003 en /diagnostico
-  operacion/    App web de operación
+  operacion/    App web de operación, de escritorio (completa en sus módulos principales: docs/13, D-32)
   e2e/          Pruebas de punta a punta con un navegador real (Playwright)
 packages/
   dominio/      Reglas de negocio compartidas: estados del viaje, tarifa, comisión, cierre diario y taxímetro
@@ -58,7 +58,7 @@ pnpm --filter @transportaya/db semilla     # Manizales: tarifa, 193 rutas y cat�
 pnpm --filter @transportaya/api dev        # API en http://localhost:3000/v1/salud
 pnpm --filter @transportaya/pasajero dev   # http://localhost:5171
 pnpm --filter @transportaya/conductor dev  # http://localhost:5172
-pnpm --filter @transportaya/operacion dev  # http://localhost:5173
+pnpm --filter @transportaya/operacion dev  # http://localhost:5173 (en modo demostración, entra con un clic por rol)
 ```
 
 ### Probar las apps (modo demostración)
@@ -66,12 +66,14 @@ pnpm --filter @transportaya/operacion dev  # http://localhost:5173
 Con la API y las apps en marcha, abre el conductor en <http://localhost:5172> y el pasajero en <http://localhost:5171>, en el navegador (idealmente con el modo móvil de las herramientas
 de desarrollo). Aún no hay proveedor de OTP: la app muestra el código para usarlo con un toque. En **Perfil → Modo demostración**
 hay un pasajero de mentira, un GPS simulado y atajos para el cierre diario y los bancos. En la app del pasajero, **Cuenta → Modo demostración** pone conductores de mentira que atienden de verdad tus viajes, y al agregar una tarjeta hay una de prueba que el banco rechaza. El camino completo (registro → conexión →
-oferta → viaje con taxímetro → cobro → pago de comisión) y el del pasajero (pedir → seguir → pagar → calificar) los recorren las pruebas de punta a punta:
+oferta → viaje con taxímetro → cobro → pago de comisión), el del pasajero (pedir → seguir → pagar → calificar) y el de operación (aprobar un registro → despachar a mano → alerta SOS → cierre y cobranza → soporte → tarifas → auditoría) los recorren las pruebas de punta a punta:
 
 ```bash
 # necesita PostgreSQL con PostGIS (como las pruebas de la API) y un Chromium; deja capturas en apps/e2e/capturas
 pnpm --filter @transportaya/e2e e2e
 ```
+
+La **App Operación** (<http://localhost:5173>) tiene en el modo demostración una cuenta por rol (monitor, soporte, cumplimiento, financiero, supervisor y administrador) con las que se entra con un clic; cada una ve solo lo que su rol permite. En producción el ingreso es correo, contraseña y código de una app de autenticación ([ADR-0008](docs/adr/0008-app-operacion-web-con-segundo-factor.md)); la primera cuenta sale de `ADMIN_INICIAL_EMAIL` y `ADMIN_INICIAL_CONTRASENA`.
 
 ## Documentación
 

@@ -13,6 +13,7 @@ que reemplaza al anterior y se actualiza el estado del viejo.
 | [0005](0005-esquema-con-drizzle-e-integridad-en-la-base.md) | Esquema con Drizzle y reglas de integridad en la base de datos | Aceptada |
 | [0006](0006-app-conductor-react-y-modo-demostracion.md) | App del conductor con React y modo demostración | Aceptada |
 | [0007](0007-app-pasajero-mapa-esquematico-y-buscador-local.md) | App del pasajero: mapa esquemático y buscador local mientras llega OpenStreetMap | Aceptada |
+| [0008](0008-app-operacion-web-con-segundo-factor.md) | App Operación web de escritorio con doble factor y permisos por rol | Aceptada |
 
 ## Plantilla
 

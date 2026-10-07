@@ -1,6 +1,6 @@
 import { useSesion } from '../estado/sesion.ts';
 
-export type AppCliente = 'conductor' | 'pasajero';
+export type AppCliente = 'conductor' | 'pasajero' | 'operacion';
 let appActual: AppCliente = 'conductor';
 /** Cada app dice quién es al arrancar: el servidor entrega el rol según la app con la que se inició sesión. */
 export function configurarApi(o: { app: AppCliente }): void {
@@ -117,7 +117,7 @@ export const api = {
   post: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('POST', ruta, cuerpo),
   put: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('PUT', ruta, cuerpo),
   patch: <T>(ruta: string, cuerpo?: unknown) => pedir<T>('PATCH', ruta, cuerpo),
-  delete: <T = void>(ruta: string) => pedir<T>('DELETE', ruta),
+  delete: <T = void>(ruta: string, cuerpo?: unknown) => pedir<T>('DELETE', ruta, cuerpo),
   postForm: <T>(ruta: string, form: FormData) => pedir<T>('POST', ruta, undefined, form),
 };
 
@@ -136,7 +136,8 @@ export const auth = {
     api.post<InicioSesion>('/v1/auth/otp/verificar', {
       telefono,
       codigo,
-      app: appActual,
+      // la App Operación entra por /v1/op/auth/ingresar, no por OTP
+      app: appActual === 'operacion' ? 'conductor' : appActual,
       dispositivo: navigator.userAgent.slice(0, 120),
     }),
   salir: () => api.post('/v1/auth/salir'),
