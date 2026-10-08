@@ -261,7 +261,21 @@ El simulador de la App Operación y las pruebas automáticas del paquete `domini
 - **RN-083** Si a `[30 min]` del servicio no hay conductor, se despacha automáticamente como un viaje inmediato
   con prioridad. Si a `[15 min]` sigue sin conductor, se genera una **alerta alta** a la operación.
 - **RN-084** El pasajero puede cancelar gratis hasta `[60 min]` antes; después aplica la tarifa de cancelación.
-- **RN-085** Se recuerda al pasajero `[24 h]` y `[1 h]` antes, y al conductor `[1 h]` y `[15 min]` antes.
+- **RN-085** Se recuerda al pasajero `[24 h]` y `[1 h]` antes, y al conductor `[1 h]` y `[15 min]` antes. Los recordatorios
+  son notificaciones *push*, que siguen pendientes (necesitan un proveedor): mientras tanto la reserva se ve en «Mis
+  reservas» y en el tablero del conductor.
+- **RN-086** Una reserva se cotiza con los recargos y la tarifa **de la hora del servicio** (por ejemplo, el recargo
+  nocturno si es de madrugada), sin dinámica y sin conductores cerca. Cada pasajero puede tener hasta `[5]` reservas
+  abiertas y no puede reservar dos servicios con menos de `[60 min]` entre sí.
+- **RN-087** Un conductor no puede tener dos reservas con menos de `[90 min]` entre sí, y mientras tiene una reserva
+  confirmada a menos de `[45 min]` no recibe viajes inmediatos. Puede **soltar** una reserva tomada hasta `[120 min]`
+  antes. Si la toma cuando falta menos de `[60 min]` queda confirmada de una vez.
+- **RN-088** La reserva confirmada **tiene prioridad**: a la hora del despacho se le asigna directamente a ese conductor
+  (sin oferta). Si no la cumple, se busca otro conductor y se alerta a la operación. Si nadie la tomó, a los `[30 min]`
+  se busca conductor como un viaje inmediato, pero con un presupuesto de búsqueda más largo (hasta `[10 min]` después de la hora).
+- **RN-089** Si el pasajero cancela con menos de `[60 min]`, paga la tarifa de cancelación: va al conductor con reserva
+  confirmada (menos la comisión) y, si no había, a la empresa. La operación puede asignar, cambiar o liberar el conductor
+  de una reserva con motivo (queda auditado).
 
 ## 10. Rutas nacionales, intermunicipales y aeropuerto (MVP)
 

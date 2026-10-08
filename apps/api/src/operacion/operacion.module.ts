@@ -8,6 +8,7 @@ import { AuthOperacionService } from './auth-op.service.js';
 import { CatalogosOperacionController } from './catalogos-op.controller.js';
 import { CatalogosOperacionService } from './catalogos-op.service.js';
 import { ConductoresOperacionService } from './conductores-op.service.js';
+import { ReservasOperacionController } from './reservas-op.controller.js';
 import { PasajerosOperacionService } from './pasajeros-op.service.js';
 import { PersonasOperacionController } from './personas-op.controller.js';
 import { TarifasOperacionController } from './tarifas-op.controller.js';
@@ -30,6 +31,7 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
   imports: [AuthModule, ConductorModule, ViajesModule, DineroModule],
   controllers: [
     CatalogosOperacionController,
+    ReservasOperacionController,
     AuthOperacionController,
     UsuariosOperacionController,
     TorreOperacionController,

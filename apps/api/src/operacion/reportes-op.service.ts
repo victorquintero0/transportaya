@@ -326,6 +326,24 @@ export class ReportesOperacionService {
       if (ambar >= rojo)
         throw solicitudInvalida('El tiempo de ámbar debe ser menor que el de rojo.');
     }
+    // Los plazos de una reserva deben ir en orden: confirmar, despachar, avisar (RN-082, RN-083).
+    if (
+      clave === 'reservas.confirmar_min' ||
+      clave === 'reservas.despacho_min' ||
+      clave === 'reservas.alerta_min'
+    ) {
+      const actual = await this.parametros.reservas();
+      const p = {
+        confirmar: actual.confirmarMin,
+        despacho: actual.despachoMin,
+        alerta: actual.alertaMin,
+        [clave.slice(9, -4)]: valor,
+      } as { confirmar: number; despacho: number; alerta: number };
+      if (!(p.alerta < p.despacho && p.despacho < p.confirmar))
+        throw solicitudInvalida(
+          'Los plazos deben ir en orden: la alerta a la operación, luego el despacho automático y antes de todo, la confirmación del conductor.',
+        );
+    }
     const antes = await this.parametros.numero(clave as ClaveParametro);
     await this.bd.db.transaction(async (tx) => {
       await tx

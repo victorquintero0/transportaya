@@ -21,6 +21,7 @@ import { Inicio } from './pantallas/Inicio.tsx';
 import { Pagos } from './pantallas/Pagos.tsx';
 import { ViajeDetalle } from './pantallas/ViajeDetalle.tsx';
 import { ViajeEnCurso } from './pantallas/ViajeEnCurso.tsx';
+import { Reservas } from './pantallas/Reservas.tsx';
 import { Viajes } from './pantallas/Viajes.tsx';
 import { iniciarMotor } from './servicios/motor.ts';
 
@@ -135,6 +136,7 @@ export function App() {
         <Route element={<Protegida />}>
           <Route index element={<Inicio />} />
           <Route path="viajes" element={<Viajes />} />
+          <Route path="reservas" element={<Reservas />} />
           <Route path="cuenta" element={<Cuenta />} />
           <Route path="viajes/:id" element={<ViajeDetalle />} />
           <Route path="destino" element={<BuscarDestino />} />

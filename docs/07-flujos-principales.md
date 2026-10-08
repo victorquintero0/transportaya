@@ -7,7 +7,7 @@ El **estado del viaje** y el **estado del pago** se manejan por separado: un via
 
 ```mermaid
 stateDiagram-v2
-    [*] --> programado: reserva (F2)
+    [*] --> programado: reserva
     [*] --> buscando_conductor: viaje inmediato
     programado --> buscando_conductor: llega la hora de despacho
     buscando_conductor --> asignado: conductor acepta
@@ -176,7 +176,12 @@ sequenceDiagram
     OP->>OP: Protocolo: autoridades, seguimiento, cierre con nota
 ```
 
-## 7. Viaje programado (F2)
+## 7. Viaje programado
+
+Una reserva es un viaje en estado `programado` con `programado_para`; sigue siendo `inmediato` o `intermunicipal` en
+su tipo de servicio. Cada 30 s una tarea la mantiene: la **activa** (`buscando_conductor`) a la hora de despacho, la
+**libera** si su conductor no confirmó a tiempo y **alerta** si a `[15 min]` sigue sin conductor.
+
 
 ```mermaid
 flowchart TD

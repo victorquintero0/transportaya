@@ -5,6 +5,7 @@ import { Icono, type NombreIcono } from '@transportaya/ui';
 
 const PESTANAS: { ruta: string; texto: string; icono: NombreIcono }[] = [
   { ruta: '/', texto: 'Inicio', icono: 'inicio' },
+  { ruta: '/reservas', texto: 'Reservas', icono: 'reloj' },
   { ruta: '/ganancias', texto: 'Ganancias', icono: 'billetera' },
   { ruta: '/perfil', texto: 'Perfil', icono: 'usuario' },
 ];

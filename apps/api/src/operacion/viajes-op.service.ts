@@ -492,6 +492,11 @@ export class ViajesOperacionService {
         estadoOperativo: 'disponible',
       });
     }
+    if (previo.reservaConductorId && previo.reservaConductorId !== previo.conductorId)
+      this.eventos.aConductor(previo.reservaConductorId, 'reserva:cambio', {
+        viajeId,
+        motivo: 'cancelada',
+      });
     this.eventos.aPasajero(previo.pasajeroId, 'viaje:estado', {
       viajeId,
       estado: 'cancelado',

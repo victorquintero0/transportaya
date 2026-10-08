@@ -30,7 +30,7 @@
 | PAS-22 | Elegir categoría con precio estimado, ETA de recogida y aviso de dinámica | MVP |
 | PAS-23 | Nota para el conductor (por ejemplo, "portería 2") | MVP |
 | PAS-24 | Confirmar viaje y ver el estado de la búsqueda de conductor | MVP |
-| PAS-25 | Programar viaje para una fecha y hora futura | F2 |
+| PAS-25 | Programar viaje para una fecha y hora futura (entre 45 min y 7 días), con precio cerrado; ver, abrir y cancelar mis reservas | MVP · hecho |
 | PAS-26 | Viaje intermunicipal o nacional: elegir destino de la lista de rutas con tarifa fija, `solo ida` o `ida y vuelta`, con el valor visible antes de confirmar | MVP |
 | **Durante el viaje** | | |
 | PAS-30 | Ver conductor asignado: nombre, foto, calificación, vehículo, color y **placa** | MVP |
@@ -136,7 +136,8 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 | **Entrar** y **Bienvenida** | Celular + código (simulado), nombre y **autorización de datos** (PAS-01, PAS-02). Sin aceptar no se puede pedir |
 | **Inicio** | Mapa, "te recogemos en…" con la ubicación del teléfono (solo se pide al fijar la recogida, PAS-20), "¿A dónde vas?", Casa y Trabajo, recientes y viajes a otras ciudades |
 | **Buscar destino** | Lugares y barrios (sin importar tildes), direcciones al estilo colombiano (`Cra 23 # 62-14`, marcadas como aproximadas), lugares guardados y recientes (PAS-21) |
-| **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor (PAS-22, PAS-23) |
+| **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor; «Ahora» o **reservar para más tarde** (PAS-22, PAS-23, PAS-25) |
+| **Mis reservas** | Las reservas abiertas con su hora y estado («Buscaremos conductor», «Conductor confirmado»…); el detalle muestra el conductor confirmado y permite cancelar, avisando si ya cuesta (RN-084, RN-089). Se entra desde Inicio |
 | **Otra ciudad** | Destinos con tarifa fija, solo ida o ida y vuelta, con el valor cerrado antes de confirmar (PAS-26) |
 | **Buscando** | Radar sobre la recogida, cuenta regresiva de los 2 minutos y cancelar sin costo. Si nadie acepta, lo explica y deja reintentar sin volver a escribir el destino |
 | **Conductor en camino / en viaje** | Mapa con el carro en vivo y el tiempo que falta, **PIN** grande, conductor con calificación, vehículo y **placa**, chat con respuestas rápidas, compartir el viaje, **SOS** (mantener 2 s) y cancelar con el costo claro antes de confirmar (PAS-30 a PAS-36) |
@@ -152,5 +153,5 @@ y el pasajero no puede pedir otro viaje hasta pagarla con otra tarjeta (ver D-30
 > **Datos personales.** Cuenta → «Mis datos y privacidad»: política, descarga de datos, solicitudes con su respuesta y eliminar la cuenta ([doc 15](15-observabilidad-y-privacidad.md)).
 
 **Pendiente.** Buscador de direcciones real y proveedor de mapas definitivo (D-27; el mapa de calles ya está, ADR-0009), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
-notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, viajes programados (F2), llamada enmascarada (F2) y la parte corporativa (F3).
+notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, recordatorios de reserva por *push*, llamada enmascarada (F2) y la parte corporativa (F3).
 

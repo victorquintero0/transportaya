@@ -148,6 +148,17 @@ export function iniciarMotor(qc: QueryClient): () => void {
       }
       void refrescarViaje(qc);
     },
+    'reserva:cambio': (d) => {
+      void qc.invalidateQueries({ queryKey: ['reservas'] });
+      avisar(
+        d.motivo === 'cancelada'
+          ? 'El pasajero canceló una reserva que tenías'
+          : d.motivo === 'liberada'
+            ? 'La operación te quitó una reserva'
+            : 'Tienes una reserva nueva asignada',
+        'info',
+      );
+    },
     'viaje:mensaje': (m) => {
       const abierto = useChat.getState().abierto;
       useChat.getState().llego(m);

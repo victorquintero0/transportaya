@@ -65,7 +65,7 @@ Mientras está **habilitado**, el conductor tiene además un **estado operativo*
 | CON-27 | Al finalizar en efectivo: valor a cobrar en grande y confirmación del valor recibido | MVP |
 | CON-28 | Calificar al pasajero | MVP |
 | CON-29 | Botón **SOS** | MVP |
-| CON-30 | Tablero de reservas programadas: ver, tomar y confirmar | F2 |
+| CON-30 | Tablero de reservas programadas: ver (el destino solo como zona, D-11), tomar, confirmar y soltar; pestaña **Reservas** | MVP · hecho |
 | CON-31 | Activar viajes intermunicipales/nacionales y de categoría inferior | MVP |
 | **Ganancias** | | |
 | CON-40 | Ganancias del día y de la semana; detalle por viaje (tarifa, comisión, propina, peajes) | MVP |

@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { RequiereRol, UsuarioActual, type UsuarioAutenticado } from '../auth/decoradores.js';
 import { validar } from '../comun/zod.js';
 import { MensajesViajeService } from '../viajes/mensajes.service.js';
+import { ReservasService } from '../viajes/reservas.service.js';
 import { CompartidoService } from './compartido.service.js';
 import { CotizacionesService } from './cotizaciones.service.js';
 import { LugaresService } from './lugares.service.js';
@@ -46,6 +47,12 @@ const lugar = z.object({
 const cotizar = z
   .object({
     origen: punto,
+    /** Una reserva: la hora del servicio, con zona horaria (por ejemplo 2026-10-12T08:30:00-05:00). */
+    programadoPara: z
+      .string()
+      .datetime({ offset: true })
+      .transform((v) => new Date(v))
+      .optional(),
     destino: punto.optional(),
     ruta: z
       .object({
@@ -106,6 +113,7 @@ export class PasajeroController {
     @Inject(MensajesViajeService) private readonly mensajes: MensajesViajeService,
     @Inject(CompartidoService) private readonly compartido: CompartidoService,
     @Inject(SoportePasajeroService) private readonly soporte: SoportePasajeroService,
+    @Inject(ReservasService) private readonly reservas: ReservasService,
   ) {}
 
   // ---------------------------------------------------------------- cuenta
@@ -248,6 +256,12 @@ export class PasajeroController {
   @Post('viajes')
   async crear(@UsuarioActual() u: UsuarioAutenticado, @Body() cuerpo: unknown) {
     return this.viajes.crear(u.id, validar(crearViaje, cuerpo));
+  }
+
+  /** Las reservas que tiene pendientes, de la más próxima a la más lejana (PAS-27). */
+  @Get('reservas')
+  async misReservas(@UsuarioActual() u: UsuarioAutenticado) {
+    return { reservas: await this.reservas.proximasDelPasajero(u.id) };
   }
 
   @Get('viaje-actual')

@@ -14,11 +14,18 @@ import {
   viaje,
   viajeCompartido,
 } from '@transportaya/db';
-import { distanciaMetros } from '@transportaya/dominio';
+import {
+  distanciaMetros,
+  estadoDeReserva,
+  finDeLaBusqueda,
+  sePisan,
+  validarAnticipacion,
+} from '@transportaya/dominio';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
-import { conflicto, noEncontrado } from '../comun/errores.js';
+import { conflicto, ErrorNegocio, noEncontrado } from '../comun/errores.js';
+import { ParametrosService } from '../operacion/parametros.service.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
 import { CancelacionPasajeroService } from '../viajes/cancelacion-pasajero.service.js';
 import { DespachoService } from '../viajes/despacho.service.js';
@@ -26,6 +33,7 @@ import { registrarEvento } from '../viajes/eventos-viaje.js';
 import { cobroSimulado } from '../comun/tarjetas.js';
 import { VERSION_TERMINOS } from './perfil.service.js';
 
+const MAX_RESERVAS_ABIERTAS = 5;
 const ESTADOS_ACTIVOS = ['buscando_conductor', 'asignado', 'en_sitio', 'en_curso'] as const;
 const VENTANA_CALIFICAR_MS = 24 * 3_600_000;
 /** Cuánto tiempo, tras terminar el viaje, la app sigue mostrando el resumen si no lo calificó. */
@@ -62,6 +70,7 @@ export class ViajesPasajeroService {
     @Inject(UbicacionStore) private readonly ubicaciones: UbicacionStore,
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(CancelacionPasajeroService) private readonly cancelacion: CancelacionPasajeroService,
+    @Inject(ParametrosService) private readonly parametros: ParametrosService,
   ) {}
 
   /** PAS-24: confirma un viaje a partir de una cotización y empieza a buscar conductor. */
@@ -104,17 +113,43 @@ export class ViajesPasajeroService {
             deuda: p.deuda,
           },
         );
-      const [enCurso] = await tx
-        .select({ id: viaje.id })
-        .from(viaje)
-        .where(and(eq(viaje.pasajeroId, pasajeroId), inArray(viaje.estado, [...ESTADOS_ACTIVOS])));
-      if (enCurso) throw conflicto('VIAJE_EN_CURSO', 'Ya tienes un viaje en curso.');
-
       const [cot] = await tx
         .select()
         .from(cotizacion)
         .where(and(eq(cotizacion.id, d.cotizacionId), eq(cotizacion.pasajeroId, pasajeroId)));
       if (!cot) throw noEncontrado('COTIZACION_NO_ENCONTRADA', 'No encontramos esa cotización');
+
+      // Un viaje inmediato a la vez. Una reserva puede hacerse aunque haya un viaje en curso, pero no se pisa con otra.
+      if (cot.programadoPara) {
+        const error = validarAnticipacion(
+          cot.programadoPara,
+          new Date(),
+          await this.parametros.reservas(),
+        );
+        if (error) throw new ErrorNegocio(400, error.codigo, error.detalle);
+        const otras = await tx
+          .select({ hora: viaje.programadoPara })
+          .from(viaje)
+          .where(and(eq(viaje.pasajeroId, pasajeroId), eq(viaje.estado, 'programado')));
+        if (otras.length >= MAX_RESERVAS_ABIERTAS)
+          throw conflicto(
+            'DEMASIADAS_RESERVAS',
+            `Puedes tener hasta ${MAX_RESERVAS_ABIERTAS} reservas a la vez.`,
+          );
+        if (otras.some((o) => o.hora && sePisan(o.hora, cot.programadoPara!, 60)))
+          throw conflicto(
+            'RESERVA_SE_PISA',
+            'Ya tienes otra reserva a una hora muy cercana a esa.',
+          );
+      } else {
+        const [enCurso] = await tx
+          .select({ id: viaje.id })
+          .from(viaje)
+          .where(
+            and(eq(viaje.pasajeroId, pasajeroId), inArray(viaje.estado, [...ESTADOS_ACTIVOS])),
+          );
+        if (enCurso) throw conflicto('VIAJE_EN_CURSO', 'Ya tienes un viaje en curso.');
+      }
       if (cot.expiraEn.getTime() < Date.now())
         throw conflicto('COTIZACION_VENCIDA', 'El precio venció. Vuelve a cotizar.');
       const [usada] = await tx
@@ -162,6 +197,9 @@ export class ViajesPasajeroService {
           pinInicio: pin,
           precioEstimadoMin: cot.precioMin,
           precioEstimadoMax: cot.precioMax,
+          ...(cot.programadoPara
+            ? { estado: 'programado' as const, programadoPara: cot.programadoPara }
+            : {}),
         })
         .returning({ id: viaje.id });
       await registrarEvento(tx, {
@@ -170,12 +208,17 @@ export class ViajesPasajeroService {
         actorTipo: 'pasajero',
         actorId: pasajeroId,
         ubicacion: cot.origen,
-        datos: { categoria: cot.categoria, metodoPago: d.metodoPago },
+        datos: {
+          categoria: cot.categoria,
+          metodoPago: d.metodoPago,
+          ...(cot.programadoPara ? { programadoPara: cot.programadoPara.toISOString() } : {}),
+        },
       });
-      return v!;
+      return { ...v!, reserva: !!cot.programadoPara };
     });
 
-    void this.despacho.iniciar(creado.id);
+    // Una reserva no busca conductor ahora: se activa a su hora (ReservasService.mantener).
+    if (!creado.reserva) void this.despacho.iniciar(creado.id);
     return this.armar(pasajeroId, creado.id);
   }
 
@@ -218,7 +261,11 @@ export class ViajesPasajeroService {
     if (!v) throw noEncontrado('VIAJE_NO_ENCONTRADO', 'No encontramos ese viaje');
 
     let conductorInfo = null;
-    if (v.conductorId) {
+    // En una reserva ya confirmada se muestra el conductor que la tomó, antes de que empiece el servicio.
+    const idConductor =
+      v.conductorId ??
+      (v.estado === 'programado' && v.reservaConfirmadaEn ? v.reservaConductorId : null);
+    if (idConductor) {
       const [c] = await db
         .select({
           nombre: usuario.nombre,
@@ -234,8 +281,8 @@ export class ViajesPasajeroService {
         .from(conductor)
         .innerJoin(usuario, eq(usuario.id, conductor.usuarioId))
         .innerJoin(vehiculo, eq(vehiculo.id, v.vehiculoId ?? conductor.vehiculoActivoId))
-        .where(eq(conductor.usuarioId, v.conductorId));
-      const u = this.ubicaciones.obtener(v.conductorId);
+        .where(eq(conductor.usuarioId, idConductor));
+      const u = this.ubicaciones.obtener(idConductor);
       const enRuta = ['asignado', 'en_sitio', 'en_curso'].includes(v.estado);
       const meta = v.estado === 'en_curso' ? v.destino : v.origen;
       const distanciaM =
@@ -271,7 +318,10 @@ export class ViajesPasajeroService {
       .from(calificacion)
       .where(and(eq(calificacion.viajeId, v.id), eq(calificacion.deUsuarioId, pasajeroId)));
     const costoCancelar =
-      v.estado === 'buscando_conductor' || v.estado === 'asignado' || v.estado === 'en_sitio'
+      v.estado === 'programado' ||
+      v.estado === 'buscando_conductor' ||
+      v.estado === 'asignado' ||
+      v.estado === 'en_sitio'
         ? await this.cancelacion.costoDeCancelar(v)
         : null;
     const [enlace] = await db
@@ -296,6 +346,13 @@ export class ViajesPasajeroService {
       origen: { lat: v.origen.lat, lng: v.origen.lng, direccion: v.origenDireccion },
       destino: { lat: v.destino.lat, lng: v.destino.lng, direccion: v.destinoDireccion },
       nota: v.notaConductor,
+      programadoPara: v.programadoPara?.toISOString() ?? null,
+      reserva: v.programadoPara
+        ? {
+            estado: estadoDeReserva(v),
+            conductorConfirmado: !!v.reservaConfirmadaEn,
+          }
+        : null,
       metodoPago: v.metodoPago,
       estadoPago: v.estadoPago,
       pin: ['asignado', 'en_sitio'].includes(v.estado) ? v.pinInicio : null,
@@ -316,8 +373,11 @@ export class ViajesPasajeroService {
       busqueda:
         v.estado === 'buscando_conductor'
           ? {
-              expiraEn: new Date(
-                v.solicitadoEn.getTime() + this.despacho.presupuestoBusquedaMs,
+              // Una reserva se busca desde que se activó y hasta un rato después de la hora del servicio.
+              desde: (v.busquedaDesde ?? v.solicitadoEn).toISOString(),
+              expiraEn: (v.programadoPara
+                ? finDeLaBusqueda(v.programadoPara, await this.parametros.reservas())
+                : new Date(v.solicitadoEn.getTime() + this.despacho.presupuestoBusquedaMs)
               ).toISOString(),
             }
           : null,

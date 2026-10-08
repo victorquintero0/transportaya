@@ -1,6 +1,7 @@
 /** Formas de las respuestas de la API del pasajero (docs/10). */
 
 export type EstadoViaje =
+  | 'programado'
   | 'buscando_conductor'
   | 'asignado'
   | 'en_sitio'
@@ -80,6 +81,8 @@ export interface Cotizacion {
   distanciaM: number;
   duracionS: number;
   expiraEn: string;
+  /** Si se cotizó una reserva, la hora del servicio. */
+  programadoPara: string | null;
   opciones: OpcionCotizacion[];
 }
 
@@ -110,6 +113,9 @@ export interface Viaje {
   origen: { lat: number; lng: number; direccion: string | null };
   destino: { lat: number; lng: number; direccion: string | null };
   nota: string | null;
+  /** Si es una reserva: la hora del servicio y cómo va (RN-080 a RN-085). */
+  programadoPara: string | null;
+  reserva: { estado: string; conductorConfirmado: boolean } | null;
   metodoPago: MetodoPago | 'local';
   estadoPago: string;
   pin: string | null;
@@ -127,7 +133,7 @@ export interface Viaje {
     finalizadoEn: string | null;
     canceladoEn: string | null;
   };
-  busqueda: { expiraEn: string } | null;
+  busqueda: { desde: string; expiraEn: string } | null;
   cancelacion: { costo: number; gratis: boolean; segundosGratisRestantes: number | null } | null;
   compartido: boolean;
   calificacion: number | null;
@@ -202,4 +208,18 @@ export interface ViajeCompartido {
   } | null;
   iniciadoEn: string | null;
   finalizadoEn: string | null;
+}
+
+export interface Reserva {
+  id: string;
+  codigo: string;
+  estado: EstadoViaje;
+  estadoReserva:
+    'sin_conductor' | 'tomada' | 'confirmada' | 'buscando' | 'asignada' | 'en_curso' | 'cerrada';
+  programadoPara: string;
+  categoria: string;
+  origen: { direccion: string | null };
+  destino: { direccion: string | null };
+  precioEstimado: { min: number; max: number };
+  conductorConfirmado: boolean;
 }

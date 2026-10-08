@@ -12,3 +12,4 @@ export * from './habilitacion.js';
 export * from './permisos.js';
 export * from './mapa.js';
 export * from './privacidad.js';
+export * from './reservas.js';

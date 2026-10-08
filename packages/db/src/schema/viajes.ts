@@ -62,6 +62,8 @@ export const cotizacion = pgTable(
     precioMax: cop('precio_max').notNull(),
     /** Recargos aplicados en el momento de cotizar, para poder auditarla. */
     desglose: jsonb('desglose').notNull().default({}),
+    /** Si es para una reserva (RN-080): la hora del servicio. El precio se calcula con los recargos de esa hora. */
+    programadoPara: marca('programado_para'),
     expiraEn: marca('expira_en').notNull(),
     creadoEn: creadoEn(),
   },
@@ -100,6 +102,12 @@ export const viaje = pgTable(
     destinoDireccion: text('destino_direccion'),
     notaConductor: text('nota_conductor'),
     programadoPara: marca('programado_para'),
+    /** Reserva (RN-082): el conductor que la tomó, cuándo, y cuándo la confirmó. Mientras tanto el viaje sigue «programado». */
+    reservaConductorId: uuid('reserva_conductor_id').references(() => conductor.usuarioId),
+    reservaTomadaEn: marca('reserva_tomada_en'),
+    reservaConfirmadaEn: marca('reserva_confirmada_en'),
+    /** Desde cuándo se busca conductor. En una reserva es la hora en que se activó, no la de la solicitud. */
+    busquedaDesde: marca('busqueda_desde'),
     cotizacionId: uuid('cotizacion_id')
       .notNull()
       .references(() => cotizacion.id),
@@ -167,6 +175,21 @@ export const viaje = pgTable(
     uniqueIndex('viaje_un_activo_por_conductor_uq')
       .on(t.conductorId)
       .where(sql`${t.estado} in ('asignado', 'en_sitio', 'en_curso')`),
+    index('viaje_reservas_idx')
+      .on(t.programadoPara)
+      .where(sql`${t.estado} = 'programado'`),
+    index('viaje_reserva_conductor_idx')
+      .on(t.reservaConductorId, t.programadoPara)
+      .where(sql`${t.reservaConductorId} is not null`),
+    check(
+      'viaje_programado_con_hora',
+      sql`${t.estado} <> 'programado' or ${t.programadoPara} is not null`,
+    ),
+    check(
+      'viaje_reserva_coherente',
+      sql`(${t.reservaTomadaEn} is null) = (${t.reservaConductorId} is null)
+        and (${t.reservaConfirmadaEn} is null or ${t.reservaConductorId} is not null)`,
+    ),
     check('viaje_codigo_formato', sql`${t.codigo} ~ '^TY-[0-9A-Z]{6}$'`),
     check('viaje_pin_formato', sql`${t.pinInicio} is null or ${t.pinInicio} ~ '^[0-9]{4}$'`),
     check(

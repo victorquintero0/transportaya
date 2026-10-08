@@ -2,11 +2,17 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 import {
   completarViaje,
   crearConductor,
+  crearPasajero,
   entrarConOtp,
   llamar,
   pedirViajeDeMentira,
   ponerEnLinea,
+  reservarDeMentira,
+  serieDePlacas,
 } from './ayudas-api.js';
+
+// Esta prueba nombra las placas en pantalla (TYE101, TYE102).
+serieDePlacas('TYE');
 
 let capturas = 0;
 async function captura(page: Page, nombre: string) {
@@ -169,6 +175,43 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await expect(p.getByText('El pasajero llamó para cancelar').first()).toBeVisible();
     await captura(p, 'viaje-cancelado');
     expect(viaje.viajeId).toBeTruthy();
+  });
+
+  await test.step('el monitor ve las reservas y asigna y libera un conductor a mano', async () => {
+    const p = monitor.page;
+    const pasajero = await crearPasajero(
+      `3${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`,
+      'Sofía Marín',
+    );
+    const reserva = await reservarDeMentira(pasajero.token, 300);
+    await p.getByRole('link', { name: 'Reservas' }).click();
+    await expect(p.locator('#resumen-reservas')).toContainText('Sin conductor');
+    const fila = p.locator('#tabla-reservas tr', { hasText: reserva.codigo });
+    await expect(fila).toContainText('Sofía Marín');
+    await captura(p, 'reservas');
+
+    await p.locator(`#asignar-${reserva.codigo}`).click();
+    await p
+      .getByRole('dialog')
+      .locator('li', { hasText: 'Natalia Ospina Rojas' })
+      .locator('input')
+      .check();
+    await p.locator('#motivo-asignar-reserva').fill('Cliente frecuente que pidió a este conductor');
+    await p.locator('#confirmar-asignar-reserva').click();
+    await expect(p.getByText('Conductor asignado a la reserva')).toBeVisible();
+    await expect(fila).toContainText('Natalia Ospina Rojas');
+    await expect(fila).toContainText('Confirmada');
+    await captura(p, 'reservas-asignada');
+
+    await p.locator(`#liberar-${reserva.codigo}`).click();
+    await p
+      .getByRole('dialog')
+      .locator('textarea, input')
+      .first()
+      .fill('El conductor avisó que no puede');
+    await p.getByRole('dialog').getByRole('button', { name: 'Liberar', exact: true }).click();
+    await expect(p.getByText('Reserva liberada')).toBeVisible();
+    await expect(fila).toContainText('Sin conductor');
   });
 
   await test.step('una alerta SOS llega en vivo y el monitor la toma y la cierra con una nota', async () => {

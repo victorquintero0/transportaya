@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { crearConductor, crearPasajero, reservarDeMentira } from './ayudas-api.js';
 
 /** PNG de 1×1 píxel: el servidor valida el tipo real del archivo, no su extensión. */
 const PNG = Buffer.from(
@@ -211,5 +212,45 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await expect(page.locator('#mis-solicitudes')).toContainText('Corregir mis datos');
     await expect(page.locator('#mis-solicitudes')).toContainText('Recibida');
     await captura(page, 'mis-datos-y-privacidad');
+  });
+});
+
+test('conductor: ve el tablero de reservas, toma una, la confirma y la suelta', async ({
+  page,
+}) => {
+  page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
+  const telefono = celularNuevo();
+  await crearConductor(telefono, { nombre: 'Andrés Salazar', aprobar: true });
+  const pasajero = await crearPasajero(celularNuevo(), 'Marta Giraldo');
+  const reserva = await reservarDeMentira(pasajero.token, 240);
+
+  await test.step('entra y abre Reservas', async () => {
+    await page.goto('/');
+    await page.getByLabel('Número de celular').fill(telefono);
+    await page.getByRole('button', { name: 'Recibir mi código' }).click();
+    await page.getByRole('button', { name: /Toca para usar el código/ }).click();
+    await page.getByRole('link', { name: 'Reservas' }).click();
+    await expect(page.locator(`[data-reserva="${reserva.codigo}"]`)).toBeVisible();
+    await captura(page, 'reservas-tablero');
+  });
+
+  await test.step('la toma y la confirma', async () => {
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    // el destino se muestra solo como zona (D-11)
+    await expect(page.locator('[data-reserva-detalle]')).toBeVisible();
+    await page.locator('#tomar-reserva').click();
+    await expect(page.getByText('Reserva tomada')).toBeVisible();
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    await page.locator('#confirmar-reserva').click();
+    await expect(page.getByText('Reserva confirmada')).toBeVisible();
+    await expect(page.locator(`[data-reserva="${reserva.codigo}"]`)).toContainText('Confirmada');
+    await captura(page, 'reservas-confirmada');
+  });
+
+  await test.step('la suelta y vuelve al tablero', async () => {
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    await page.locator('#soltar-reserva').click();
+    await expect(page.getByText('Soltaste la reserva')).toBeVisible();
+    await expect(page.locator('#sin-mias')).toBeVisible();
   });
 });

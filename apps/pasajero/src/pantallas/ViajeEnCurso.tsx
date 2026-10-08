@@ -69,7 +69,7 @@ function Buscando({ viaje }: { viaje: Viaje }) {
   const ahora = useAhora(500);
   const cancelar = useCancelar(viaje);
   const total = viaje.busqueda
-    ? Date.parse(viaje.busqueda.expiraEn) - Date.parse(viaje.tiempos.solicitadoEn)
+    ? Date.parse(viaje.busqueda.expiraEn) - Date.parse(viaje.busqueda.desde)
     : 120_000;
   const restante = viaje.busqueda ? Math.max(0, Date.parse(viaje.busqueda.expiraEn) - ahora) : 0;
   const frase =

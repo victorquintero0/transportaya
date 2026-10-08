@@ -16,6 +16,7 @@ import { Inicio } from './pantallas/Inicio.tsx';
 import { OfertaEntrante } from './pantallas/OfertaEntrante.tsx';
 import { PantallaViaje } from './pantallas/PantallaViaje.tsx';
 import { Perfil } from './pantallas/Perfil.tsx';
+import { Reservas } from './pantallas/Reservas.tsx';
 import { Registro } from './pantallas/Registro.tsx';
 import { Resumen } from './pantallas/Resumen.tsx';
 import { iniciarMotor } from './servicios/motor.ts';
@@ -78,6 +79,7 @@ export function App() {
         <Route path="/entrar" element={token ? <Navigate to="/" replace /> : <Entrar />} />
         <Route element={<Protegida />}>
           <Route index element={<Inicio />} />
+          <Route path="reservas" element={<Reservas />} />
           <Route path="ganancias" element={<Ganancias />} />
           <Route path="perfil" element={<Perfil />} />
           <Route path="*" element={<Navigate to="/" replace />} />

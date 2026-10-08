@@ -14,6 +14,7 @@ export interface EventosServidor {
   'viaje:estado': (d: { viajeId: string; estado: string }) => void;
   'conductor:estado': (d: { estadoOperativo: string; motivo?: string }) => void;
   'viaje:mensaje': (m: Mensaje) => void;
+  'reserva:cambio': (d: { viajeId: string; motivo: 'asignada' | 'liberada' | 'cancelada' }) => void;
 }
 
 let socket: Socket | null = null;

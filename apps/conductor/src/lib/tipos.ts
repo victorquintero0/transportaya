@@ -239,3 +239,25 @@ export interface Mensaje {
   cuerpo: string;
   creadoEn: string;
 }
+
+/** Una reserva en el tablero (RN-080 a RN-085). El destino se muestra solo como zona (D-11). */
+export interface ReservaTablero {
+  id: string;
+  codigo: string;
+  programadoPara: string;
+  categoria: string;
+  tipoServicio: string;
+  recogida: { lat: number; lng: number; direccion: string | null };
+  destino: { zona: string; distanciaViajeM: number };
+  precioEstimado: { min: number; max: number };
+  gananciaEstimada: number;
+  metodoPago: string;
+  pasajero: { nombre: string; calificacion: number | null };
+}
+
+export interface MiReserva extends ReservaTablero {
+  estado: 'tomada' | 'confirmada' | 'buscando';
+  /** Hora límite para confirmar (solo si falta). */
+  confirmarAntesDe: string | null;
+  puedeSoltar: boolean;
+}

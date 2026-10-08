@@ -19,6 +19,7 @@ interface Destino {
 export const DESTINOS: Destino[] = [
   { ruta: '/', titulo: 'Torre de control', icono: 'velocimetro', permiso: 'torre.ver' },
   { ruta: '/viajes', titulo: 'Viajes', icono: 'carro', permiso: 'viajes.ver' },
+  { ruta: '/reservas', titulo: 'Reservas', icono: 'reloj', permiso: 'viajes.ver' },
   { ruta: '/conductores', titulo: 'Conductores', icono: 'maletin', permiso: 'conductores.ver' },
   { ruta: '/pasajeros', titulo: 'Pasajeros', icono: 'usuario', permiso: 'pasajeros.ver' },
   { ruta: '/soporte', titulo: 'Soporte', icono: 'mensaje', permiso: 'tickets.ver' },

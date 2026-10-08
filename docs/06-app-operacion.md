@@ -27,7 +27,7 @@
 | OPE-06 | Tarifas, zonas y dinámica | MVP |
 | OPE-07 | Liquidaciones y saldos de conductores | MVP |
 | OPE-08 | Soporte y PQRS | MVP (básico) / F2 (completo) |
-| OPE-09 | Reservas programadas | F2 |
+| OPE-09 | Reservas programadas | F2 · hecho |
 | OPE-10 | Clientes corporativos | F3 |
 | OPE-11 | Usuarios internos, roles y auditoría | MVP |
 | OPE-12 | Configuración general y plantillas de notificación | MVP |
@@ -194,8 +194,15 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 
 ## OPE-09 · Reservas programadas (F2)
 
-Calendario y lista de reservas por hora, con estado (sin conductor, tomada, confirmada, en curso),
-asignación manual y alertas de reservas en riesgo.
+> **Implementado.** Pantalla **Reservas** (permiso `viajes.ver`; asignar y liberar piden `viajes.despachar`).
+
+Lista de reservas por hora (ventana de 1, 3 u 8 días) con su estado (sin conductor, por confirmar, confirmada,
+buscando, asignada, en curso), el pasajero, el conductor, el recorrido y el precio. Arriba, el resumen por estado y
+cuántas están **en riesgo** (faltan menos de `[30 min]` y no hay conductor firme). Por fila: **Asignar / Cambiar**
+(lista de conductores habilitados que pueden hacer ese servicio sin cruzarse con otra reserva; queda confirmada de una
+vez), **Liberar** (vuelve al tablero y se avisa al conductor) y **Ver** el viaje. Asignar y liberar piden motivo y
+quedan en la auditoría. Si a `[15 min]` no hay conductor, se genera la alerta alta «Reserva sin conductor» en la Torre
+de control. Los tiempos se editan en Configuración → Reservas.
 
 ## OPE-10 · Clientes corporativos (F3)
 

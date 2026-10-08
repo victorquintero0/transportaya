@@ -12,6 +12,7 @@ import { VencimientosService } from './conductor/vencimientos.service.js';
 import { CierresService } from './dinero/cierres.service.js';
 import { EstadoTareasService } from './observabilidad/estado-tareas.service.js';
 import { RetencionService } from './privacidad/retencion.service.js';
+import { ReservasService } from './viajes/reservas.service.js';
 import { ViajesService } from './viajes/viajes.service.js';
 
 const DIA_MS = 24 * 3_600_000;
@@ -28,6 +29,7 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     @Inject(VencimientosService) private readonly vencimientos: VencimientosService,
     @Inject(EstadoTareasService) private readonly estado: EstadoTareasService,
     @Inject(RetencionService) private readonly retencion: RetencionService,
+    @Inject(ReservasService) private readonly reservas: ReservasService,
   ) {}
 
   onModuleInit(): void {
@@ -35,6 +37,11 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
       'vigilar_senal',
       'Marca sin señal a quien dejó de reportar posición',
       15_000,
+    );
+    this.estado.registrar(
+      'reservas',
+      'Libera las reservas sin confirmar, activa las que llegaron a su hora y alerta las que siguen sin conductor',
+      30_000,
     );
     this.estado.registrar('cierre_diario', 'Cierre de cuentas del día (00:00)', DIA_MS);
     this.estado.registrar(
@@ -54,6 +61,14 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     await this.estado.correr('retencion', async () => {
       await this.retencion.asegurarParticiones();
     });
+    // Las reservas que debieron activarse mientras la API estaba caída se activan de una vez.
+    await this.estado.correr('reservas', () => this.reservas.mantener());
+  }
+
+  /** Cada 30 s: el ciclo de vida de las reservas (RN-082, RN-083). */
+  @Interval(30_000)
+  async reservasPeriodicas(): Promise<void> {
+    await this.estado.correr('reservas', () => this.reservas.mantener());
   }
 
   @Interval(15_000)

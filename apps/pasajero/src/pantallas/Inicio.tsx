@@ -16,6 +16,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mapa } from '../componentes/Mapa.tsx';
 import { usePedido } from '../estado/pedido.ts';
 import { usePerfil } from '../lib/consultas.ts';
+import { fechaReserva } from '../lib/fechas.ts';
+import { useReservas } from './Reservas.tsx';
 import { fijarOrigenDesdeGps } from '../servicios/origen.ts';
 import { useUbicacion } from '../servicios/ubicacion.ts';
 
@@ -28,6 +30,7 @@ interface Reciente {
 export function Inicio() {
   const navegar = useNavigate();
   const { data: perfil } = usePerfil();
+  const proxima = useReservas().data?.[0];
   const origen = usePedido((s) => s.origen);
   const ponerDestino = usePedido((s) => s.ponerDestino);
   const estadoUbicacion = useUbicacion((s) => s.estado);
@@ -212,6 +215,25 @@ export function Inicio() {
             </ul>
           </div>
         )}
+
+        <Link
+          to="/reservas"
+          id="mis-reservas"
+          className="flex items-center gap-3 rounded-tarjeta border border-borde bg-superficie p-4"
+        >
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-ty/15 text-ty">
+            <Icono nombre="reloj" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-lg font-black">Mis reservas</span>
+            <span className="block text-sm text-suave">
+              {proxima
+                ? `Próxima: ${fechaReserva(proxima.programadoPara)}`
+                : 'Programa un viaje con hasta 7 días de anticipación'}
+            </span>
+          </span>
+          <Icono nombre="derecha" className="shrink-0 text-suave" />
+        </Link>
 
         <Link
           to="/ciudades"

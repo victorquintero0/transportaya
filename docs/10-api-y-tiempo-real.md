@@ -118,7 +118,8 @@ Todas las rutas requieren el rol `conductor`. Los errores siguen RFC 9457 con un
 | GET | `/v1/conductor/ganancias?periodo=` | Resumen por `hoy`, `ayer`, `semana`, `mes` (o `desde` y `hasta`) |
 | GET | `/v1/conductor/saldo` · `movimientos` · `cierres` | Saldo y deuda, libro de movimientos, cierres diarios; el saldo incluye la llave a la que se paga la comisión (D-04) |
 | POST | `/v1/conductor/pagos-comision` | Avisar que pagó la comisión (queda en revisión hasta conciliar) |
-| GET / POST | `/v1/conductor/reservas` | Tablero de reservas y tomar una (F2) |
+| GET | `/v1/conductor/reservas` | `{disponibles, mias}`: el tablero (desde 24 h antes) y las que ya tomé |
+| POST | `/v1/conductor/reservas/{id}/tomar` · `/confirmar` · `/soltar` | Tomar, confirmar (≥ 60 min antes) o soltar una reserva; devuelven `{mias}` |
 
 ### Modo demostración (`/v1/dev/*`)
 
@@ -150,6 +151,9 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | GET | `/v1/op/viajes?q=&estado=&desde=&hasta=` · `/{id}` · `/{id}/recorrido` | `viajes.ver` | Búsqueda, detalle (línea de tiempo, ofertas, pagos, chat, tickets, alertas) y posiciones del conductor |
 | POST | `/v1/op/viajes/{id}/despachar` | `viajes.despachar` | Despacho manual a un conductor disponible (solo mientras el viaje busca conductor) |
 | POST | `/v1/op/viajes/{id}/reasignar` · `/cancelar` | `viajes.despachar` | Reasignar (a un conductor o a búsqueda automática) y cancelar, siempre con motivo |
+| GET | `/v1/op/reservas?desde=&hasta=&estado=` | `viajes.ver` | Reservas por hora, con estado, resumen y las que están en riesgo |
+| GET | `/v1/op/reservas/{id}/conductores?q=` | `viajes.despachar` | Conductores que podrían tomar esa reserva |
+| POST | `/v1/op/reservas/{id}/asignar` · `/liberar` | `viajes.despachar` | Poner o quitar el conductor de una reserva, con motivo |
 | POST | `/v1/op/viajes/{id}/ajustar-precio` | `viajes.ajustar_tarifa` | Corrige el precio de un viaje finalizado; la diferencia del conductor queda como ajuste de saldo pendiente |
 | GET | `/v1/op/conductores?estado=&q=` · `/{id}` · `/v1/op/vencimientos` | `conductores.ver` | Cola de revisión, ficha completa y documentos por vencer |
 | GET | `/v1/op/documentos/{id}/archivo` | `conductores.aprobar` | Imagen del documento (queda en la auditoría) |

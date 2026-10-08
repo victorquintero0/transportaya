@@ -6,6 +6,7 @@ import { DESTINOS, Layout } from './componentes/Layout.tsx';
 import { useAjustes } from './estado/ajustes.ts';
 import { usePerfilOperador } from './lib/consultas.ts';
 import { Ingresar } from './pantallas/Ingresar.tsx';
+import { Reservas } from './pantallas/Reservas.tsx';
 
 // Cada pantalla se descarga cuando se abre: quien solo usa la torre no baja el código de finanzas.
 const Auditoria = lazy(() =>
@@ -79,6 +80,7 @@ export function App() {
         <Route path="torre" element={<Torre />} />
         <Route path="viajes" element={<Viajes />} />
         <Route path="viajes/:id" element={<ViajeDetalle />} />
+        <Route path="reservas" element={<Reservas />} />
         <Route path="conductores" element={<Conductores />} />
         <Route path="conductores/:id" element={<ConductorFicha />} />
         <Route path="pasajeros" element={<Pasajeros />} />

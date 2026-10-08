@@ -8,12 +8,14 @@ import {
   type CategoriaVehiculo,
   type Coordenada,
   type Recargo,
+  validarAnticipacion,
 } from '@transportaya/dominio';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
-import { conflicto, noEncontrado, solicitudInvalida } from '../comun/errores.js';
+import { conflicto, ErrorNegocio, noEncontrado, solicitudInvalida } from '../comun/errores.js';
 import { DespachoService } from '../viajes/despacho.service.js';
+import { ParametrosService } from '../operacion/parametros.service.js';
 import { PrecioService } from '../viajes/precio.service.js';
 import { UBICACION_DESTINOS } from './destinos-nacionales.js';
 
@@ -46,6 +48,8 @@ export interface EntradaCotizacion {
   origen: PuntoConDireccion;
   /** Para un viaje urbano. */
   destino?: PuntoConDireccion | undefined;
+  /** Si es una reserva (RN-080): la hora del servicio. Se cotiza con los recargos y la tarifa de esa hora, sin dinámica. */
+  programadoPara?: Date | undefined;
   /** Para un viaje con tarifa fija a otra ciudad (PAS-26). */
   ruta?: { destino: string; modalidad: 'solo_ida' | 'ida_y_vuelta' } | undefined;
 }
@@ -56,6 +60,7 @@ export class CotizacionesService {
     @Inject(BaseDeDatos) private readonly bd: BaseDeDatos,
     @Inject(PrecioService) private readonly precios: PrecioService,
     @Inject(DespachoService) private readonly despacho: DespachoService,
+    @Inject(ParametrosService) private readonly parametros: ParametrosService,
   ) {}
 
   /** Destinos con tarifa fija que se ofrecen en la app: los que tienen ubicación conocida (D-29). */
@@ -124,7 +129,7 @@ export class CotizacionesService {
           eq(tarifa.ciudadId, ciudadId),
           eq(tarifa.tipoServicio, 'inmediato'),
           lte(tarifa.vigenteDesde, ahora),
-          or(isNull(tarifa.vigenteHasta), sql`${tarifa.vigenteHasta} > now()`),
+          or(isNull(tarifa.vigenteHasta), sql`${tarifa.vigenteHasta} > ${ahora}`),
         ),
       )
       .orderBy(desc(tarifa.version))
@@ -145,14 +150,25 @@ export class CotizacionesService {
 
   async cotizar(pasajeroId: string, e: EntradaCotizacion) {
     const ciudadId = await this.ciudadActiva();
-    const ahora = new Date();
+    const ahoraReal = new Date();
+    if (e.programadoPara) {
+      const error = validarAnticipacion(
+        e.programadoPara,
+        ahoraReal,
+        await this.parametros.reservas(),
+      );
+      if (error) throw new ErrorNegocio(400, error.codigo, error.detalle);
+    }
+    // Una reserva se cotiza con la tarifa y los recargos de la hora del servicio (nocturno, festivo...).
+    const ahora = e.programadoPara ?? ahoraReal;
     const centro = await this.centro(ciudadId);
     if (distanciaMetros(centro, e.origen) > RADIO_SERVICIO_URBANO_M)
       throw conflicto(
         'FUERA_DE_COBERTURA',
         'Todavía no llegamos a tu ubicación. Por ahora atendemos Manizales y sus alrededores.',
       );
-    if (e.ruta) return this.cotizarRuta(pasajeroId, ciudadId, ahora, e.origen, e.ruta);
+    if (e.ruta)
+      return this.cotizarRuta(pasajeroId, ciudadId, ahora, e.origen, e.ruta, e.programadoPara);
     if (!e.destino) throw solicitudInvalida('Indica a dónde vas.');
     if (distanciaMetros(centro, e.destino) > RADIO_SERVICIO_URBANO_M)
       throw conflicto(
@@ -161,7 +177,7 @@ export class CotizacionesService {
       );
     if (distanciaMetros(e.origen, e.destino) < 150)
       throw solicitudInvalida('El origen y el destino están muy cerca. Elige otro destino.');
-    return this.cotizarUrbano(pasajeroId, ciudadId, ahora, e.origen, e.destino);
+    return this.cotizarUrbano(pasajeroId, ciudadId, ahora, e.origen, e.destino, e.programadoPara);
   }
 
   private async cotizarUrbano(
@@ -170,13 +186,15 @@ export class CotizacionesService {
     ahora: Date,
     origen: PuntoConDireccion,
     destino: PuntoConDireccion,
+    programadoPara?: Date,
   ) {
     const t = await this.tarifaVigente(ciudadId, ahora);
-    const dinamica = await this.dinamicaEn(origen, ahora);
+    // RN-081: la reserva no lleva dinámica.
+    const dinamica = programadoPara ? 1 : await this.dinamicaEn(origen, ahora);
     const distanciaM = Math.round(distanciaMetros(origen, destino) * FACTOR_RUTA);
     const duracionS = Math.round(distanciaM / (VELOCIDAD_URBANA_KMH / 3.6));
     const detenidoS = estimarTiempoDetenido(duracionS, FRACCION_DETENIDO);
-    const expiraEn = new Date(ahora.getTime() + VIGENCIA_COTIZACION_MS);
+    const expiraEn = new Date(Date.now() + VIGENCIA_COTIZACION_MS);
 
     const opciones = [];
     for (const categoria of CATEGORIAS_VEHICULO) {
@@ -226,10 +244,14 @@ export class CotizacionesService {
             recargosAplicados: recargos,
             fraccionDetenido: FRACCION_DETENIDO,
           },
+          programadoPara: programadoPara ?? null,
           expiraEn,
         })
         .returning({ id: cotizacion.id });
-      const disp = await this.despacho.disponibilidad(ciudadId, origen, categoria, 'inmediato');
+      // Para una reserva no hay conductores "cerca": se asignará cuando se acerque la hora.
+      const disp = programadoPara
+        ? { conductores: 0, etaS: null }
+        : await this.despacho.disponibilidad(ciudadId, origen, categoria, 'inmediato');
       opciones.push({
         id: fila!.id,
         categoria,
@@ -249,6 +271,7 @@ export class CotizacionesService {
       distanciaM,
       duracionS,
       expiraEn: expiraEn.toISOString(),
+      programadoPara: programadoPara?.toISOString() ?? null,
       opciones,
     };
   }
@@ -259,6 +282,7 @@ export class CotizacionesService {
     ahora: Date,
     origen: PuntoConDireccion,
     pedida: { destino: string; modalidad: 'solo_ida' | 'ida_y_vuelta' },
+    programadoPara?: Date,
   ) {
     const [ruta] = await this.bd.db
       .select()
@@ -279,7 +303,7 @@ export class CotizacionesService {
     const destino: PuntoConDireccion = { ...ubicacion, direccion: `Centro, ${ruta.destino}` };
     const distanciaM = Math.round(distanciaMetros(origen, destino) * FACTOR_RUTA);
     const duracionS = Math.round(distanciaM / (VELOCIDAD_CARRETERA_KMH / 3.6));
-    const expiraEn = new Date(ahora.getTime() + VIGENCIA_COTIZACION_MS);
+    const expiraEn = new Date(Date.now() + VIGENCIA_COTIZACION_MS);
 
     const [fila] = await this.bd.db
       .insert(cotizacion)
@@ -303,16 +327,20 @@ export class CotizacionesService {
           modalidad: ruta.modalidad,
           tarifa: ruta.tarifa,
         },
+        programadoPara: programadoPara ?? null,
         expiraEn,
       })
       .returning({ id: cotizacion.id });
-    const disp = await this.despacho.disponibilidad(ciudadId, origen, 'media', 'intermunicipal');
+    const disp = programadoPara
+      ? { conductores: 0, etaS: null }
+      : await this.despacho.disponibilidad(ciudadId, origen, 'media', 'intermunicipal');
     return {
       origen,
       destino,
       distanciaM,
       duracionS,
       expiraEn: expiraEn.toISOString(),
+      programadoPara: programadoPara?.toISOString() ?? null,
       opciones: [
         {
           id: fila!.id,

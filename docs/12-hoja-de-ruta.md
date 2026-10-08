@@ -80,7 +80,7 @@ y prueba de penetración sin hallazgos críticos abiertos.
 
 ## Fase 2 · Más servicios y automatización
 
-- Viajes programados y tablero de reservas.
+- Viajes programados y tablero de reservas. **Hecho** (recordatorios por *push* pendientes de proveedor).
 - Rutas con tarifa por categoría, tarifas desde otras ciudades y peajes.
 - Métodos de pago locales y pago de la comisión desde la app del conductor con habilitación automática.
 - Dinámica automática por celdas H3.

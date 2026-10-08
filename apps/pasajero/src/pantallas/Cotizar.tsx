@@ -10,6 +10,7 @@ import {
   duracion,
   ErrorApi,
   mensajeDe,
+  type NombreIcono,
   pesos,
   vibrar,
 } from '@transportaya/ui';
@@ -21,9 +22,11 @@ import { Mapa } from '../componentes/Mapa.tsx';
 import { usePedido } from '../estado/pedido.ts';
 import { useSeguimiento } from '../estado/seguimiento.ts';
 import { usePerfil } from '../lib/consultas.ts';
+import { aCampoFechaHora, deCampoFechaHora, fechaReserva } from '../lib/fechas.ts';
 import type { Cotizacion, OpcionCotizacion, Viaje } from '../lib/tipos.ts';
 
-function textoEta(o: OpcionCotizacion): { texto: string; tono: 'ok' | 'aviso' } {
+function textoEta(o: OpcionCotizacion, reserva: boolean): { texto: string; tono: 'ok' | 'aviso' } {
+  if (reserva) return { texto: 'Precio cerrado', tono: 'ok' };
   if (o.etaRecogidaS === null) return { texto: 'Sin conductores cerca', tono: 'aviso' };
   const min = Math.max(1, Math.round(o.etaRecogidaS / 60));
   return { texto: `Llega en ${min} min`, tono: 'ok' };
@@ -39,8 +42,12 @@ export function Cotizar() {
   const ruta = usePedido((s) => s.ruta);
   const metodoPago = usePedido((s) => s.metodoPago);
   const nota = usePedido((s) => s.nota);
+  const programadoPara = usePedido((s) => s.programadoPara);
   const [elegida, setElegida] = useState<string | null>(null);
   const [pagos, setPagos] = useState(false);
+  const [cuando, setCuando] = useState(false);
+  const reserva = programadoPara !== null;
+  const [saliendo, setSaliendo] = useState(false);
 
   const clave = [
     origen?.lat,
@@ -49,12 +56,14 @@ export function Cotizar() {
     destino?.lng,
     ruta?.ruta.destino,
     ruta?.modalidad,
+    programadoPara,
   ];
   const cot = useQuery({
     enabled: !!origen && !!destino,
     queryKey: ['cotizacion', ...clave],
     queryFn: () =>
       api.post<Cotizacion>('/v1/pasajero/cotizaciones', {
+        ...(programadoPara ? { programadoPara } : {}),
         origen: { lat: origen!.lat, lng: origen!.lng, direccion: origen!.direccion },
         ...(ruta
           ? { ruta: { destino: ruta.ruta.destino, modalidad: ruta.modalidad } }
@@ -86,17 +95,34 @@ export function Cotizar() {
       }),
     onSuccess: (viaje) => {
       vibrar('exito');
-      qc.setQueryData(['viaje-actual'], viaje);
       // La cotización quedó usada; el destino se conserva por si hay que reintentar.
       qc.removeQueries({ queryKey: ['cotizacion'] });
-      useSeguimiento.getState().ponerSinConductor(false);
       void qc.invalidateQueries({ queryKey: ['perfil'] });
+      if (viaje.programadoPara) {
+        // Una reserva no es el viaje de ahora: queda en «Mis reservas».
+        void qc.invalidateQueries({ queryKey: ['reservas'] });
+        avisar('Reserva confirmada. Te avisamos cuando tengamos conductor.', 'exito');
+        // Sin destino esta pantalla vuelve al inicio; aquí ya se está yendo a las reservas.
+        setSaliendo(true);
+        usePedido.getState().limpiar();
+        void navegar('/reservas', { replace: true });
+        return;
+      }
+      qc.setQueryData(['viaje-actual'], viaje);
+      useSeguimiento.getState().ponerSinConductor(false);
       void navegar('/', { replace: true });
     },
     onError: (e) => {
       vibrar('alerta');
       const codigo = e instanceof ErrorApi ? e.codigo : '';
-      if (codigo === 'COTIZACION_VENCIDA') {
+      if (
+        codigo === 'DEMASIADAS_RESERVAS' ||
+        codigo === 'RESERVA_SE_PISA' ||
+        codigo === 'RESERVA_MUY_PRONTO' ||
+        codigo === 'RESERVA_MUY_LEJOS'
+      ) {
+        avisar(mensajeDe(e), 'error');
+      } else if (codigo === 'COTIZACION_VENCIDA') {
         avisar('El precio venció. Te mostramos el nuevo.', 'info');
         void qc.invalidateQueries({ queryKey: ['cotizacion'] });
       } else if (codigo === 'DEUDA_PENDIENTE') {
@@ -111,7 +137,7 @@ export function Cotizar() {
     },
   });
 
-  if (!origen || !destino) return <Navigate to="/" replace />;
+  if (!origen || !destino) return saliendo ? null : <Navigate to="/" replace />;
   const error = cot.error instanceof ErrorApi ? cot.error : null;
 
   return (
@@ -149,6 +175,19 @@ export function Cotizar() {
           )}
         </div>
 
+        <button
+          type="button"
+          id="elegir-cuando"
+          onClick={() => setCuando(true)}
+          className="flex min-h-14 items-center gap-3 rounded-2xl border border-borde bg-superficie px-4 text-left"
+        >
+          <Icono nombre="reloj" className="text-ty" />
+          <span className="flex-1 font-extrabold">
+            {programadoPara ? `Reservar · ${fechaReserva(programadoPara)}` : 'Ahora'}
+          </span>
+          <span className="text-sm font-extrabold text-ty">Cambiar</span>
+        </button>
+
         {cot.isPending && (
           <div className="space-y-3" aria-label="Calculando precios">
             {[0, 1, 2].map((i) => (
@@ -179,7 +218,7 @@ export function Cotizar() {
           <AnimatePresence initial>
             {opciones.map((o, i) => {
               const activa = o.id === opcion?.id;
-              const eta = textoEta(o);
+              const eta = textoEta(o, reserva);
               return (
                 <motion.li
                   key={o.id}
@@ -234,13 +273,19 @@ export function Cotizar() {
           </AnimatePresence>
         </ul>
 
-        {opcion && !opcion.fijo && (
+        {opcion && reserva && (
+          <p className="text-sm text-suave">
+            El precio de la reserva queda cerrado: incluye los recargos de la hora del servicio y no
+            sube por demanda. Cancelas gratis hasta 1 hora antes.
+          </p>
+        )}
+        {opcion && !reserva && !opcion.fijo && (
           <p className="text-sm text-suave">
             El valor final lo calcula el taxímetro con la distancia y el tiempo reales del viaje. Si
             cambias de ruta o te detienes, puede variar.
           </p>
         )}
-        {opcion && opcion.conductoresCerca === 0 && (
+        {opcion && !reserva && opcion.conductoresCerca === 0 && (
           <p className="rounded-xl bg-sol/10 px-4 py-3 text-sm font-bold text-sol">
             Ahora mismo no hay conductores cerca. Puedes pedir igual: seguimos buscando por 2
             minutos.
@@ -286,10 +331,25 @@ export function Cotizar() {
             cargando={pedir.isPending}
             alPulsar={() => pedir.mutate()}
           >
-            {opcion ? `Pedir ${opcion.fijo ? 'viaje' : opcion.nombre}` : 'Pedir viaje'}
+            {reserva
+              ? 'Reservar viaje'
+              : opcion
+                ? `Pedir ${opcion.fijo ? 'viaje' : opcion.nombre}`
+                : 'Pedir viaje'}
           </Boton>
         </div>
       </section>
+
+      <Hoja abierta={cuando} alCerrar={() => setCuando(false)} titulo="¿Cuándo lo necesitas?">
+        <Programar
+          valor={programadoPara}
+          alElegir={(iso) => {
+            usePedido.getState().ponerProgramado(iso);
+            setElegida(null);
+            setCuando(false);
+          }}
+        />
+      </Hoja>
 
       <Hoja abierta={pagos} alCerrar={() => setPagos(false)} titulo="¿Cómo vas a pagar?">
         <div className="space-y-2.5 pb-4">
@@ -338,7 +398,7 @@ function OpcionPago({
   alPulsar,
 }: {
   activa: boolean;
-  icono: 'efectivo' | 'tarjeta';
+  icono: NombreIcono;
   titulo: string;
   detalle: string;
   alPulsar: () => void;
@@ -357,5 +417,62 @@ function OpcionPago({
       </span>
       {activa && <Icono nombre="ok" className="text-ty" />}
     </button>
+  );
+}
+
+/** Ahora, o una fecha y hora entre 45 minutos y 7 días (RN-080). La hora se interpreta en Bogotá. */
+function Programar({
+  valor,
+  alElegir,
+}: {
+  valor: string | null;
+  alElegir: (iso: string | null) => void;
+}) {
+  const [ahora] = useState(() => Date.now());
+  const min = aCampoFechaHora(new Date(ahora + 46 * 60_000));
+  const max = aCampoFechaHora(new Date(ahora + 7 * 24 * 3_600_000));
+  const [campo, setCampo] = useState(valor ? aCampoFechaHora(new Date(valor)) : '');
+  const valido = campo !== '' && campo >= min && campo <= max;
+  return (
+    <div className="space-y-3 pb-4">
+      <OpcionPago
+        activa={valor === null}
+        icono="rayo"
+        titulo="Ahora"
+        detalle="Buscamos un conductor cerca ya mismo"
+        alPulsar={() => alElegir(null)}
+      />
+      <div
+        className={`space-y-3 rounded-2xl border-2 p-4 ${valor ? 'border-ty bg-ty/10' : 'border-borde bg-superficie'}`}
+      >
+        <span className="block font-extrabold">Reservar para más tarde</span>
+        <span className="block text-sm text-suave">
+          Con al menos 45 minutos y hasta 7 días de anticipación. El precio queda cerrado.
+        </span>
+        <input
+          id="reserva-fecha"
+          type="datetime-local"
+          aria-label="Fecha y hora de la reserva"
+          value={campo}
+          min={min}
+          max={max}
+          onChange={(e) => setCampo(e.target.value)}
+          className="min-h-12 w-full rounded-xl border border-borde bg-fondo px-3 font-bold"
+        />
+        {campo !== '' && !valido && (
+          <p className="text-sm font-bold text-sol">
+            Elige una hora entre 45 minutos y 7 días a partir de ahora.
+          </p>
+        )}
+        <Boton
+          id="reserva-confirmar-hora"
+          variante="secundario"
+          deshabilitado={!valido}
+          alPulsar={() => alElegir(deCampoFechaHora(campo))}
+        >
+          Usar esta hora
+        </Boton>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  HttpException,
   Inject,
   Injectable,
   Logger,
@@ -19,7 +20,10 @@ import {
 import {
   ambitoComision,
   COMISION_PUNTOS_BASICOS,
+  BLOQUEO_POR_RESERVA_MIN,
   distanciaMetros,
+  finDeLaBusqueda,
+  momentoAlerta,
   puedeAtender,
   type CategoriaVehiculo,
 } from '@transportaya/dominio';
@@ -171,8 +175,30 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       .where(eq(viaje.id, viajeId));
     if (!v || v.v.estado !== 'buscando_conductor') return;
 
-    if (Date.now() - v.v.solicitadoEn.getTime() > this.p.presupuestoMs) {
+    // Una reserva se busca desde que se activó y hasta un rato después de la hora del servicio (RN-083); un viaje
+    // inmediato, durante el presupuesto de despacho.
+    const inicio = v.v.busquedaDesde ?? v.v.solicitadoEn;
+    let presupuestoMs = this.p.presupuestoMs;
+    let prioridadVigente = false;
+    if (v.v.programadoPara) {
+      const rp = await this.parametros.reservas();
+      presupuestoMs = Math.max(
+        presupuestoMs,
+        finDeLaBusqueda(v.v.programadoPara, rp).getTime() - inicio.getTime(),
+      );
+      // El conductor que confirmó la reserva tiene prioridad hasta que se avise a la operación.
+      prioridadVigente =
+        !!v.v.reservaConductorId &&
+        !!v.v.reservaConfirmadaEn &&
+        Date.now() < momentoAlerta(v.v.programadoPara, rp).getTime();
+    }
+    if (Date.now() - inicio.getTime() > presupuestoMs) {
       await this.marcarSinConductor(viajeId);
+      return;
+    }
+    if (prioridadVigente) {
+      const asignado = await this.asignarAlReservado(v.v);
+      if (!asignado) this.programarReintento(viajeId);
       return;
     }
 
@@ -184,11 +210,29 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       v.v,
       v.ciudadId,
       new Set(yaOfrecidos.map((o) => o.id)),
+      v.v.id,
     );
     for (const c of candidatos) {
       if (await this.ofrecer(v.v, c)) return;
     }
     this.programarReintento(viajeId);
+  }
+
+  /**
+   * El conductor que tomó y confirmó la reserva se asigna directamente, sin pasar por una oferta: ya se comprometió.
+   * `false` si todavía no está disponible (sigue en otro viaje o desconectado); se vuelve a intentar enseguida.
+   */
+  private async asignarAlReservado(v: typeof viaje.$inferSelect): Promise<boolean> {
+    try {
+      await this.asignarManual(v.id, v.reservaConductorId!, null, {
+        actor: 'sistema',
+        reintentar: false,
+      });
+      return true;
+    } catch (e) {
+      if (e instanceof HttpException) return false;
+      throw e;
+    }
   }
 
   /** Los temporizadores pueden terminar de ejecutarse mientras la aplicación se apaga: eso no es un error. */
@@ -220,6 +264,7 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
     v: Pick<typeof viaje.$inferSelect, 'origen' | 'categoria' | 'tipoServicio'>,
     ciudadId: string,
     excluidos: Set<string>,
+    viajePropio?: string,
   ): Promise<Candidato[]> {
     const filas = await this.bd.db
       .select({
@@ -237,6 +282,15 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
           eq(conductor.estadoHabilitacion, 'habilitado'),
           eq(conductor.bloqueadoPorDeuda, false),
           eq(conductor.ciudadId, ciudadId),
+          // Quien tiene una reserva confirmada a punto de empezar no recibe otros viajes: se reserva para ella.
+          sql`not exists (
+            select 1 from viaje r
+            where r.reserva_conductor_id = ${conductor.usuarioId}
+              and r.reserva_confirmada_en is not null
+              and r.estado in ('programado', 'buscando_conductor')
+              and r.programado_para < now() + make_interval(mins => ${BLOQUEO_POR_RESERVA_MIN})
+              ${viajePropio ? sql`and r.id <> ${viajePropio}` : sql``}
+          )`,
         ),
       );
 
@@ -550,7 +604,13 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
    * Despacho manual desde la App Operación (OPE-01): la operación elige el conductor sin esperar la oferta. Solo
    * funciona mientras el viaje sigue buscando conductor. Retira las ofertas abiertas y asigna de forma atómica.
    */
-  async asignarManual(viajeId: string, conductorId: string, operadorId: string): Promise<void> {
+  async asignarManual(
+    viajeId: string,
+    conductorId: string,
+    operadorId: string | null,
+    opciones: { actor?: 'operacion' | 'sistema'; reintentar?: boolean } = {},
+  ): Promise<void> {
+    const actor = opciones.actor ?? 'operacion';
     const { db } = this.bd;
     const pendientes = await db
       .select({ id: oferta.id, conductorId: oferta.conductorId })
@@ -630,9 +690,9 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
         await registrarEvento(tx, {
           viajeId,
           tipo: 'asignado',
-          actorTipo: 'operacion',
+          actorTipo: actor,
           actorId: operadorId,
-          datos: { manual: true, conductorId },
+          datos: { manual: actor === 'operacion', reserva: actor === 'sistema', conductorId },
         });
         return v.pasajeroId;
       });
@@ -653,7 +713,8 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
         });
       }
     } catch (e) {
-      void this.intentar(viajeId); // si no se pudo asignar, el despacho automático sigue buscando
+      // Si no se pudo asignar, el despacho automático sigue buscando (salvo cuando quien llama ya reintenta por su cuenta).
+      if (opciones.reintentar !== false) void this.intentar(viajeId);
       throw e;
     }
   }

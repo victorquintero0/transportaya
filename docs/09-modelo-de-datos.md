@@ -254,6 +254,15 @@ Además borra mensajes del viaje, recorridos GPS, códigos OTP y sesiones vencid
 
 `peaje`: nombre único, `ubicacion` (punto con índice espacial), `valor` en pesos y `activo`. Al finalizar un viaje, el servidor arma una línea con las posiciones recibidas entre «Iniciar» y «Finalizar» y cobra cada peaje activo que quede a menos de `peajes.radio_m` (150 m por defecto). El valor queda en `viaje.peajes` y el detalle en `viaje.desglose.peajesCruzados`.
 
+### Reservas
+
+Una reserva es una fila de `viaje` con `programado_para` y estado `programado` (`CHECK viaje_programado_con_hora`). Columnas
+propias: `reserva_conductor_id` (quien la tomó), `reserva_tomada_en`, `reserva_confirmada_en` (la confirmación exige haberla
+tomado, `CHECK viaje_reserva_coherente`) y `busqueda_desde` (cuándo se activó la búsqueda). `cotizacion.programado_para` guarda
+la hora cotizada. Los índices `viaje_reservas_idx` y `viaje_reserva_conductor_idx` sirven al tablero y a la tarea que las
+mantiene. El estado que ven las personas (sin conductor, por confirmar, confirmada…) se calcula con `estadoDeReserva`
+(`packages/dominio/src/reservas.ts`); no se guarda.
+
 ### Solicitudes sobre datos personales
 
 `solicitud_datos`: quién (`usuario_id`, `rol`), qué (`tipo`: consulta, rectificación, supresión, revocatoria), `estado` (recibida, en trámite, aceptada, rechazada,

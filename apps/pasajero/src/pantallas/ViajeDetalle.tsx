@@ -1,5 +1,15 @@
-import { Boton, Chip, Icono, api, duracion, pesos } from '@transportaya/ui';
-import { useQuery } from '@tanstack/react-query';
+import {
+  Boton,
+  Chip,
+  Hoja,
+  Icono,
+  api,
+  avisar,
+  duracion,
+  mensajeDe,
+  pesos,
+} from '@transportaya/ui';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Mapa } from '../componentes/Mapa.tsx';
@@ -7,13 +17,14 @@ import { Placa } from '../componentes/Placa.tsx';
 import { ReciboHoja } from '../componentes/ReciboHoja.tsx';
 import { ReporteHoja } from '../componentes/ReporteHoja.tsx';
 import { usePedido } from '../estado/pedido.ts';
-import { fechaCorta } from '../lib/fechas.ts';
+import { fechaCorta, fechaReserva } from '../lib/fechas.ts';
 import type { Viaje } from '../lib/tipos.ts';
 
 const ESTADOS: Record<string, { texto: string; tono: 'ok' | 'aviso' | 'malo' | 'neutro' }> = {
   finalizado: { texto: 'Terminado', tono: 'ok' },
   cancelado: { texto: 'Cancelado', tono: 'neutro' },
   sin_conductor: { texto: 'Sin conductor', tono: 'aviso' },
+  programado: { texto: 'Reservado', tono: 'ok' },
 };
 
 /** Detalle de un viaje pasado: recorrido, conductor, recibo y ayuda (PAS-40, PAS-50). */
@@ -22,9 +33,30 @@ export function ViajeDetalle() {
   const navegar = useNavigate();
   const [recibo, setRecibo] = useState(false);
   const [reporte, setReporte] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
+  const qc = useQueryClient();
   const { data: v } = useQuery({
     queryKey: ['viaje', id],
     queryFn: () => api.get<Viaje>(`/v1/pasajero/viajes/${id}`),
+  });
+
+  const cancelar = useMutation({
+    mutationFn: () => api.post<{ costo: number }>(`/v1/pasajero/viajes/${id}/cancelar`),
+    onSuccess: async (r) => {
+      avisar(
+        r.costo > 0
+          ? `Cancelaste la reserva. Se cobró ${pesos(r.costo)}.`
+          : 'Cancelaste la reserva sin costo',
+        'info',
+      );
+      setCancelando(false);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['viaje', id] }),
+        qc.invalidateQueries({ queryKey: ['reservas'] }),
+        qc.invalidateQueries({ queryKey: ['perfil'] }),
+      ]);
+    },
+    onError: (e) => avisar(mensajeDe(e), 'error'),
   });
 
   if (!v)
@@ -35,6 +67,7 @@ export function ViajeDetalle() {
     );
   const estado = ESTADOS[v.estado] ?? { texto: v.estado, tono: 'neutro' as const };
   const c = v.conductor;
+  const reserva = v.estado === 'programado';
 
   return (
     <div className="flex min-h-dvh flex-col bg-fondo pb-8">
@@ -64,22 +97,44 @@ export function ViajeDetalle() {
               {(v.destino.direccion ?? 'Viaje').split(',')[0]}
             </h1>
             <p className="text-sm font-bold text-suave">
-              {fechaCorta(
-                v.tiempos.finalizadoEn ?? v.tiempos.canceladoEn ?? v.tiempos.solicitadoEn,
-              )}{' '}
+              {reserva && v.programadoPara
+                ? fechaReserva(v.programadoPara)
+                : fechaCorta(
+                    v.tiempos.finalizadoEn ?? v.tiempos.canceladoEn ?? v.tiempos.solicitadoEn,
+                  )}{' '}
               · {v.codigo}
             </p>
           </div>
           <Chip tono={estado.tono}>{estado.texto}</Chip>
         </div>
 
+        {reserva && v.reserva && (
+          <p
+            id="estado-reserva"
+            className="rounded-xl bg-ty/10 px-4 py-3 font-bold text-ty"
+            data-conductor-confirmado={v.reserva.conductorConfirmado}
+          >
+            {v.reserva.conductorConfirmado
+              ? 'Tu conductor ya confirmó esta reserva.'
+              : 'Todavía no hay conductor confirmado. Si no lo hay, lo buscamos 30 minutos antes de la hora.'}
+          </p>
+        )}
+
         <div className="flex items-center justify-between rounded-tarjeta border border-borde bg-superficie p-4">
           <div>
             <p className="text-sm font-bold text-suave">
-              {v.metodoPago === 'tarjeta' ? 'Pagado con tarjeta' : 'Pagado en efectivo'}
+              {reserva
+                ? 'Precio estimado · cerrado'
+                : v.metodoPago === 'tarjeta'
+                  ? 'Pagado con tarjeta'
+                  : 'Pagado en efectivo'}
             </p>
             <p className="numeros text-3xl font-black">
-              {v.precioFinal ? pesos(v.precioFinal + v.propina) : '—'}
+              {reserva
+                ? `${pesos(v.precioEstimado.min)} – ${pesos(v.precioEstimado.max)}`
+                : v.precioFinal
+                  ? pesos(v.precioFinal + v.propina)
+                  : '—'}
             </p>
           </div>
           {v.calificacion !== null && (
@@ -123,6 +178,16 @@ export function ViajeDetalle() {
               Ver recibo
             </Boton>
           )}
+          {reserva && (
+            <Boton
+              id="cancelar-reserva"
+              variante="peligro"
+              icono="cerrar"
+              alPulsar={() => setCancelando(true)}
+            >
+              Cancelar reserva
+            </Boton>
+          )}
           {v.estado === 'finalizado' && (
             <Boton
               id="pedir-de-nuevo"
@@ -151,6 +216,37 @@ export function ViajeDetalle() {
           </Boton>
         </div>
       </section>
+
+      <Hoja
+        abierta={cancelando}
+        alCerrar={() => setCancelando(false)}
+        titulo="¿Cancelar la reserva?"
+      >
+        <div className="space-y-4 pb-4">
+          {v.cancelacion && v.cancelacion.costo > 0 ? (
+            <p className="rounded-xl bg-sol/10 px-4 py-3 font-bold text-sol" id="costo-cancelar">
+              Faltan menos de 60 minutos para tu reserva. Cancelar ahora cuesta{' '}
+              {pesos(v.cancelacion.costo)}.
+            </p>
+          ) : (
+            <p className="rounded-xl bg-ty/10 px-4 py-3 font-bold text-ty" id="costo-cancelar">
+              Puedes cancelar sin costo hasta 1 hora antes de la hora de la reserva.
+            </p>
+          )}
+          <Boton
+            id="confirmar-cancelar-reserva"
+            variante="peligro"
+            tamano="grande"
+            cargando={cancelar.isPending}
+            alPulsar={() => cancelar.mutate()}
+          >
+            Sí, cancelar reserva
+          </Boton>
+          <Boton variante="secundario" alPulsar={() => setCancelando(false)}>
+            No, mantener la reserva
+          </Boton>
+        </div>
+      </Hoja>
 
       <ReciboHoja viajeId={v.id} abierto={recibo} alCerrar={() => setRecibo(false)} />
       <ReporteHoja viajeId={v.id} abierto={reporte} alCerrar={() => setReporte(false)} />
