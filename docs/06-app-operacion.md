@@ -209,3 +209,5 @@ limitado, que solo ven los datos de su empresa**), empleados, centros de costo, 
 
 Parámetros operativos (tiempos de espera, radios de búsqueda, límites de deuda, intervalos de GPS, umbrales
 de alertas) y plantillas de notificaciones (push, SMS, correo). Todo cambio queda en auditoría.
+
+> **Implementado (mapa).** Configuración → *Mapa de las apps* elige el proveedor del mapa de las tres apps (OpenFreeMap, MapTiler, otro `style.json` o el esquemático), con botón «Probar estilo», clave cifrada y motivo ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)).

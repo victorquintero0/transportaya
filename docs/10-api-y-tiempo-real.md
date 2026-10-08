@@ -164,6 +164,8 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | POST | `/v1/op/usuarios/{id}/reiniciar-segundo-factor` · `/restablecer-contrasena` | `usuarios.gestionar` | Para quien perdió su dispositivo o su contraseña; cierra sus sesiones |
 | GET | `/v1/op/auditoria?accion=&entidad=&desde=` | `usuarios.ver` | Consulta del registro de auditoría |
 | GET / PUT / DELETE | `/v1/op/parametros` · `/{clave}` | `config.ver` · `config.editar` | Parámetros operativos; los de despacho rigen en caliente |
+| GET / PUT | `/v1/op/mapa` | `config.ver` · `config.editar` | Proveedor del mapa de las apps (clave enmascarada, con motivo y auditoría) |
+| GET | `/v1/mapa/config` | pública | Qué mapa muestran las apps: `{ proveedor, estilo, estiloOscuro }` (caché de 1 min) |
 
 ## Integraciones entrantes
 

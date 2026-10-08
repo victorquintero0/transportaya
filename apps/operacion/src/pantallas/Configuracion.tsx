@@ -5,6 +5,7 @@ import { Encabezado } from '../componentes/Layout.tsx';
 import { AccionMotivo, Campo, Entrada, Insignia, Panel } from '../componentes/ui.tsx';
 import { useEjecutar, usePermiso } from '../lib/consultas.ts';
 import type { Parametro } from '../lib/tipos.ts';
+import { ConfiguracionMapa } from './ConfiguracionMapa.tsx';
 
 function FilaParametro({ p, editable }: { p: Parametro; editable: boolean }) {
   const ejecutar = useEjecutar();
@@ -104,6 +105,7 @@ export function Configuracion() {
         subtitulo="Parámetros operativos. Cada cambio queda en la auditoría con su motivo."
       />
       <div className="space-y-4 p-6">
+        <ConfiguracionMapa />
         {grupos.map((g) => (
           <Panel key={g} titulo={g} sinRelleno>
             <table className="w-full">

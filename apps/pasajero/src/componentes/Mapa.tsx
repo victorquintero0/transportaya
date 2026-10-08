@@ -1,4 +1,4 @@
-import { Icono } from '@transportaya/ui';
+import { BaseMapa, Icono, type ControlMapa } from '@transportaya/ui';
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { crearProyeccion, trazoCurvo, type Punto } from '../lib/mapa.ts';
@@ -31,9 +31,10 @@ const RUMBO_CALLES = 125;
 const RUMBO_CARRERAS = 215;
 
 /**
- * Mapa esquemático. No es un mapa de calles (el mapa propio con OpenStreetMap llega con el ADR-0002): dibuja la
- * cuadrícula de la ciudad con su inclinación real, ubica los puntos con la proporción correcta y mueve el carro del
- * conductor. Es lo que hace falta para pedir, esperar y seguir un viaje.
+ * Mapa del viaje. Si la operación configuró un proveedor de mapas (ADR-0009: OpenFreeMap por defecto), se ve el mapa
+ * de calles y los marcadores se proyectan encima. Mientras carga, o si no hay internet ni WebGL, se dibuja el mapa
+ * esquemático: la cuadrícula de la ciudad con su inclinación real, con los puntos en la proporción correcta. En los dos
+ * casos el carro del conductor se mueve igual.
  */
 export function Mapa({
   origen,
@@ -51,6 +52,7 @@ export function Mapa({
 }: Props) {
   const contenedor = useRef<HTMLDivElement>(null);
   const [tam, setTam] = useState({ w: ANCHO_POR_DEFECTO, h: ALTO_POR_DEFECTO });
+  const [real, setReal] = useState<ControlMapa | null>(null);
 
   useEffect(() => {
     const el = contenedor.current;
@@ -65,14 +67,19 @@ export function Mapa({
 
   // Se proyecta sobre el área libre (sin lo que tapan las hojas); luego se desplaza hacia abajo lo que tapa lo de arriba.
   const libre = Math.max(160, tam.h - reservaInferior - reservaSuperior);
-  const proy = useMemo(() => {
-    const puntos = [origen, destino, conductor, yo, ruta?.desde, ruta?.hasta].filter(
-      (p): p is Punto => !!p,
-    );
-    return crearProyeccion(puntos, tam.w, libre, 56, minSpanM);
-  }, [origen, destino, conductor, yo, ruta, tam.w, libre, minSpanM]);
+  const puntos = useMemo(
+    () => [origen, destino, conductor, yo, ruta?.desde, ruta?.hasta].filter((p): p is Punto => !!p),
+    [origen, destino, conductor, yo, ruta],
+  );
+  const proy = useMemo(
+    () => crearProyeccion(puntos, tam.w, libre, 56, minSpanM),
+    [puntos, tam.w, libre, minSpanM],
+  );
 
-  const px = (p: Punto) => ({ x: proy.x(p), y: proy.y(p) + reservaSuperior });
+  const px = (p: Punto) =>
+    real ? real.proyectar(p) : { x: proy.x(p), y: proy.y(p) + reservaSuperior };
+  // Con el mapa real los puntos fijos siguen a la cámara al instante; el carro se desliza.
+  const fijo = real ? { duration: 0 } : { type: 'spring' as const, stiffness: 120, damping: 20 };
   const bloque = Math.min(Math.max(80 / proy.metrosPorPixel, 22), 90);
 
   const o = origen ? px(origen) : null;
@@ -87,7 +94,15 @@ export function Mapa({
       className={`absolute inset-0 overflow-hidden bg-superficie-2 ${className}`}
       role="img"
       aria-label="Mapa del viaje"
+      data-mapa={real ? 'real' : 'esquematico'}
     >
+      <BaseMapa
+        puntos={puntos}
+        reservaSuperior={reservaSuperior}
+        reservaInferior={reservaInferior}
+        minSpanM={minSpanM}
+        alControl={setReal}
+      />
       <svg
         className="absolute inset-0 h-full w-full"
         viewBox={`0 0 ${tam.w} ${tam.h}`}
@@ -118,10 +133,14 @@ export function Mapa({
             <stop offset="100%" stopColor="var(--color-ty)" stopOpacity="0" />
           </radialGradient>
         </defs>
-        <rect width={tam.w} height={tam.h} fill="var(--superficie-2)" />
-        <rect width={tam.w} height={tam.h} fill="url(#calles-a)" />
-        <rect width={tam.w} height={tam.h} fill="url(#calles-b)" />
-        <rect width={tam.w} height={tam.h} fill="url(#brillo-mapa)" />
+        {!real && (
+          <>
+            <rect width={tam.w} height={tam.h} fill="var(--superficie-2)" />
+            <rect width={tam.w} height={tam.h} fill="url(#calles-a)" />
+            <rect width={tam.w} height={tam.h} fill="url(#calles-b)" />
+            <rect width={tam.w} height={tam.h} fill="url(#brillo-mapa)" />
+          </>
+        )}
 
         {r && (
           <g>
@@ -172,7 +191,7 @@ export function Mapa({
           className="pointer-events-none absolute"
           initial={false}
           animate={{ left: d.x, top: d.y }}
-          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+          transition={fijo}
         >
           <div className="absolute -translate-x-1/2 -translate-y-full">
             <div className="flex flex-col items-center">
@@ -195,7 +214,7 @@ export function Mapa({
           className="pointer-events-none absolute"
           initial={false}
           animate={{ left: o.x, top: o.y }}
-          transition={{ type: 'spring', stiffness: 120, damping: 20 }}
+          transition={fijo}
         >
           <span className="absolute grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-ty/25">
             <span className="size-4 rounded-full border-[3px] border-fondo bg-ty shadow-brillo" />

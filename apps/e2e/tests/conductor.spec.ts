@@ -129,6 +129,8 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await captura(page, 'oferta');
     await page.locator('#aceptar-oferta').click();
     await expect(page.getByText('Rumbo al pasajero')).toBeVisible();
+    // el mapa del viaje está (de calles si hay internet; si no, el esquemático de respaldo)
+    await expect(page.getByRole('img', { name: /Mapa hacia/ })).toBeVisible();
     await captura(page, 'en-camino');
   });
 
@@ -140,6 +142,7 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.locator('#pin-demo').click();
     await page.locator('#boton-iniciar').click();
     await expect(page.locator('#boton-finalizar')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Mapa hacia/ })).toBeVisible();
   });
 
   await test.step('el taxímetro mide distancia y paradas mientras maneja', async () => {

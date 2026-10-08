@@ -53,6 +53,15 @@ export default defineConfig({
         // La app es una SPA: cualquier ruta que no sea de la API devuelve el shell.
         navigateFallbackDenylist: [/^\/v1\//, /^\/socket\.io\//],
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
+        // La librería del mapa pesa ~1 MB: no se descarga con la instalación; se guarda la primera vez que se usa.
+        globIgnores: ['**/maplibre-gl-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => /\/assets\/maplibre-gl-.*\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: { cacheName: 'mapa-libreria', expiration: { maxEntries: 2 } },
+          },
+        ],
       },
     }),
   ],

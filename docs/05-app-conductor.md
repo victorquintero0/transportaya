@@ -168,5 +168,5 @@ Al reconectar o volver a la app, esta recupera su oferta y su viaje desde el ser
 
 **Gamificación.** Solo refuerzos positivos y personales (meta del día que el propio conductor fija, logros, racha). No hay rankings ni castigos por rechazar ofertas, para no crear una relación de subordinación (R-02, RN-035).
 
-**Pendiente.** Mapa propio (D-27), proveedor real de OTP, notificaciones *push*, pago por Wompi / Bre-B reales, y la prueba del ADR-0003 en celulares Android reales (la pantalla encendida y la ubicación en segundo plano siguen siendo el riesgo R-03).
+**Pendiente.** Proveedor de mapas definitivo y rutas por calles (D-27; el mapa de calles ya está, ADR-0009), proveedor real de OTP, notificaciones *push*, pago por Wompi / Bre-B reales, y la prueba del ADR-0003 en celulares Android reales (la pantalla encendida y la ubicación en segundo plano siguen siendo el riesgo R-03).
 

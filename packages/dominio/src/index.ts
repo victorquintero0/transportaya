@@ -10,3 +10,4 @@ export * from './taximetro.js';
 export * from './tiempo.js';
 export * from './habilitacion.js';
 export * from './permisos.js';
+export * from './mapa.js';

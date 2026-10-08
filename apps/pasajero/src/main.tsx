@@ -1,4 +1,4 @@
-import { configurarApi, registrarPreferencias } from '@transportaya/ui';
+import { cargarConfigMapa, configurarApi, registrarPreferencias } from '@transportaya/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -8,6 +8,7 @@ import { useAjustes } from './estado/ajustes.ts';
 import './estilos.css';
 
 configurarApi({ app: 'pasajero' });
+void cargarConfigMapa();
 registrarPreferencias(() => useAjustes.getState());
 
 const raiz = document.getElementById('raiz');

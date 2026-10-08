@@ -45,7 +45,7 @@ pnpm install
 pnpm test          # pruebas de todos los paquetes
 pnpm typecheck
 pnpm lint
-pnpm build
+pnpm build         # también deja listo @transportaya/dominio, que necesita el comando de migración
 
 cp .env.example .env
 docker compose -f infra/docker/docker-compose.yml up -d   # servicios de apoyo
@@ -60,6 +60,14 @@ pnpm --filter @transportaya/pasajero dev   # http://localhost:5171
 pnpm --filter @transportaya/conductor dev  # http://localhost:5172
 pnpm --filter @transportaya/operacion dev  # http://localhost:5173 (en modo demostración, entra con un clic por rol)
 ```
+
+> **Windows:** si ya tienes un PostgreSQL en el puerto 5432 (por ejemplo el de Laragon), el contenedor de Docker puede usar otro puerto (`-p 5433:5432`) y `DATABASE_URL` apuntar a él. El repositorio fuerza finales de línea LF (`.gitattributes`) para que los CSV de la semilla se lean bien.
+
+### Mapa
+
+Las apps muestran el mapa de calles con [MapLibre](https://maplibre.org) y **OpenFreeMap** por defecto (gratis, sin clave; necesita internet). El proveedor se cambia en la
+App Operación, **Configuración → Mapa de las apps**, sin tocar código ([ADR-0009](docs/adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)); sin internet o sin WebGL las apps
+siguen con el mapa esquemático.
 
 ### Probar las apps (modo demostración)
 

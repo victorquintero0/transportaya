@@ -111,13 +111,14 @@ export async function pedirViajeDeMentira(
 }
 
 /** El conductor acepta la oferta que le llegó y hace el viaje de principio a fin. */
+// Si hay otros conductores cerca (los de prueba de otros tests), la oferta les llega primero y pasa a este tras su tiempo de espera.
 export async function completarViaje(
   token: string,
   viaje: { viajeId: string; pin: string },
   distanciaM = 4500,
 ) {
   let oferta: any = null;
-  for (let i = 0; i < 30 && !oferta; i++) {
+  for (let i = 0; i < 120 && !oferta; i++) {
     oferta = (await llamar('GET', '/v1/conductor/oferta-actual', undefined, token)).oferta;
     if (!oferta) await new Promise((r) => setTimeout(r, 500));
   }

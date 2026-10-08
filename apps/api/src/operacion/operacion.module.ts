@@ -16,6 +16,8 @@ import { SoporteOperacionController } from './soporte-op.controller.js';
 import { SoporteOperacionService } from './soporte-op.service.js';
 import { ReportesOperacionController } from './reportes-op.controller.js';
 import { ReportesOperacionService } from './reportes-op.service.js';
+import { MapaConfigService } from './mapa-config.service.js';
+import { MapaController } from './mapa.controller.js';
 import { EmpleadosService } from './empleados.service.js';
 import { TorreOperacionController } from './torre-op.controller.js';
 import { TorreService } from './torre.service.js';
@@ -33,6 +35,7 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
     FinanzasOperacionController,
     SoporteOperacionController,
     ReportesOperacionController,
+    MapaController,
   ],
   providers: [
     AuthOperacionService,
@@ -45,6 +48,7 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
     FinanzasOperacionService,
     SoporteOperacionService,
     ReportesOperacionService,
+    MapaConfigService,
   ],
   exports: [EmpleadosService],
 })
