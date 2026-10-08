@@ -132,6 +132,31 @@ export const CATALOGO_PARAMETROS = {
     min: 1,
     max: 120,
   },
+  'retencion.posiciones_dias': {
+    grupo: 'Privacidad y retención',
+    descripcion: 'Días que se guardan las posiciones GPS detalladas de los conductores',
+    unidad: 'días',
+    defecto: 180,
+    min: 30,
+    max: 1095,
+  },
+  'retencion.chats_dias': {
+    grupo: 'Privacidad y retención',
+    descripcion: 'Días que se guardan los mensajes entre pasajero y conductor',
+    unidad: 'días',
+    defecto: 180,
+    min: 30,
+    max: 1095,
+  },
+  'retencion.trayectorias_dias': {
+    grupo: 'Privacidad y retención',
+    descripcion:
+      'Días que se guarda el recorrido GPS de cada viaje (el viaje y su cobro se conservan)',
+    unidad: 'días',
+    defecto: 365,
+    min: 90,
+    max: 1825,
+  },
 } as const satisfies Record<string, DefinicionParametro>;
 
 export type ClaveParametro = keyof typeof CATALOGO_PARAMETROS;

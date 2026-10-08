@@ -3,6 +3,7 @@ import { Boton } from '@transportaya/ui';
 import { Chip } from '@transportaya/ui';
 import { Icono } from '@transportaya/ui';
 import { Interruptor } from '@transportaya/ui';
+import { PanelPrivacidad } from '@transportaya/ui';
 import { Tarjeta } from '@transportaya/ui';
 import { avisar } from '@transportaya/ui';
 import { useAjustes, type Tema } from '../estado/ajustes.ts';
@@ -125,6 +126,10 @@ export function Perfil() {
 
         <Preferencias perfil={perfil} />
         <Historial />
+        <div>
+          <h2 className="mb-2 text-xl font-black">Mis datos y privacidad</h2>
+          <PanelPrivacidad />
+        </div>
         <Demostracion />
 
         <Boton

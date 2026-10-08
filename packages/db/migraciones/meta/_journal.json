@@ -50,6 +50,13 @@
       "when": 1791380957172,
       "tag": "0006_operacion",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791467703439,
+      "tag": "0007_privacidad",
+      "breakpoints": true
     }
   ]
 }

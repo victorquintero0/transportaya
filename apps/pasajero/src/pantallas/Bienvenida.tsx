@@ -1,6 +1,6 @@
 import {
   Boton,
-  Chip,
+  PoliticaDatosVista,
   Hoja,
   Icono,
   Logo,
@@ -223,28 +223,7 @@ export function Bienvenida({ perfil }: { perfil: Perfil }) {
         alCerrar={() => setPolitica(false)}
         titulo="Política de tratamiento de datos"
       >
-        <div className="space-y-3 pb-4 text-base text-suave">
-          <Chip tono="aviso">Versión {perfil.terminos.version} · borrador</Chip>
-          <p>
-            <b className="text-texto">Responsable.</b> TransporteYa. Atenderemos tus solicitudes de
-            consulta, actualización, rectificación y supresión por los canales de soporte de la app.
-          </p>
-          <p>
-            <b className="text-texto">Finalidades.</b> Prestar el servicio de transporte, procesar
-            pagos, garantizar tu seguridad y la del conductor, atender soporte y cumplir
-            obligaciones legales y contables.
-          </p>
-          <p>
-            <b className="text-texto">Datos que tratamos.</b> Nombre, celular, correo, ubicación
-            durante el viaje, historial de viajes y medios de pago tokenizados. No guardamos el
-            número de tu tarjeta.
-          </p>
-          <p>
-            <b className="text-texto">Conservación.</b> El recorrido detallado se conserva por un
-            tiempo limitado; los viajes y pagos, según las obligaciones contables.
-          </p>
-          <p className="text-sm">El texto definitivo lo revisa Legal antes del lanzamiento.</p>
-        </div>
+        {politica && <PoliticaDatosVista />}
       </Hoja>
     </main>
   );

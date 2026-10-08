@@ -56,6 +56,11 @@ export const PERMISOS = {
   'usuarios.gestionar': ['admin'],
   'config.ver': ['supervisor', 'admin'],
   'config.editar': ['admin'],
+  /** Solicitudes de las personas sobre sus datos personales (Ley 1581). */
+  'privacidad.ver': ['soporte', 'supervisor', 'admin'],
+  'privacidad.responder': ['soporte', 'supervisor', 'admin'],
+  /** Aceptar borrar datos o revocar la autorización: anonimiza la cuenta. */
+  'privacidad.suprimir': ['supervisor', 'admin'],
   /** Pantalla «Sistema»: salud, tareas programadas y tráfico de la API. */
   'sistema.ver': ['supervisor', 'admin'],
 } as const satisfies Record<string, readonly RolInterno[]>;

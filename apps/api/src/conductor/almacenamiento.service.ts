@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import { CONFIG, type Configuracion } from '../config.js';
@@ -9,6 +9,8 @@ export const ALMACENAMIENTO = Symbol('ALMACENAMIENTO');
 export interface Almacenamiento {
   guardar(clave: string, contenido: Buffer): Promise<void>;
   leer(clave: string): Promise<Buffer>;
+  /** Borra el archivo. Si ya no existe, no es un error. */
+  borrar(clave: string): Promise<void>;
 }
 
 @Injectable()
@@ -34,5 +36,9 @@ export class AlmacenamientoLocal implements Almacenamiento {
 
   leer(clave: string): Promise<Buffer> {
     return readFile(this.ruta(clave));
+  }
+
+  async borrar(clave: string): Promise<void> {
+    await rm(this.ruta(clave), { force: true });
   }
 }

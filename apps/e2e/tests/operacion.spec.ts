@@ -291,6 +291,33 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await p.locator('#resolver').click();
     await expect(p.getByText('Ticket resuelto')).toBeVisible();
   });
+  // ── Privacidad: una persona pide corregir sus datos y soporte le responde ──
+  const titular = await entrarConOtp('3109000077', 'pasajero');
+  await llamar('PATCH', '/v1/pasajero/yo', { nombre: 'Marcela Titular Datos' }, titular.token);
+  await llamar(
+    'POST',
+    '/v1/datos/solicitudes',
+    { tipo: 'rectificacion', detalle: 'Mi correo está mal escrito' },
+    titular.token,
+  );
+  await test.step('soporte atiende una solicitud de datos dentro del plazo de la ley', async () => {
+    const p = soporte.page;
+    await p.getByRole('link', { name: 'Privacidad' }).click();
+    await expect(p.locator('#tabla-privacidad')).toContainText('Marcela Titular Datos');
+    await p.locator('#tabla-privacidad').getByText('Marcela Titular Datos').click();
+    await expect(p.locator('#atender-solicitud')).toContainText('Mi correo está mal escrito');
+    await p.locator('#tomar-solicitud').click();
+    await expect(p.locator('#atender-solicitud')).toContainText('En trámite');
+    await p.locator('#aceptar-solicitud').click();
+    await p
+      .getByRole('dialog')
+      .locator('textarea')
+      .fill('Corregimos tu correo, gracias por avisarnos.');
+    await p.getByRole('dialog').getByRole('button', { name: 'Responder' }).click();
+    await expect(p.getByText('Solicitud resuelta')).toBeVisible();
+    await captura(p, 'privacidad');
+  });
+
   await soporte.context.close();
 
   // ── Tarifas y configuración (administrador) ──

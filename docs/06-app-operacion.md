@@ -203,6 +203,10 @@ limitado, que solo ven los datos de su empresa**), empleados, centros de costo, 
 - Alta y baja de usuarios internos, asignación de roles, doble factor obligatorio.
 - **Auditoría** consultable: quién hizo qué, cuándo, sobre qué registro, valor anterior y nuevo, y motivo.
 
+## Privacidad y Sistema
+
+> **Implementado.** **Privacidad** (soporte, supervisión, administración): cola de solicitudes de las personas sobre sus datos con su plazo legal y semáforo; responder, rechazar o aceptar borrar los datos (solo supervisión y administración). **Sistema** (supervisión, administración): salud técnica, tareas programadas y tráfico. Ver [doc 15](15-observabilidad-y-privacidad.md).
+
 ## OPE-12 · Configuración general
 
 > **Implementado (parámetros).** Los que el sistema lee de verdad, con su rango, y cada cambio pide motivo (D-35). Las plantillas de notificación llegan con el proveedor de mensajería.

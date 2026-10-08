@@ -3,7 +3,6 @@ import {
   lugarGuardado,
   metodoPago,
   pasajero,
-  sesion,
   usuario,
   viaje,
 } from '@transportaya/db';
@@ -12,9 +11,12 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { normalizarTelefono } from '../comun/telefono.js';
+import { AnonimizacionService } from '../privacidad/anonimizacion.service.js';
+import { PrivacidadService } from '../privacidad/privacidad.service.js';
+import { VERSION_TERMINOS } from '@transportaya/dominio';
 
 /** Versión vigente de los términos y de la política de datos (Ley 1581 de 2012). Al cambiarla, se vuelve a pedir la aceptación. */
-export const VERSION_TERMINOS = '2026-10';
+export { VERSION_TERMINOS };
 
 const ESTADOS_ACTIVOS = ['buscando_conductor', 'asignado', 'en_sitio', 'en_curso'] as const;
 const MAX_CONTACTOS = 5;
@@ -22,7 +24,11 @@ const MAX_LUGARES = 20;
 
 @Injectable()
 export class PerfilPasajeroService {
-  constructor(@Inject(BaseDeDatos) private readonly bd: BaseDeDatos) {}
+  constructor(
+    @Inject(BaseDeDatos) private readonly bd: BaseDeDatos,
+    @Inject(AnonimizacionService) private readonly anonimizacion: AnonimizacionService,
+    @Inject(PrivacidadService) private readonly privacidad: PrivacidadService,
+  ) {}
 
   async obtener(pasajeroId: string) {
     const { db } = this.bd;
@@ -234,26 +240,8 @@ export class PerfilPasajeroService {
         deuda: perfil.deuda,
       });
     await db.transaction(async (tx) => {
-      await tx.delete(contactoConfianza).where(eq(contactoConfianza.pasajeroId, pasajeroId));
-      await tx.delete(lugarGuardado).where(eq(lugarGuardado.pasajeroId, pasajeroId));
-      await tx.delete(metodoPago).where(eq(metodoPago.pasajeroId, pasajeroId));
-      await tx
-        .update(sesion)
-        .set({ revocadaEn: new Date() })
-        .where(eq(sesion.usuarioId, pasajeroId));
-      // El teléfono es único y obligatorio: se reemplaza por uno inválido para liberar el número.
-      const marcador = `+99${String(Date.now()).slice(-9)}${Math.floor(Math.random() * 90 + 10)}`;
-      await tx
-        .update(usuario)
-        .set({
-          nombre: 'Cuenta eliminada',
-          email: null,
-          fotoClave: null,
-          telefono: marcador,
-          estado: 'anonimizado',
-          actualizadoEn: new Date(),
-        })
-        .where(eq(usuario.id, pasajeroId));
+      await this.anonimizacion.anonimizar(tx, pasajeroId, 'pasajero');
+      await this.privacidad.registrarAutoeliminacion(tx, pasajeroId, 'pasajero');
     });
   }
 }

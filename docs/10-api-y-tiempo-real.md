@@ -25,6 +25,20 @@ documento OpenAPI que genera el backend.
   }
   ```
 
+## Salud, métricas y datos personales
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/v1/salud` · `/v1/listo` | Viva / lista para tráfico (503 si la base no responde) |
+| GET | `/v1/metricas` | Formato Prometheus; exige `METRICAS_TOKEN` si está definido |
+| POST | `/v1/telemetria/errores` | Las apps reportan errores no manejados (tope por dirección) |
+| GET | `/v1/politica-datos` | Política de tratamiento de datos con su versión (pública) |
+| GET | `/v1/datos/exportar` | Todo lo que se guarda de la persona (pasajero o conductor) |
+| GET / POST | `/v1/datos/solicitudes` | Sus solicitudes (consulta, rectificación, supresión, revocatoria) con su fecha límite |
+| POST | `/v1/conductor/terminos` | El conductor acepta la política vigente (necesario para enviar el registro) |
+
+Todas las respuestas llevan `x-request-id`; las apps lo envían para unir sus errores con el registro del servidor.
+
 ## Autenticación
 
 | Método | Ruta | Descripción |
@@ -166,6 +180,9 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | GET / PUT / DELETE | `/v1/op/parametros` · `/{clave}` | `config.ver` · `config.editar` | Parámetros operativos; los de despacho rigen en caliente |
 | GET / PUT | `/v1/op/mapa` | `config.ver` · `config.editar` | Proveedor del mapa de las apps (clave enmascarada, con motivo y auditoría) |
 | GET | `/v1/mapa/config` | pública | Qué mapa muestran las apps: `{ proveedor, estilo, estiloOscuro }` (caché de 1 min) |
+| GET | `/v1/op/sistema` | `sistema.ver` | Salud técnica: base de datos, tareas programadas, tráfico y conexiones ([doc 15](15-observabilidad-y-privacidad.md)) |
+| GET | `/v1/op/privacidad/solicitudes` · `/{id}` | `privacidad.ver` | Solicitudes de las personas sobre sus datos, con plazo y semáforo |
+| POST | `/v1/op/privacidad/solicitudes/{id}/tomar` · `/resolver` | `privacidad.responder` (borrar: `privacidad.suprimir`) | Responder; aceptar una supresión anonimiza la cuenta |
 
 ## Integraciones entrantes
 

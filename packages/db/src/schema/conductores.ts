@@ -73,6 +73,9 @@ export const conductor = pgTable(
     bloqueadoPorDeuda: boolean('bloqueado_por_deuda').notNull().default(false),
     /** La operación lo suspendió a mano: la revisión diaria de documentos no lo reactiva sola. */
     suspensionManual: boolean('suspension_manual').notNull().default(false),
+    /** Autorización de tratamiento de datos y términos (Ley 1581 de 2012, RNF-60): cuándo y qué versión aceptó. */
+    aceptoTerminosEn: marca('acepto_terminos_en'),
+    versionTerminos: text('version_terminos'),
     /** RUT configurable (D-06): se guarda si el conductor lo entrega. */
     rut: text('rut'),
     calificacionPromedio: numeric('calificacion_promedio', {

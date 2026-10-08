@@ -61,6 +61,7 @@ export interface Perfil {
   vehiculos: Vehiculo[];
   cuentaPago: { tipo: string; valorEnmascarado: string; verificada: boolean } | null;
   documentos: { requisitos: RequisitoDocumento[]; completo: boolean; habilitado: boolean };
+  terminos: { version: string; aceptados: boolean; aceptoEn: string | null };
   onboarding: {
     pasos: {
       id: 'datos' | 'vehiculo' | 'documentos' | 'cuenta' | 'revision';

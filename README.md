@@ -63,6 +63,12 @@ pnpm --filter @transportaya/operacion dev  # http://localhost:5173 (en modo demo
 
 > **Windows:** si ya tienes un PostgreSQL en el puerto 5432 (por ejemplo el de Laragon), el contenedor de Docker puede usar otro puerto (`-p 5433:5432`) y `DATABASE_URL` apuntar a él. El repositorio fuerza finales de línea LF (`.gitattributes`) para que los CSV de la semilla se lean bien.
 
+### Observabilidad y datos personales
+
+La API escribe un registro JSON con identificador de solicitud, expone `/v1/listo` y `/v1/metricas`, y la App Operación tiene las pantallas **Sistema** (salud técnica) y **Privacidad**
+(solicitudes de las personas sobre sus datos, Ley 1581). Para ver métricas y alertas: `docker compose -f infra/docker/docker-compose.yml --profile observabilidad up -d`.
+Detalle en [docs/15](docs/15-observabilidad-y-privacidad.md).
+
 ### Mapa
 
 Las apps muestran el mapa de calles con [MapLibre](https://maplibre.org) y **OpenFreeMap** por defecto (gratis, sin clave; necesita internet). El proveedor se cambia en la

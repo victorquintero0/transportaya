@@ -21,6 +21,7 @@ Es un documento vivo: se debe actualizar cuando cambie una regla de negocio o un
 | 12 | [Hoja de ruta](12-hoja-de-ruta.md) | Fases de entrega |
 | 13 | [Decisiones y riesgos](13-decisiones-pendientes-y-riesgos.md) | Decisiones tomadas, las que siguen abiertas y los riesgos |
 | 14 | [Catálogo de vehículos](14-catalogo-de-vehiculos.md) | Categorías Media, Media Alta y Alta y catálogo para el registro de conductores |
+| 15 | [Observabilidad y protección de datos](15-observabilidad-y-privacidad.md) | Registro, métricas, alertas, Ley 1581, derechos del titular y retención |
 | — | [Datos iniciales](datos/README.md) | Tarifas de rutas desde Manizales y catálogo de vehículos en CSV |
 | — | [Registros de decisiones (ADR)](adr/README.md) | Decisiones de arquitectura y su justificación |
 

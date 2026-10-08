@@ -4,6 +4,7 @@ import {
   Hoja,
   Icono,
   Interruptor,
+  PanelPrivacidad,
   Tarjeta,
   api,
   auth,
@@ -120,22 +121,6 @@ export function Cuenta() {
     },
     onError: (e) => avisar(mensajeDe(e), 'error'),
   });
-
-  const descargar = async () => {
-    try {
-      const datos = await api.get('/v1/pasajero/mis-datos');
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }),
-      );
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'mis-datos-transporteya.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      avisar(mensajeDe(e), 'error');
-    }
-  };
 
   const demo = useMutation({
     mutationFn: (accion: 'crear' | 'detener') => {
@@ -328,11 +313,8 @@ export function Cuenta() {
           </Tarjeta>
         </Seccion>
 
-        <Seccion titulo="Privacidad">
-          <Tarjeta className="space-y-2.5">
-            <Boton variante="secundario" icono="descargar" alPulsar={() => void descargar()}>
-              Descargar mis datos
-            </Boton>
+        <Seccion titulo="Mis datos y privacidad">
+          <PanelPrivacidad>
             <Boton
               id="eliminar-cuenta"
               variante="fantasma"
@@ -341,7 +323,7 @@ export function Cuenta() {
             >
               Eliminar mi cuenta
             </Boton>
-          </Tarjeta>
+          </PanelPrivacidad>
         </Seccion>
 
         {simulador && (

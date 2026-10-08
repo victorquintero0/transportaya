@@ -53,7 +53,10 @@ flowchart LR
 | Usuarios internos con doble factor (correo, contraseña y TOTP), roles y permisos | Hecho (D-31, [ADR-0008](adr/0008-app-operacion-web-con-segundo-factor.md)) |
 | API de la App Operación: torre, viajes, conductores, tarifas, finanzas, soporte, reportes, usuarios, auditoría y parámetros | Hecho, con 56 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
 | App Operación de escritorio, con prueba de punta a punta con navegador real | Hecho ([docs/06](06-app-operacion.md)); alcance en D-32 |
-| Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
+| Mapa de calles con MapLibre y proveedor configurable desde la App Operación ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)) | Hecho |
+| Observabilidad: registro JSON con identificador de solicitud, métricas, salud, pantalla Sistema y alertas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta Alertmanager y trazas |
+| Protección de datos: política versionada, derechos del titular, anonimización, retención y particiones automáticas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta revisión de Legal, RNBD |
+| Servicios de mapas propios (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |
 | Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |
 

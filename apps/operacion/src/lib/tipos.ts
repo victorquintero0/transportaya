@@ -675,3 +675,26 @@ export interface EstadoSistema {
   negocio: { viajesActivos: Record<string, number>; conductores: Record<string, number> };
   erroresDeApps15min: number;
 }
+
+export interface SolicitudDatosFila {
+  id: string;
+  tipo: 'consulta' | 'rectificacion' | 'supresion' | 'revocatoria';
+  detalle: string;
+  estado: 'recibida' | 'en_tramite' | 'aceptada' | 'rechazada' | 'ejecutada';
+  creadaEn: string;
+  venceEn: string;
+  respuesta: string | null;
+  resueltaEn: string | null;
+  rol: 'conductor' | 'pasajero';
+  titular: { id: string; nombre: string; telefono: string };
+  semaforo?: Semaforo;
+  diasHabilesRestantes?: number;
+}
+
+export interface SolicitudDatosDetalle extends Omit<
+  SolicitudDatosFila,
+  'titular' | 'semaforo' | 'diasHabilesRestantes'
+> {
+  titular: { id: string; nombre: string; telefono: string; estadoCuenta: string };
+  bloqueadores: { codigo: string; detalle: string; monto?: number }[];
+}

@@ -243,12 +243,18 @@ Estas reglas no dependen de que la aplicación se comporte bien. Cada una tiene 
 `posicion_conductor` es una tabla **particionada por día** (corte a la medianoche de Bogotá). La migración crea 14 días hacia
 adelante y una partición por defecto que recibe lo que no tenga partición propia, para no perder datos.
 
-Un trabajo programado debe, cada día:
+Un trabajo programado hace, cada día a las 03:30 (Bogotá) y al arrancar la API ([doc 15](15-observabilidad-y-privacidad.md)):
 
-1. `SELECT crear_particiones_posicion(current_date, 14)`: asegura los días siguientes.
-2. `SELECT eliminar_particiones_posicion(current_date - 180)`: aplica la retención de `[6 meses]` ([RNF-64](11-requisitos-no-funcionales.md)).
+1. `crear_particiones_posicion(hoy, 8)`: asegura los días siguientes. Si había posiciones de ese día en la partición por defecto, las pasa a la nueva.
+2. `eliminar_particiones_posicion(hoy - retencion.posiciones_dias)`: aplica la retención ([RNF-64](11-requisitos-no-funcionales.md)); 180 días por defecto.
 
-Pendiente: implementar ese trabajo en `apps/api` (BullMQ).
+Además borra mensajes del viaje, recorridos GPS, códigos OTP y sesiones vencidas según su plazo. Pendiente: pasar el trabajo a BullMQ cuando haya varias instancias.
+
+### Solicitudes sobre datos personales
+
+`solicitud_datos`: quién (`usuario_id`, `rol`), qué (`tipo`: consulta, rectificación, supresión, revocatoria), `estado` (recibida, en trámite, aceptada, rechazada,
+ejecutada), `vence_en` (10 o 15 días hábiles), la `respuesta` y quién la dio. La base exige que una solicitud resuelta tenga fecha de resolución y que un rechazo traiga explicación.
+`conductor` guarda `acepto_terminos_en` y `version_terminos`, igual que `pasajero`.
 
 ## Fuera de esta versión
 

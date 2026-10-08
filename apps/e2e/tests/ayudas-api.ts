@@ -81,6 +81,8 @@ export async function crearConductor(
   for (const t of ['soat', 'revision_tecnicomecanica', 'seguro_todo_riesgo'])
     await subir(t, { vehiculoId: vehiculo.id, venceEn: lejos });
   await llamar('PUT', '/v1/conductor/cuenta-pago', { tipo: 'llave_bre_b', valor: telefono }, token);
+  const { version } = await llamar<{ version: string }>('GET', '/v1/politica-datos');
+  await llamar('POST', '/v1/conductor/terminos', { version }, token);
   await llamar('POST', '/v1/conductor/enviar-revision', undefined, token);
   if (o.aprobar) await llamar('POST', '/v1/dev/conductor/aprobar', undefined, token);
   return { token, id };

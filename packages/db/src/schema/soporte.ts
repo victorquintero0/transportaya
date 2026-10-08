@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { boolean, check, index, jsonb, pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { estadoTicket, prioridadTicket, tipoTicket } from './enums.js';
-import { usuario } from './identidad.js';
+import { empleado, usuario } from './identidad.js';
 import { actualizadoEn, creadoEn, id, marca } from './tipos.js';
 import { viaje } from './viajes.js';
 
@@ -75,5 +75,54 @@ export const auditoria = pgTable(
     index('auditoria_entidad_idx').on(t.entidad, t.entidadId, t.ocurridoEn),
     index('auditoria_usuario_idx').on(t.usuarioId, t.ocurridoEn),
     check('auditoria_accion', sql`${t.accion} ~ '^[a-z_]+([.][a-z_]+)+$'`),
+  ],
+);
+
+/**
+ * Solicitudes de las personas sobre sus datos personales (Ley 1581 de 2012, art. 14; RNF-62): consultar, rectificar,
+ * suprimir o revocar la autorización. La ley da 10 días hábiles para las consultas y 15 para los reclamos, por eso cada
+ * una guarda su fecha límite.
+ */
+export const solicitudDatos = pgTable(
+  'solicitud_datos',
+  {
+    id: id(),
+    usuarioId: uuid('usuario_id')
+      .notNull()
+      .references(() => usuario.id),
+    rol: text('rol').notNull(),
+    tipo: text('tipo').notNull(),
+    detalle: text('detalle').notNull(),
+    estado: text('estado').notNull().default('recibida'),
+    venceEn: marca('vence_en').notNull(),
+    respuesta: text('respuesta'),
+    /** Quien resolvió. Vacío cuando la propia persona ejerció el derecho desde la app (por ejemplo, eliminar su cuenta). */
+    resueltaPor: uuid('resuelta_por').references(() => empleado.usuarioId),
+    resueltaEn: marca('resuelta_en'),
+    creadaEn: creadoEn(),
+  },
+  (t) => [
+    index('solicitud_datos_bandeja_idx')
+      .on(t.estado, t.venceEn)
+      .where(sql`${t.estado} in ('recibida', 'en_tramite')`),
+    index('solicitud_datos_usuario_idx').on(t.usuarioId, t.creadaEn),
+    check('solicitud_datos_rol', sql`${t.rol} in ('conductor', 'pasajero')`),
+    check(
+      'solicitud_datos_tipo',
+      sql`${t.tipo} in ('consulta', 'rectificacion', 'supresion', 'revocatoria')`,
+    ),
+    check(
+      'solicitud_datos_estado',
+      sql`${t.estado} in ('recibida', 'en_tramite', 'aceptada', 'rechazada', 'ejecutada')`,
+    ),
+    check('solicitud_datos_detalle', sql`char_length(${t.detalle}) between 5 and 2000`),
+    check(
+      'solicitud_datos_resuelta',
+      sql`(${t.estado} in ('recibida', 'en_tramite')) = (${t.resueltaEn} is null)`,
+    ),
+    check(
+      'solicitud_datos_rechazo_con_respuesta',
+      sql`${t.estado} <> 'rechazada' or ${t.respuesta} is not null`,
+    ),
   ],
 );

@@ -12,6 +12,7 @@ import { ParametrosModule } from './operacion/parametros.service.js';
 import { MiddlewareSolicitudes } from './observabilidad/solicitudes.middleware.js';
 import { ObservabilidadModule } from './observabilidad/observabilidad.module.js';
 import { PasajeroModule } from './pasajero/pasajero.module.js';
+import { PrivacidadModule } from './privacidad/privacidad.module.js';
 import { SimuladorModule } from './simulador/simulador.module.js';
 import { TareasService } from './tareas.service.js';
 import { TiempoRealModule } from './tiempo-real/tiempo-real.module.js';
@@ -31,6 +32,7 @@ import { SaludController } from './salud.controller.js';
     ViajesModule,
     DineroModule,
     PasajeroModule,
+    PrivacidadModule,
     OperacionModule,
     SimuladorModule,
   ],

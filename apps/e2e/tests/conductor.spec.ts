@@ -105,6 +105,12 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.getByRole('button', { name: 'Guardar cuenta' }).click();
     await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible();
     await captura(page, 'registro-revision');
+    // sin autorizar el tratamiento de datos no se puede enviar
+    await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeDisabled();
+    await page.getByText('Leer la política de tratamiento de datos').click();
+    await expect(page.locator('[data-politica]')).toContainText('Quién es el responsable');
+    await page.mouse.click(10, 10); // toca fuera de la hoja para cerrarla
+    await page.locator('#acepto-terminos').click();
     await page.getByRole('button', { name: 'Enviar a revisión' }).click();
     await expect(page.getByText('¡Recibimos tu registro!')).toBeVisible();
     await captura(page, 'en-revision');
@@ -191,5 +197,19 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.locator('#simular-pago').click();
     await expect(page.getByText('Estás al día ✓')).toBeVisible();
     await captura(page, 'ganancias-al-dia');
+  });
+
+  await test.step('ejerce sus derechos: descarga sus datos y pide corregir uno', async () => {
+    await page.getByRole('link', { name: 'Perfil' }).click();
+    const descarga = page.waitForEvent('download');
+    await page.locator('#descargar-datos').click();
+    expect((await descarga).suggestedFilename()).toBe('mis-datos-transporteya.json');
+    await page.locator('#nueva-solicitud').click();
+    await page.locator('[data-tipo="rectificacion"]').click();
+    await page.locator('#detalle-solicitud').fill('Mi segundo apellido está mal escrito');
+    await page.locator('#enviar-solicitud').click();
+    await expect(page.locator('#mis-solicitudes')).toContainText('Corregir mis datos');
+    await expect(page.locator('#mis-solicitudes')).toContainText('Recibida');
+    await captura(page, 'mis-datos-y-privacidad');
   });
 });

@@ -99,6 +99,7 @@ describe.skipIf(!hayBase)('Observabilidad (RNF-80 a 83)', () => {
     expect(r.baseDatos.pool.total).toBeGreaterThan(0);
     expect(r.tareas.map((t: { nombre: string }) => t.nombre).sort()).toEqual([
       'cierre_diario',
+      'retencion',
       'vencimientos',
       'vigilar_senal',
     ]);

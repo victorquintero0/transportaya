@@ -1,3 +1,4 @@
+import { EnlacePolitica } from '@transportaya/ui';
 import { useMutation } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
@@ -230,6 +231,7 @@ export function Entrar() {
           )}
         </AnimatePresence>
       </div>
+      <EnlacePolitica />
     </main>
   );
 }

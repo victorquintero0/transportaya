@@ -171,6 +171,16 @@ export class ConductorController {
     return (await this.perfil.obtener(u.id)).cuentaPago;
   }
 
+  @Post('conductor/terminos')
+  @HttpCode(200)
+  async aceptarTerminos(@UsuarioActual() u: UsuarioAutenticado, @Body() cuerpo: unknown) {
+    await this.perfil.aceptarTerminos(
+      u.id,
+      validar(z.object({ version: z.string() }), cuerpo).version,
+    );
+    return this.perfil.obtener(u.id);
+  }
+
   @Post('conductor/enviar-revision')
   @HttpCode(200)
   async enviarRevision(@UsuarioActual() u: UsuarioAutenticado) {

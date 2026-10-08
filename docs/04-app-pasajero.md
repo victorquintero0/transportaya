@@ -149,6 +149,8 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 **Cobros rechazados (HU-PAS-04).** Si el banco rechaza la tarjeta al terminar, el viaje queda como **deuda del pasajero**, el conductor cobra igual
 y el pasajero no puede pedir otro viaje hasta pagarla con otra tarjeta (ver D-30).
 
+> **Datos personales.** Cuenta → «Mis datos y privacidad»: política, descarga de datos, solicitudes con su respuesta y eliminar la cuenta ([doc 15](15-observabilidad-y-privacidad.md)).
+
 **Pendiente.** Buscador de direcciones real y proveedor de mapas definitivo (D-27; el mapa de calles ya está, ADR-0009), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
 notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, viajes programados (F2), llamada enmascarada (F2) y la parte corporativa (F3).
 

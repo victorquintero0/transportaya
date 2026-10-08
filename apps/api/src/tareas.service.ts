@@ -1,17 +1,24 @@
-import { Inject, Injectable, Logger, type OnModuleInit } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  type OnApplicationBootstrap,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { Cron, Interval } from '@nestjs/schedule';
 import { fechaBogota } from '@transportaya/dominio';
 import { ConexionService } from './conductor/conexion.service.js';
 import { VencimientosService } from './conductor/vencimientos.service.js';
 import { CierresService } from './dinero/cierres.service.js';
 import { EstadoTareasService } from './observabilidad/estado-tareas.service.js';
+import { RetencionService } from './privacidad/retencion.service.js';
 import { ViajesService } from './viajes/viajes.service.js';
 
 const DIA_MS = 24 * 3_600_000;
 
 /** Trabajos periódicos de vigilancia. En producción se moverán a BullMQ (docs/08). */
 @Injectable()
-export class TareasService implements OnModuleInit {
+export class TareasService implements OnModuleInit, OnApplicationBootstrap {
   private readonly log = new Logger('Tareas');
 
   constructor(
@@ -20,6 +27,7 @@ export class TareasService implements OnModuleInit {
     @Inject(CierresService) private readonly cierres: CierresService,
     @Inject(VencimientosService) private readonly vencimientos: VencimientosService,
     @Inject(EstadoTareasService) private readonly estado: EstadoTareasService,
+    @Inject(RetencionService) private readonly retencion: RetencionService,
   ) {}
 
   onModuleInit(): void {
@@ -30,10 +38,22 @@ export class TareasService implements OnModuleInit {
     );
     this.estado.registrar('cierre_diario', 'Cierre de cuentas del día (00:00)', DIA_MS);
     this.estado.registrar(
+      'retencion',
+      'Borra datos que cumplieron su plazo y crea particiones (03:30)',
+      DIA_MS,
+    );
+    this.estado.registrar(
       'vencimientos',
       'Vence documentos y suspende a quien no los tiene (00:05)',
       DIA_MS,
     );
+  }
+
+  /** Al arrancar se aseguran las particiones de posiciones de hoy y los próximos días, sin esperar a la madrugada. */
+  async onApplicationBootstrap(): Promise<void> {
+    await this.estado.correr('retencion', async () => {
+      await this.retencion.asegurarParticiones();
+    });
   }
 
   @Interval(15_000)
@@ -61,5 +81,11 @@ export class TareasService implements OnModuleInit {
   @Cron('5 0 * * *', { timeZone: 'America/Bogota' })
   async vencimientosDiarios(): Promise<void> {
     await this.estado.correr('vencimientos', () => this.vencimientos.revisar());
+  }
+
+  /** 03:30 en Bogotá: crea las particiones de los próximos días y borra lo que ya cumplió su plazo (RNF-64). */
+  @Cron('30 3 * * *', { timeZone: 'America/Bogota' })
+  async retencionDiaria(): Promise<void> {
+    await this.estado.correr('retencion', () => this.retencion.aplicar());
   }
 }

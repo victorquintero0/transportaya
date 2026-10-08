@@ -27,6 +27,7 @@ export const DESTINOS: Destino[] = [
   { ruta: '/reportes', titulo: 'Reportes', icono: 'archivo', permiso: 'reportes.ver' },
   { ruta: '/usuarios', titulo: 'Usuarios', icono: 'escudo', permiso: 'usuarios.ver' },
   { ruta: '/auditoria', titulo: 'Auditoría', icono: 'candado', permiso: 'usuarios.ver' },
+  { ruta: '/privacidad', titulo: 'Privacidad', icono: 'escudo', permiso: 'privacidad.ver' },
   { ruta: '/configuracion', titulo: 'Configuración', icono: 'editar', permiso: 'config.ver' },
   { ruta: '/sistema', titulo: 'Sistema', icono: 'rayo', permiso: 'sistema.ver' },
 ];
