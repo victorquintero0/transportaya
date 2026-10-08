@@ -18,6 +18,9 @@ function celularNuevo(): string {
 const UBICACION = { latitude: 5.0548, longitude: -75.4945 };
 
 test.beforeEach(async ({ context }) => {
+  // El mapa de calles sale a internet: aquí se corta para que la prueba use siempre el mapa esquemático (lo de los
+  // mapas reales se prueba en mapa.spec.ts), sin depender de la red ni de la tarjeta gráfica de quien corre la prueba.
+  await context.route('https://tiles.openfreemap.org/**', (r) => r.abort());
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation(UBICACION);
 });

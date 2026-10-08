@@ -222,12 +222,14 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await p.getByRole('tab', { name: /Alertas/ }).click();
     await expect(p.locator('#lista-alertas [data-alerta="sos"]')).toBeVisible();
     await captura(p, 'torre-alerta-sos');
-    await p.locator('#lista-alertas').getByRole('button', { name: 'Tomar' }).click();
-    await expect(p.locator('#lista-alertas')).toContainText('La atiende');
-    await p.locator('#lista-alertas').getByRole('button', { name: 'Cerrar' }).click();
+    // Otras alertas pueden estar abiertas (por ejemplo un conductor de otra prueba sin señal): se trabaja solo la del SOS.
+    const sos = p.locator('#lista-alertas [data-alerta="sos"]');
+    await sos.getByRole('button', { name: 'Tomar' }).click();
+    await expect(sos).toContainText('La atiende');
+    await sos.getByRole('button', { name: 'Cerrar' }).click();
     await p.getByRole('dialog').locator('textarea').fill('Hablé con el conductor: falsa alarma');
     await p.getByRole('dialog').getByRole('button', { name: 'Cerrar alerta' }).click();
-    await expect(p.getByText('Sin alertas abiertas')).toBeVisible();
+    await expect(p.locator('#lista-alertas [data-alerta="sos"]')).toHaveCount(0);
   });
 
   // ── Un viaje completo para que haya dinero que cerrar ──
