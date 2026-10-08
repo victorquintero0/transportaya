@@ -57,3 +57,18 @@ describe('proyección del mapa esquemático', () => {
     expect(trazoCurvo(0, 0, 100, 0)).toMatch(/^M 0\.0 0\.0 Q [\d.-]+ [\d.-]+ 100\.0 0\.0$/);
   });
 });
+
+describe('proyección inversa', () => {
+  it('invertir devuelve la coordenada de la que se partió', () => {
+    const puntos = [
+      { lat: 5.0, lng: -75.5 },
+      { lat: 5.01, lng: -75.49 },
+    ];
+    const p = crearProyeccion(puntos, 400, 300, 40, 200);
+    for (const punto of puntos) {
+      const q = p.invertir(p.x(punto), p.y(punto));
+      expect(q.lat).toBeCloseTo(punto.lat, 6);
+      expect(q.lng).toBeCloseTo(punto.lng, 6);
+    }
+  });
+});

@@ -116,6 +116,7 @@ export interface Viaje {
   precioEstimado: { min: number; max: number };
   precioFinal: number | null;
   cobroEspera: number;
+  peajes?: number;
   propina: number;
   conductor: ConductorAsignado | null;
   tiempos: {

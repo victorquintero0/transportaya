@@ -4,10 +4,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BarrasApiladas } from '../componentes/Grafica.tsx';
 import { Encabezado } from '../componentes/Layout.tsx';
-import { Boton, Campo, Entrada, Kpi, Panel, Tabla } from '../componentes/ui.tsx';
+import { MapaOperacion } from '../componentes/MapaOperacion.tsx';
+import { Boton, Campo, Entrada, Kpi, Panel, Selector, Tabla } from '../componentes/ui.tsx';
 import { consulta, usePermiso } from '../lib/consultas.ts';
+import { CATEGORIA } from '../lib/etiquetas.ts';
 import { fechaCorta, hoyBogota } from '../lib/fechas.ts';
-import type { Reporte } from '../lib/tipos.ts';
+import type { CeldaCalor, Reporte, Zona } from '../lib/tipos.ts';
 
 const dias = (n: number) =>
   new Date(Date.now() - n * 86_400_000).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
@@ -36,13 +38,33 @@ const SERIES_HORA = [
 ];
 
 export function Reportes() {
-  const [rango, setRango] = useState({ desde: dias(6), hasta: hoyBogota() });
+  const [rango, setRango] = useState({
+    desde: dias(6),
+    hasta: hoyBogota(),
+    categoria: '',
+    zonaId: '',
+  });
   const [aplicado, setAplicado] = useState(rango);
+  const [calorTipo, setCalorTipo] = useState<'solicitudes' | 'sin_conductor'>('solicitudes');
+  const { data: zonas } = useQuery({
+    queryKey: ['zonas'],
+    queryFn: () => api.get<Zona[]>('/v1/op/zonas'),
+  });
   const [exportando, setExportando] = useState(false);
   const puedeVerFinanzas = usePermiso('finanzas.ver');
   const q = consulta({
     desde: `${aplicado.desde}T00:00:00-05:00`,
     hasta: `${aplicado.hasta}T23:59:59-05:00`,
+    categoria: aplicado.categoria,
+    zonaId: aplicado.zonaId,
+  });
+  const { data: calor } = useQuery({
+    queryKey: ['calor', aplicado, calorTipo],
+    queryFn: () =>
+      api.get<{ total: number; celdas: CeldaCalor[] }>(
+        `/v1/op/reportes/calor${q}${q ? '&' : '?'}tipo=${calorTipo}`,
+      ),
+    placeholderData: (p) => p,
   });
   const { data: r, isFetching } = useQuery({
     queryKey: ['reportes', aplicado],
@@ -51,7 +73,7 @@ export function Reportes() {
   });
 
   const preset = (n: number) => {
-    const nuevo = { desde: dias(n - 1), hasta: hoyBogota() };
+    const nuevo = { ...rango, desde: dias(n - 1), hasta: hoyBogota() };
     setRango(nuevo);
     setAplicado(nuevo);
   };
@@ -127,6 +149,34 @@ export function Reportes() {
               onChange={(e) => setRango({ ...rango, hasta: e.target.value })}
             />
           </Campo>
+          <Campo etiqueta="Categoría">
+            <Selector
+              id="filtro-categoria"
+              value={rango.categoria}
+              onChange={(e) => setRango({ ...rango, categoria: e.target.value })}
+            >
+              <option value="">Todas</option>
+              {Object.entries(CATEGORIA).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
+          <Campo etiqueta="Zona de origen">
+            <Selector
+              id="filtro-zona"
+              value={rango.zonaId}
+              onChange={(e) => setRango({ ...rango, zonaId: e.target.value })}
+            >
+              <option value="">Toda la ciudad</option>
+              {(zonas ?? []).map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.nombre}
+                </option>
+              ))}
+            </Selector>
+          </Campo>
           <Boton type="submit" variante="primario">
             Aplicar
           </Boton>
@@ -166,7 +216,11 @@ export function Reportes() {
               <Kpi
                 etiqueta="Utilización de la flota"
                 valor={r.flota.utilizacion === null ? '—' : porcentaje(r.flota.utilizacion)}
-                nota={`${r.flota.horasProductivas} h productivas de ${r.flota.horasEnLinea} h en línea`}
+                nota={
+                  r.flota.horasEnLinea === null
+                    ? `${r.flota.horasProductivas} h productivas (la flota no se recorta por filtro)`
+                    : `${r.flota.horasProductivas} h productivas de ${r.flota.horasEnLinea} h en línea`
+                }
               />
             </div>
 
@@ -223,6 +277,41 @@ export function Reportes() {
                 </Panel>
               )}
             </div>
+
+            <Panel
+              id="panel-calor"
+              titulo="Dónde se piden los viajes"
+              acciones={
+                <div className="flex gap-1.5">
+                  <Boton
+                    tamano="sm"
+                    variante={calorTipo === 'solicitudes' ? 'primario' : 'secundario'}
+                    onClick={() => setCalorTipo('solicitudes')}
+                  >
+                    Todas
+                  </Boton>
+                  <Boton
+                    tamano="sm"
+                    variante={calorTipo === 'sin_conductor' ? 'primario' : 'secundario'}
+                    onClick={() => setCalorTipo('sin_conductor')}
+                  >
+                    Sin conductor
+                  </Boton>
+                </div>
+              }
+            >
+              <MapaOperacion
+                className="h-[360px]"
+                calor={calor?.celdas ?? []}
+                colorCalor={
+                  calorTipo === 'sin_conductor' ? 'var(--color-peligro)' : 'var(--color-mandarina)'
+                }
+              />
+              <p className="mt-2 text-xs text-suave">
+                {calor?.total ?? 0} solicitudes en celdas de unos 330 m: entre más intenso el color,
+                más viajes empezaron ahí. No se muestran personas, solo zonas.
+              </p>
+            </Panel>
 
             <div className="grid gap-4 xl:grid-cols-2">
               <Panel>

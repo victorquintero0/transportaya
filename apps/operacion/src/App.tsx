@@ -11,6 +11,9 @@ import { Ingresar } from './pantallas/Ingresar.tsx';
 const Auditoria = lazy(() =>
   import('./pantallas/Auditoria.tsx').then((m) => ({ default: m.Auditoria })),
 );
+const CatalogoVehiculos = lazy(() =>
+  import('./pantallas/Catalogo.tsx').then((m) => ({ default: m.CatalogoVehiculos })),
+);
 const Conductores = lazy(() =>
   import('./pantallas/Conductores.tsx').then((m) => ({ default: m.Conductores })),
 );
@@ -88,6 +91,7 @@ export function App() {
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="auditoria" element={<Auditoria />} />
         <Route path="configuracion" element={<Configuracion />} />
+        <Route path="catalogo" element={<CatalogoVehiculos />} />
         <Route path="privacidad" element={<Privacidad />} />
         <Route path="sistema" element={<Sistema />} />
       </Route>

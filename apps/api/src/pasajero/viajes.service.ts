@@ -302,6 +302,7 @@ export class ViajesPasajeroService {
       precioEstimado: { min: v.precioEstimadoMin, max: v.precioEstimadoMax },
       precioFinal: v.precioFinal,
       cobroEspera: v.cobroEspera,
+      peajes: v.peajes,
       propina: v.propina,
       conductor: conductorInfo,
       tiempos: {
@@ -450,6 +451,7 @@ export class ViajesPasajeroService {
       const ajuste = (d.totalRedondeado ?? 0) - tarifaViaje - recargos;
       if (ajuste !== 0) lineas.push({ concepto: 'Aproximación a la centena', valor: ajuste });
       if (v.cobroEspera > 0) lineas.push({ concepto: 'Tiempo de espera', valor: v.cobroEspera });
+      if (v.peajes > 0) lineas.push({ concepto: 'Peajes', valor: v.peajes });
     } else if (v.estado === 'cancelado') {
       lineas.push({ concepto: 'Cancelación', valor: v.precioFinal });
     }

@@ -13,6 +13,23 @@ export interface Rango {
   hasta: Date;
 }
 
+/** Recortes opcionales de los reportes: la categoría del vehículo y la zona donde se pidió el viaje. */
+export interface FiltroReporte {
+  categoria?: 'media' | 'media_alta' | 'alta' | undefined;
+  zonaId?: string | undefined;
+}
+
+/** Condición SQL de los filtros sobre una tabla de viajes con ese alias. Vacía si no hay filtros. */
+function condicion(f: FiltroReporte, alias: string) {
+  const a = sql.raw(alias);
+  return sql`${f.categoria ? sql`and ${a}.categoria = ${f.categoria}` : sql``}
+    ${
+      f.zonaId
+        ? sql`and exists (select 1 from zona zf where zf.id = ${f.zonaId} and ST_Covers(zf.poligono, ${a}.origen))`
+        : sql``
+    }`;
+}
+
 const DIA_MS = 86_400_000;
 
 /** Tiempos y movimientos (OPE-03): indicadores calculados desde los eventos, ofertas y sesiones. */
@@ -33,11 +50,12 @@ export class ReportesOperacionService {
     return { desde: d, hasta: h };
   }
 
-  async tiempos(r: Rango) {
+  async tiempos(r: Rango, f: FiltroReporte = {}) {
     const { db } = this.bd;
+    const filtrado = !!(f.categoria || f.zonaId);
     const [g] = (
       await db.execute<Record<string, number | string | null>>(sql`
-        with v as (select * from viaje where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta})
+        with v as (select * from viaje v where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta} ${condicion(f, 'v')})
         select
           count(*)::int as solicitudes,
           count(*) filter (where estado = 'finalizado')::int as finalizados,
@@ -74,7 +92,8 @@ export class ReportesOperacionService {
                count(*) filter (where resultado = 'rechazada')::int as rechazadas,
                count(*) filter (where resultado = 'expirada')::int as expiradas,
                round(avg(extract(epoch from respondida_en - ofrecida_en)) filter (where resultado in ('aceptada','rechazada')))::int as respuesta_media_s
-        from oferta where ofrecida_en >= ${r.desde} and ofrecida_en < ${r.hasta}`)
+        from oferta where ofrecida_en >= ${r.desde} and ofrecida_en < ${r.hasta}
+        ${filtrado ? sql`and viaje_id in (select v.id from viaje v where true ${condicion(f, 'v')})` : sql``}`)
     ).rows;
 
     const [s] = (
@@ -82,7 +101,7 @@ export class ReportesOperacionService {
         select
           coalesce(round((sum(extract(epoch from least(coalesce(fin, now()), ${r.hasta}) - greatest(inicio, ${r.desde}))) / 3600)::numeric, 1), 0)::float as horas_en_linea,
           (select coalesce(round((sum(extract(epoch from finalizado_en - aceptado_en)) / 3600)::numeric, 1), 0)::float
-             from viaje where estado = 'finalizado' and finalizado_en >= ${r.desde} and finalizado_en < ${r.hasta}) as horas_productivas
+             from viaje v where estado = 'finalizado' and finalizado_en >= ${r.desde} and finalizado_en < ${r.hasta} ${condicion(f, 'v')}) as horas_productivas
         from sesion_conductor where inicio < ${r.hasta} and coalesce(fin, now()) > ${r.desde}`)
     ).rows;
 
@@ -98,7 +117,7 @@ export class ReportesOperacionService {
              count(*) filter (where estado = 'finalizado')::int as finalizados,
              count(*) filter (where estado = 'cancelado')::int as cancelados,
              count(*) filter (where estado = 'sin_conductor')::int as sin_conductor
-      from viaje where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta}
+      from viaje v where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta} ${condicion(f, 'v')}
       group by 1 order by 1`);
     const porHora = await db.execute<{
       hora: number;
@@ -108,7 +127,7 @@ export class ReportesOperacionService {
       select extract(hour from solicitado_en at time zone 'America/Bogota')::int as hora,
              count(*)::int as solicitudes,
              count(*) filter (where estado = 'sin_conductor')::int as sin_conductor
-      from viaje where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta}
+      from viaje v where solicitado_en >= ${r.desde} and solicitado_en < ${r.hasta} ${condicion(f, 'v')}
       group by 1 order by 1`);
     const conductores = await db.execute<{
       id: string;
@@ -120,22 +139,24 @@ export class ReportesOperacionService {
       cancelados: number;
     }>(sql`
       select c.usuario_id as id, u.nombre,
-        (select count(*)::int from viaje v where v.conductor_id = c.usuario_id and v.estado = 'finalizado' and v.finalizado_en >= ${r.desde} and v.finalizado_en < ${r.hasta}) as viajes,
+        (select count(*)::int from viaje v where v.conductor_id = c.usuario_id and v.estado = 'finalizado' and v.finalizado_en >= ${r.desde} and v.finalizado_en < ${r.hasta} ${condicion(f, 'v')}) as viajes,
         (select coalesce(round((sum(extract(epoch from least(coalesce(fin, now()), ${r.hasta}) - greatest(inicio, ${r.desde}))) / 3600)::numeric, 1), 0)::float
            from sesion_conductor s where s.conductor_id = c.usuario_id and s.inicio < ${r.hasta} and coalesce(s.fin, now()) > ${r.desde}) as horas_en_linea,
-        (select count(*)::int from oferta o where o.conductor_id = c.usuario_id and o.ofrecida_en >= ${r.desde} and o.ofrecida_en < ${r.hasta}) as ofertas,
-        (select count(*)::int from oferta o where o.conductor_id = c.usuario_id and o.resultado = 'aceptada' and o.ofrecida_en >= ${r.desde} and o.ofrecida_en < ${r.hasta}) as aceptadas,
-        (select count(*)::int from viaje v where v.conductor_id = c.usuario_id and v.estado = 'cancelado' and v.cancelado_por = 'conductor' and v.solicitado_en >= ${r.desde} and v.solicitado_en < ${r.hasta}) as cancelados
+        (select count(*)::int from oferta o where o.conductor_id = c.usuario_id and o.ofrecida_en >= ${r.desde} and o.ofrecida_en < ${r.hasta} ${filtrado ? sql`and o.viaje_id in (select vf.id from viaje vf where true ${condicion(f, 'vf')})` : sql``}) as ofertas,
+        (select count(*)::int from oferta o where o.conductor_id = c.usuario_id and o.resultado = 'aceptada' and o.ofrecida_en >= ${r.desde} and o.ofrecida_en < ${r.hasta} ${filtrado ? sql`and o.viaje_id in (select vf.id from viaje vf where true ${condicion(f, 'vf')})` : sql``}) as aceptadas,
+        (select count(*)::int from viaje v where v.conductor_id = c.usuario_id and v.estado = 'cancelado' and v.cancelado_por = 'conductor' and v.solicitado_en >= ${r.desde} and v.solicitado_en < ${r.hasta} ${condicion(f, 'v')}) as cancelados
       from conductor c join usuario u on u.id = c.usuario_id
       order by 3 desc, 2 limit 100`);
 
     const n = (k: string) => (g?.[k] === null || g?.[k] === undefined ? null : Number(g[k]));
     const solicitudes = n('solicitudes') ?? 0;
     const finalizados = n('finalizados') ?? 0;
-    const horasLinea = s?.horas_en_linea ?? 0;
+    // Las horas en línea son de los conductores, no de los viajes: con un filtro no se pueden recortar.
+    const horasLinea = filtrado ? 0 : (s?.horas_en_linea ?? 0);
     return {
       desde: r.desde.toISOString(),
       hasta: r.hasta.toISOString(),
+      filtros: { categoria: f.categoria ?? null, zonaId: f.zonaId ?? null },
       viajes: {
         solicitudes,
         finalizados,
@@ -165,7 +186,7 @@ export class ReportesOperacionService {
           : null,
       },
       flota: {
-        horasEnLinea: horasLinea,
+        horasEnLinea: filtrado ? null : horasLinea,
         horasProductivas: s?.horas_productivas ?? 0,
         utilizacion:
           horasLinea > 0
@@ -203,8 +224,35 @@ export class ReportesOperacionService {
     };
   }
 
+  /**
+   * Mapa de calor (OPE-03): dónde se piden los viajes, o dónde se quedan sin conductor. Se agrupan en celdas de unos
+   * 330 m; el origen exacto de una persona no sale de aquí.
+   */
+  async calor(r: Rango, f: FiltroReporte, tipo: 'solicitudes' | 'sin_conductor') {
+    const filas = await this.bd.db.execute<{ lat: number; lng: number; n: number }>(sql`
+      select ST_Y(c)::float as lat, ST_X(c)::float as lng, count(*)::int as n
+      from (
+        select ST_SnapToGrid(v.origen::geometry, 0.003) as c
+        from viaje v
+        where v.solicitado_en >= ${r.desde} and v.solicitado_en < ${r.hasta}
+          ${tipo === 'sin_conductor' ? sql`and v.estado = 'sin_conductor'` : sql``}
+          ${condicion(f, 'v')}
+      ) t
+      group by c order by n desc limit 2000`);
+    const celdas = filas.rows.map((c) => ({ lat: c.lat, lng: c.lng, n: c.n }));
+    return {
+      desde: r.desde.toISOString(),
+      hasta: r.hasta.toISOString(),
+      tipo,
+      tamanoM: 330,
+      total: celdas.reduce((a, c) => a + c.n, 0),
+      maximo: celdas[0]?.n ?? 0,
+      celdas,
+    };
+  }
+
   /** CSV de los viajes del rango, con BOM para que Excel respete las tildes. */
-  async csvViajes(r: Rango, operador: Operador): Promise<string> {
+  async csvViajes(r: Rango, operador: Operador, f: FiltroReporte = {}): Promise<string> {
     const filas = await this.bd.db.execute<Record<string, unknown>>(sql`
       select v.codigo, to_char(v.solicitado_en at time zone 'America/Bogota', 'YYYY-MM-DD HH24:MI:SS') as solicitado,
              v.estado::text as estado, v.tipo_servicio::text as servicio, v.categoria::text as categoria,
@@ -214,7 +262,7 @@ export class ReportesOperacionService {
              v.cancelado_por::text as cancelado_por, v.motivo_cancelacion
       from viaje v join usuario p on p.id = v.pasajero_id
       left join usuario c on c.id = v.conductor_id left join vehiculo ve on ve.id = v.vehiculo_id
-      where v.solicitado_en >= ${r.desde} and v.solicitado_en < ${r.hasta}
+      where v.solicitado_en >= ${r.desde} and v.solicitado_en < ${r.hasta} ${condicion(f, 'v')}
       order by v.solicitado_en limit 50000`);
     await auditar(this.bd.db, operador, {
       accion: 'reporte.exportar',
@@ -222,6 +270,7 @@ export class ReportesOperacionService {
       despues: {
         tipo: 'viajes',
         filas: filas.rows.length,
+        filtros: f,
         desde: r.desde.toISOString(),
         hasta: r.hasta.toISOString(),
       },
@@ -229,12 +278,17 @@ export class ReportesOperacionService {
     return aCsv(filas.rows);
   }
 
-  async csvTiempos(r: Rango, operador: Operador): Promise<string> {
-    const t = await this.tiempos(r);
+  async csvTiempos(r: Rango, operador: Operador, f: FiltroReporte = {}): Promise<string> {
+    const t = await this.tiempos(r, f);
     await auditar(this.bd.db, operador, {
       accion: 'reporte.exportar',
       entidad: 'reporte',
-      despues: { tipo: 'tiempos', desde: r.desde.toISOString(), hasta: r.hasta.toISOString() },
+      despues: {
+        tipo: 'tiempos',
+        filtros: f,
+        desde: r.desde.toISOString(),
+        hasta: r.hasta.toISOString(),
+      },
     });
     return aCsv(t.porDia.map((d) => ({ ...d })));
   }

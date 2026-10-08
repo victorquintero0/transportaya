@@ -37,6 +37,7 @@ import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from './despacho.service.js';
 import { primerNombre, registrarEvento } from './eventos-viaje.js';
 import { cobroSimulado } from '../comun/tarjetas.js';
+import { PeajesService } from './peajes.service.js';
 import { PrecioService } from './precio.service.js';
 
 const ESTADOS_ACTIVOS = ['asignado', 'en_sitio', 'en_curso'] as const;
@@ -65,6 +66,7 @@ export class ViajesService {
     @Inject(Eventos) private readonly eventos: Eventos,
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(PrecioService) private readonly precios: PrecioService,
+    @Inject(PeajesService) private readonly peajesServicio: PeajesService,
   ) {}
 
   private async cargar(conductorId: string, viajeId: string, db: DbOTx = this.bd.db) {
@@ -351,9 +353,21 @@ export class ViajesService {
         desglose = { tipo: 'urbano', ...calculo, recargosAplicados: recargos };
       }
 
+      // Peajes por los que pasó el recorrido. Las rutas con tarifa fija no los suman: su valor ya los incluye.
+      const peajesCruzados = ruta
+        ? []
+        : await this.peajesServicio.cruzados(tx, {
+            conductorId,
+            viajeId: v.id,
+            desde: iniciadoEn,
+            hasta: new Date(ahora.getTime() + 60_000),
+          });
+      const peajes = peajesCruzados.reduce((suma, p) => suma + p.valor, 0);
+      if (peajesCruzados.length) desglose = { ...desglose, peajes, peajesCruzados };
+
       const ambito = ambitoComision(v.tipoServicio);
       const comision = calcularComision({ totalRedondeado: totalCarrera, cobroEspera }, ambito);
-      const precioFinal = totalCarrera + cobroEspera;
+      const precioFinal = totalCarrera + cobroEspera + peajes;
       const efectivo = v.metodoPago === 'efectivo';
       // Con tarjeta, el cobro lo resuelve la pasarela. Mientras no hay Wompi, el simulador aprueba todo salvo las
       // tarjetas de prueba rechazadas; en ese caso el viaje queda como deuda del pasajero (RN-053, HU-PAS-04).
@@ -397,6 +411,7 @@ export class ViajesService {
           },
           totalCarrera,
           cobroEspera,
+          peajes,
           precioFinal,
           comision,
           comisionPb: COMISION_PUNTOS_BASICOS[ambito],
@@ -421,6 +436,7 @@ export class ViajesService {
         base: { totalRedondeado: totalCarrera, cobroEspera },
         ambito,
         viajeId: v.id,
+        peajes,
       });
       await tx
         .insert(movimientoSaldo)
@@ -460,6 +476,7 @@ export class ViajesService {
         precioFinal,
         totalCarrera,
         cobroEspera,
+        peajes,
         comision,
         gananciaNeta: precioFinal - comision,
         desglose,

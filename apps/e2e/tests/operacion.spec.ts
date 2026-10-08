@@ -29,6 +29,8 @@ async function sesionComo(
     colorScheme: 'dark',
     baseURL: 'http://localhost:5183',
   });
+  // El mapa de calles sale a internet: aquí se corta para que la prueba use siempre el mapa esquemático.
+  await context.route('https://tiles.openfreemap.org/**', (r) => r.abort());
   const page = await context.newPage();
   page.on('pageerror', (e) => console.log(`ERROR EN LA PÁGINA (${rol}):`, e.message));
   await page.goto('/');
@@ -352,6 +354,64 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await expect(p.locator('#tabla-tareas')).toContainText('vigilar_senal');
     await expect(p.getByText('Base de datos', { exact: true })).toBeVisible();
     await captura(p, 'sistema');
+
+    // catálogo: se agrega un vehículo nuevo y queda en la tabla
+    await p.getByRole('link', { name: 'Catálogo', exact: true }).click();
+    await p.locator('#nuevo-vehiculo-catalogo').click();
+    const d = p.getByRole('dialog');
+    await d.getByLabel('Marca').fill('Zhidou');
+    await d.getByLabel('Línea').fill('D2');
+    await d.locator('textarea').fill('Vehículo eléctrico nuevo en el mercado');
+    await d.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Vehículo agregado al catálogo')).toBeVisible();
+    await expect(p.locator('#tabla-catalogo')).toContainText('Zhidou D2');
+    await captura(p, 'catalogo');
+
+    // peajes: se crea uno y la tabla lo muestra
+    await p.getByRole('link', { name: 'Tarifas y zonas' }).click();
+    await p.getByRole('tab', { name: 'Peajes' }).click();
+    await p.locator('#nuevo-peaje').click();
+    const dp = p.getByRole('dialog');
+    await dp.getByLabel('Nombre').fill('Peaje Tres Puertas');
+    await dp.getByLabel('Latitud').fill('5.0301');
+    await dp.getByLabel('Longitud').fill('-75.4382');
+    await dp.getByLabel('Valor (COP)').fill('12400');
+    await dp.locator('textarea').fill('Tarifa oficial 2026');
+    await dp.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Peaje creado')).toBeVisible();
+    await expect(p.locator('#tabla-peajes')).toContainText('Peaje Tres Puertas');
+    await expect(p.locator('#tabla-peajes')).toContainText('$ 12.400');
+
+    // zonas: se dibuja una sobre el mapa con tres clics
+    await p.getByRole('tab', { name: 'Zonas' }).click();
+    const mapa = p.locator('#mapa-zonas');
+    await expect(mapa).toBeVisible();
+    const caja = (await mapa.boundingBox())!;
+    for (const [fx, fy] of [
+      [0.3, 0.3],
+      [0.6, 0.35],
+      [0.45, 0.65],
+    ] as const)
+      await p.mouse.click(caja.x + caja.width * fx, caja.y + caja.height * fy);
+    await expect(p.locator('#conteo-vertices')).toContainText('3 vértices');
+    await p.locator('#zona-nombre').fill('Punto de encuentro del centro');
+    await captura(p, 'zonas-dibujo');
+    await p.locator('#guardar-zona').click();
+    await p.getByRole('dialog').locator('textarea').fill('Punto de encuentro para el centro');
+    await p.getByRole('dialog').getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Zona creada')).toBeVisible();
+    await expect(p.locator('#tabla-zonas')).toContainText('Punto de encuentro del centro');
+    await expect(p.locator('#conteo-vertices')).toContainText('0 vértices');
+
+    // reportes: filtro por categoría y mapa de calor
+    await p.getByRole('link', { name: 'Reportes' }).click();
+    await p.locator('#filtro-categoria').selectOption('media');
+    await p.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(p.locator('#kpis-reporte')).toBeVisible();
+    await expect(p.locator('#panel-calor')).toBeVisible();
+    await p.getByRole('button', { name: 'Sin conductor', exact: true }).click();
+    await expect(p.locator('#panel-calor')).toContainText('No se muestran personas');
+    await captura(p, 'reportes-calor');
   });
 
   await test.step('el administrador crea un usuario y revisa la auditoría', async () => {

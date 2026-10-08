@@ -157,6 +157,14 @@ export const CATALOGO_PARAMETROS = {
     min: 90,
     max: 1825,
   },
+  'peajes.radio_m': {
+    grupo: 'Tarifas',
+    descripcion: 'Distancia máxima entre el recorrido del viaje y un peaje para cobrarlo',
+    unidad: 'm',
+    defecto: 150,
+    min: 50,
+    max: 500,
+  },
 } as const satisfies Record<string, DefinicionParametro>;
 
 export type ClaveParametro = keyof typeof CATALOGO_PARAMETROS;

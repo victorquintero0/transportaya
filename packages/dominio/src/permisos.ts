@@ -56,6 +56,9 @@ export const PERMISOS = {
   'usuarios.gestionar': ['admin'],
   'config.ver': ['supervisor', 'admin'],
   'config.editar': ['admin'],
+  /** Catálogo de vehículos y su clasificación en Media, Media Alta y Alta (D-21). */
+  'catalogo.ver': ['monitor', 'soporte', 'cumplimiento', 'supervisor', 'admin'],
+  'catalogo.editar': ['cumplimiento', 'supervisor', 'admin'],
   /** Solicitudes de las personas sobre sus datos personales (Ley 1581). */
   'privacidad.ver': ['soporte', 'supervisor', 'admin'],
   'privacidad.responder': ['soporte', 'supervisor', 'admin'],

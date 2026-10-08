@@ -180,6 +180,10 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | GET / PUT / DELETE | `/v1/op/parametros` · `/{clave}` | `config.ver` · `config.editar` | Parámetros operativos; los de despacho rigen en caliente |
 | GET / PUT | `/v1/op/mapa` | `config.ver` · `config.editar` | Proveedor del mapa de las apps (clave enmascarada, con motivo y auditoría) |
 | GET | `/v1/mapa/config` | pública | Qué mapa muestran las apps: `{ proveedor, estilo, estiloOscuro }` (caché de 1 min) |
+| GET / POST / PATCH | `/v1/op/catalogo-vehiculos` · `/{id}` | `catalogo.ver` · `catalogo.editar` | Catálogo de vehículos; el cambio de categoría puede aplicarse a los ya registrados |
+| GET / POST | `/v1/op/vehiculos-fuera-de-catalogo` · `/v1/op/vehiculos/{id}/revisar` | `catalogo.ver` · `catalogo.editar` | Cola de vehículos escritos a mano y su resolución (asignar o agregar) |
+| GET / POST / PATCH | `/v1/op/peajes` · `/{id}` | `tarifas.ver` · `tarifas.editar` | Tabla de peajes georreferenciados |
+| GET | `/v1/op/reportes/tiempos?categoria=&zonaId=` · `/calor?tipo=` | `reportes.ver` | Reportes con filtros y mapa de calor por celdas |
 | GET | `/v1/op/sistema` | `sistema.ver` | Salud técnica: base de datos, tareas programadas, tráfico y conexiones ([doc 15](15-observabilidad-y-privacidad.md)) |
 | GET | `/v1/op/privacidad/solicitudes` · `/{id}` | `privacidad.ver` | Solicitudes de las personas sobre sus datos, con plazo y semáforo |
 | POST | `/v1/op/privacidad/solicitudes/{id}/tomar` · `/resolver` | `privacidad.responder` (borrar: `privacidad.suprimir`) | Responder; aceptar una supresión anonimiza la cuenta |

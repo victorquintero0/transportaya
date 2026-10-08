@@ -525,6 +525,7 @@ export interface TicketDetalleDatos {
 export interface Reporte {
   desde: string;
   hasta: string;
+  filtros: { categoria: string | null; zonaId: string | null };
   viajes: {
     solicitudes: number;
     finalizados: number;
@@ -552,7 +553,7 @@ export interface Reporte {
     tasaAceptacion: number | null;
   };
   flota: {
-    horasEnLinea: number;
+    horasEnLinea: number | null;
     horasProductivas: number;
     utilizacion: number | null;
     kmProductivos: number;
@@ -697,4 +698,46 @@ export interface SolicitudDatosDetalle extends Omit<
 > {
   titular: { id: string; nombre: string; telefono: string; estadoCuenta: string };
   bloqueadores: { codigo: string; detalle: string; monto?: number }[];
+}
+
+export interface Peaje {
+  id: string;
+  nombre: string;
+  lat: number;
+  lng: number;
+  valor: number;
+  fuente: string | null;
+  activo: boolean;
+}
+
+export interface EntradaCatalogo {
+  id: string;
+  marca: string;
+  linea: string;
+  categoria: 'media' | 'media_alta' | 'alta';
+  anioDesde: number;
+  anioHasta: number | null;
+  carroceria: string | null;
+  pasajeros: number | null;
+  puertas: number | null;
+  activo: boolean;
+  vehiculos: number;
+}
+
+export interface VehiculoFueraDeCatalogo {
+  id: string;
+  placa: string;
+  marca: string;
+  linea: string;
+  modeloAnio: number;
+  color: string;
+  categoria: string;
+  creadoEn: string;
+  conductor: { id: string; nombre: string | null; habilitacion: string | null } | null;
+}
+
+export interface CeldaCalor {
+  lat: number;
+  lng: number;
+  n: number;
 }

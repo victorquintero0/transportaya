@@ -214,3 +214,23 @@ export const dinamicaZona = pgTable(
     check('dinamica_zona_periodo', sql`${t.hasta} > ${t.desde}`),
   ],
 );
+
+/**
+ * Peajes georreferenciados (RN-091). Si el recorrido que midió el servidor pasa por uno activo, su valor se suma al
+ * precio del viaje (RN-041). No cuenta para la comisión.
+ */
+export const peaje = pgTable(
+  'peaje',
+  {
+    id: id(),
+    nombre: text('nombre').notNull(),
+    ubicacion: punto('ubicacion').notNull(),
+    /** Lo que paga un automóvil (categoría I), en pesos. */
+    valor: cop('valor').notNull(),
+    fuente: text('fuente'),
+    activo: boolean('activo').notNull().default(true),
+    creadoEn: creadoEn(),
+    actualizadoEn: actualizadoEn(),
+  },
+  (t) => [uniqueIndex('peaje_nombre_uq').on(t.nombre), check('peaje_valor', sql`${t.valor} > 0`)],
+);

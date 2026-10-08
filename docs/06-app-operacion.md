@@ -154,7 +154,9 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 
 ## OPE-06 · Tarifas, zonas y dinámica
 
-> **Implementado.** Versiones de tarifa con recargos (programables a futuro), simulador, festivos, rutas fijas, zonas por vértices y dinámica manual. Faltan la tabla de peajes y los parámetros de dinámica automática (F2).
+> **Implementado.** Versiones de tarifa con recargos (programables a futuro), simulador, festivos, rutas fijas, **zonas que se dibujan sobre el mapa** (un clic por vértice), **tabla de peajes** y dinámica manual. Faltan los parámetros de dinámica automática (F2).
+>
+> **Peajes.** Cada peaje tiene nombre, ubicación y valor (categoría I). Si el recorrido que midió el servidor pasa a menos de `peajes.radio_m` (150 m) de un peaje activo, su valor se suma al precio del viaje (RN-041), se acredita completo al conductor y **no entra en la comisión**. Las rutas con tarifa fija no los suman. Mientras la tabla esté vacía, ningún viaje cambia de precio (D-39).
 
 - **Tarifas** por ciudad, categoría y tipo de servicio: base, km, minuto, mínima, cancelación, espera.
   Cada cambio crea una **nueva versión** con fecha de vigencia; se puede programar a futuro.
@@ -163,6 +165,10 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 - **Zonas** dibujadas en el mapa: área de servicio, aeropuerto, zonas restringidas, puntos de encuentro.
 - **Dinámica:** parámetros por ciudad (tramos, tope, suavizado) y **control manual** por zona y horario.
 - **Simulador:** calcula el precio de un trayecto con la configuración vigente o con una versión futura antes de publicarla.
+
+## OPE-13 · Catálogo de vehículos
+
+> **Implementado.** Pantalla **Catálogo** (`catalogo.ver`; editan cumplimiento, supervisión y administración): buscar, agregar y reclasificar vehículos en Media, Media Alta y Alta, y desactivarlos. Cambiar una categoría rige para los vehículos que se registren desde ese momento; si se pide, también para los ya registrados con esa entrada. La pestaña **Fuera del catálogo** lista los vehículos que el conductor escribió a mano: se resuelven agregando el modelo al catálogo con la categoría que se decida, o asignándolos a una entrada que ya existe. Todo pide motivo y queda en la auditoría.
 
 ## OPE-07 · Cierre diario, pagos y saldos
 
@@ -202,6 +208,10 @@ limitado, que solo ven los datos de su empresa**), empleados, centros de costo, 
 
 - Alta y baja de usuarios internos, asignación de roles, doble factor obligatorio.
 - **Auditoría** consultable: quién hizo qué, cuándo, sobre qué registro, valor anterior y nuevo, y motivo.
+
+## OPE-03 (ampliación) · Filtros y mapa de calor
+
+> **Implementado.** Los reportes de tiempos y movimientos se pueden recortar por **categoría** del vehículo y por **zona de origen**, y se exportan a CSV con el mismo filtro (queda en la auditoría). Las horas en línea y la utilización de la flota no se recortan por viaje: con un filtro no se muestran. El **mapa de calor** agrupa los orígenes de los viajes en celdas de unos 330 m, para todas las solicitudes o solo las que quedaron sin conductor; no trae ningún dato de personas.
 
 ## Privacidad y Sistema
 

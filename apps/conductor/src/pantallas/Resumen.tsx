@@ -102,6 +102,7 @@ function Ganaste({ resultado, alSeguir }: { resultado: ResultadoFinalizar; alSeg
           {resultado.cobroEspera > 0 && (
             <Linea texto="Incluye espera" valor={pesos(resultado.cobroEspera)} />
           )}
+          {!!resultado.peajes && <Linea texto="Incluye peajes" valor={pesos(resultado.peajes)} />}
           <Linea texto="Comisión TransporteYa" valor={`− ${pesos(resultado.comision)}`} negativo />
           <div className="border-t border-borde pt-2.5">
             <Linea texto="Tu ganancia" valor={pesos(resultado.gananciaNeta)} fuerte />

@@ -3,6 +3,7 @@ import { ConductorModule } from '../conductor/conductor.module.js';
 import { CancelacionPasajeroService } from './cancelacion-pasajero.service.js';
 import { DESPACHO_POR_DEFECTO, DespachoService, PARAMETROS_DESPACHO } from './despacho.service.js';
 import { MensajesViajeService } from './mensajes.service.js';
+import { PeajesService } from './peajes.service.js';
 import { PrecioService } from './precio.service.js';
 import { ViajesController } from './viajes.controller.js';
 import { ViajesService } from './viajes.service.js';
@@ -12,6 +13,7 @@ import { ViajesService } from './viajes.service.js';
   controllers: [ViajesController],
   providers: [
     PrecioService,
+    PeajesService,
     DespachoService,
     ViajesService,
     CancelacionPasajeroService,

@@ -1,3 +1,4 @@
+import { desplazar } from '@transportaya/dominio';
 import { BaseMapa, Icono, type ControlMapa } from '@transportaya/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { crearProyeccion, type Punto } from '../lib/mapa.ts';
@@ -27,6 +28,9 @@ interface Props {
   /** Recorrido de un viaje (reproducción) y hasta qué punto se ha reproducido. */
   recorrido?: Punto[];
   avance?: number;
+  /** Mapa de calor: celdas con cuántos viajes empezaron allí (ya agrupadas por el servidor, ~330 m). */
+  calor?: { lat: number; lng: number; n: number }[];
+  colorCalor?: string;
   /** Puntos extra que deben caber en el encuadre (por ejemplo, el origen y el destino del viaje abierto). */
   extra?: Punto[];
   className?: string;
@@ -68,6 +72,8 @@ export function MapaOperacion({
   recorrido = [],
   avance = 1,
   extra = [],
+  calor = [],
+  colorCalor = 'var(--color-mandarina)',
   className = '',
 }: Props) {
   const caja = useRef<HTMLDivElement>(null);
@@ -94,9 +100,10 @@ export function MapaOperacion({
       ...viajes.flatMap((v) => [v.origen, v.destino]),
       ...recorrido,
       ...extra,
+      ...calor,
     ];
     return todos;
-  }, [conductores, viajes, recorrido, extra]);
+  }, [conductores, viajes, recorrido, extra, calor]);
 
   // El encuadre se calcula con la lista de puntos que se muestra; solo se vuelve a ajustar si la persona no ha movido el mapa.
   const proy = useMemo(
@@ -196,6 +203,26 @@ export function MapaOperacion({
           </>
         )}
 
+        {calor.length > 0 &&
+          (() => {
+            const maximo = Math.max(1, ...calor.map((c) => c.n));
+            return calor.map((c) => {
+              const a = pos(c);
+              const borde = pos(desplazar(c, 165, 90));
+              const r = Math.max(6, Math.hypot(borde.x - a.x, borde.y - a.y));
+              return (
+                <circle
+                  key={`${c.lat},${c.lng}`}
+                  data-calor={c.n}
+                  cx={a.x}
+                  cy={a.y}
+                  r={r}
+                  fill={colorCalor}
+                  fillOpacity={0.15 + 0.6 * (c.n / maximo)}
+                />
+              );
+            });
+          })()}
         {viajes.map((v) => {
           const a = pos(v.origen);
           const b = pos(v.destino);

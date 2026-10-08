@@ -23,6 +23,7 @@ export const DESTINOS: Destino[] = [
   { ruta: '/pasajeros', titulo: 'Pasajeros', icono: 'usuario', permiso: 'pasajeros.ver' },
   { ruta: '/soporte', titulo: 'Soporte', icono: 'mensaje', permiso: 'tickets.ver' },
   { ruta: '/finanzas', titulo: 'Finanzas', icono: 'billetera', permiso: 'finanzas.ver' },
+  { ruta: '/catalogo', titulo: 'Catálogo', icono: 'carro', permiso: 'catalogo.ver' },
   { ruta: '/tarifas', titulo: 'Tarifas y zonas', icono: 'pin', permiso: 'tarifas.ver' },
   { ruta: '/reportes', titulo: 'Reportes', icono: 'archivo', permiso: 'reportes.ver' },
   { ruta: '/usuarios', titulo: 'Usuarios', icono: 'escudo', permiso: 'usuarios.ver' },

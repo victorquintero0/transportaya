@@ -5,6 +5,8 @@ import { DineroModule } from '../dinero/dinero.module.js';
 import { ViajesModule } from '../viajes/viajes.module.js';
 import { AuthOperacionController } from './auth-op.controller.js';
 import { AuthOperacionService } from './auth-op.service.js';
+import { CatalogosOperacionController } from './catalogos-op.controller.js';
+import { CatalogosOperacionService } from './catalogos-op.service.js';
 import { ConductoresOperacionService } from './conductores-op.service.js';
 import { PasajerosOperacionService } from './pasajeros-op.service.js';
 import { PersonasOperacionController } from './personas-op.controller.js';
@@ -27,6 +29,7 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
 @Module({
   imports: [AuthModule, ConductorModule, ViajesModule, DineroModule],
   controllers: [
+    CatalogosOperacionController,
     AuthOperacionController,
     UsuariosOperacionController,
     TorreOperacionController,
@@ -38,6 +41,7 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
     MapaController,
   ],
   providers: [
+    CatalogosOperacionService,
     AuthOperacionService,
     EmpleadosService,
     TorreService,

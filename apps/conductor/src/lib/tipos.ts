@@ -153,6 +153,7 @@ export interface ResultadoFinalizar {
   precioFinal: number;
   totalCarrera: number;
   cobroEspera: number;
+  peajes?: number;
   comision: number;
   gananciaNeta: number;
   desglose: Record<string, unknown>;

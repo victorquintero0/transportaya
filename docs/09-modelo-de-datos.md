@@ -250,6 +250,10 @@ Un trabajo programado hace, cada día a las 03:30 (Bogotá) y al arrancar la API
 
 Además borra mensajes del viaje, recorridos GPS, códigos OTP y sesiones vencidas según su plazo. Pendiente: pasar el trabajo a BullMQ cuando haya varias instancias.
 
+### Peajes
+
+`peaje`: nombre único, `ubicacion` (punto con índice espacial), `valor` en pesos y `activo`. Al finalizar un viaje, el servidor arma una línea con las posiciones recibidas entre «Iniciar» y «Finalizar» y cobra cada peaje activo que quede a menos de `peajes.radio_m` (150 m por defecto). El valor queda en `viaje.peajes` y el detalle en `viaje.desglose.peajesCruzados`.
+
 ### Solicitudes sobre datos personales
 
 `solicitud_datos`: quién (`usuario_id`, `rol`), qué (`tipo`: consulta, rectificación, supresión, revocatoria), `estado` (recibida, en trámite, aceptada, rechazada,

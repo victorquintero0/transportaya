@@ -8,6 +8,8 @@ import { useConfigMapa } from './config.ts';
 export interface ControlMapa {
   /** Posición en píxeles, dentro del contenedor, de una coordenada. Cambia de identidad cada vez que el mapa se mueve. */
   proyectar: (p: Punto) => { x: number; y: number };
+  /** La coordenada que hay bajo un punto del contenedor (para dibujar zonas con el ratón). */
+  desproyectar: (x: number, y: number) => Punto;
   /** Acerca (positivo) o aleja (negativo) en niveles de zoom. */
   acercar: (niveles: number) => void;
   /** Vuelve al encuadre automático que muestra todos los puntos. */
@@ -190,6 +192,10 @@ export function BaseMapa({
       proyectar: (p) => {
         const q = m.project([p.lng, p.lat]);
         return { x: q.x, y: q.y };
+      },
+      desproyectar: (x, y) => {
+        const q = m.unproject([x, y]);
+        return { lat: q.lat, lng: q.lng };
       },
       acercar: (n) => {
         movidoAMano.current = true;

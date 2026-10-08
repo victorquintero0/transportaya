@@ -8,6 +8,8 @@ export interface Proyeccion {
   y: (p: Punto) => number;
   /** Metros que representa un píxel del dibujo. */
   metrosPorPixel: number;
+  /** La coordenada que corresponde a un píxel del dibujo (lo contrario de `x` e `y`). */
+  invertir: (x: number, y: number) => Punto;
 }
 
 const M_POR_GRADO_LAT = 111_320;
@@ -37,6 +39,10 @@ export function crearProyeccion(
     x: (p) => ancho / 2 + ((p.lng - centroLng) * kLng) / metrosPorPixel,
     y: (p) => alto / 2 - ((p.lat - centroLat) * M_POR_GRADO_LAT) / metrosPorPixel,
     metrosPorPixel,
+    invertir: (x, y) => ({
+      lat: centroLat - ((y - alto / 2) * metrosPorPixel) / M_POR_GRADO_LAT,
+      lng: centroLng + ((x - ancho / 2) * metrosPorPixel) / kLng,
+    }),
   };
 }
 
