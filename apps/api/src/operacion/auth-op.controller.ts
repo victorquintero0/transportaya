@@ -54,8 +54,8 @@ export class AuthOperacionController {
   /** Cuentas de demostración para entrar con un clic. Solo existe con el simulador activo. */
   @Publico()
   @Get('auth/demo')
-  demo() {
-    const r = this.auth.cuentasDemo();
+  async demo() {
+    const r = await this.auth.cuentasDemo();
     if (!r) throw noEncontrado('NO_ENCONTRADO', 'Ruta no encontrada');
     return r;
   }

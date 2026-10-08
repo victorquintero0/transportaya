@@ -11,6 +11,7 @@ import { ConexionService } from './conductor/conexion.service.js';
 import { VencimientosService } from './conductor/vencimientos.service.js';
 import { CierresService } from './dinero/cierres.service.js';
 import { EstadoTareasService } from './observabilidad/estado-tareas.service.js';
+import { CorporativoService } from './corporativo/corporativo.service.js';
 import { RetencionService } from './privacidad/retencion.service.js';
 import { ReservasService } from './viajes/reservas.service.js';
 import { ViajesService } from './viajes/viajes.service.js';
@@ -30,6 +31,7 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     @Inject(EstadoTareasService) private readonly estado: EstadoTareasService,
     @Inject(RetencionService) private readonly retencion: RetencionService,
     @Inject(ReservasService) private readonly reservas: ReservasService,
+    @Inject(CorporativoService) private readonly corporativo: CorporativoService,
   ) {}
 
   onModuleInit(): void {
@@ -50,6 +52,11 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
       DIA_MS,
     );
     this.estado.registrar(
+      'estados_cuenta',
+      'Genera los estados de cuenta de las empresas clientes al cerrar su ciclo (00:10)',
+      DIA_MS,
+    );
+    this.estado.registrar(
       'vencimientos',
       'Vence documentos y suspende a quien no los tiene (00:05)',
       DIA_MS,
@@ -63,6 +70,14 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     });
     // Las reservas que debieron activarse mientras la API estaba caída se activan de una vez.
     await this.estado.correr('reservas', () => this.reservas.mantener());
+    // Si la API estuvo caída el día de corte, el estado de cuenta se genera al volver (es idempotente).
+    await this.estado.correr('estados_cuenta', () => this.corporativo.generarPendientes());
+  }
+
+  /** Cada día a las 00:10: el estado de cuenta del ciclo que cerró (RN-105). */
+  @Cron('10 0 * * *', { timeZone: 'America/Bogota' })
+  async estadosDeCuentaDiarios(): Promise<void> {
+    await this.estado.correr('estados_cuenta', () => this.corporativo.generarPendientes());
   }
 
   /** Cada 30 s: el ciclo de vida de las reservas (RN-082, RN-083). */

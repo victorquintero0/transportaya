@@ -53,6 +53,17 @@ export default defineConfig({
       },
     },
     {
+      // Clientes corporativos: la App Operación (finanzas y administrador de la empresa) y la app del empleado.
+      name: 'corporativo',
+      testMatch: /corporativo\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        baseURL: `http://localhost:${WEB_OPERACION}`,
+        launchOptions: existsSync(chromium) ? { executablePath: chromium } : {},
+      },
+    },
+    {
       // El mapa de calles usa WebGL: en el navegador sin pantalla se emula por software.
       name: 'mapa',
       testMatch: /mapa\.spec\.ts/,

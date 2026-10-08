@@ -110,11 +110,19 @@ export class AuthOperacionService implements OnApplicationBootstrap {
   }
 
   /** Cuentas de demostración con su código actual, para entrar con un clic. Solo con el simulador. */
-  cuentasDemo() {
+  async cuentasDemo() {
     if (!this.config.SIMULADOR) return null;
+    const cuentas: { rol: RolInterno; nombre: string }[] = [...CUENTAS_DEMO];
+    // La empresa de demostración (y su administrador) la crea el módulo de clientes corporativos.
+    const [empresaDemo] = await this.bd.db
+      .select({ nombre: usuario.nombre })
+      .from(empleado)
+      .innerJoin(usuario, eq(usuario.id, empleado.usuarioId))
+      .where(eq(empleado.email, this.correoDemo('empresa')));
+    if (empresaDemo) cuentas.push({ rol: 'empresa', nombre: empresaDemo.nombre });
     return {
       contrasena: CONTRASENA_DEMO,
-      cuentas: CUENTAS_DEMO.map((c) => ({
+      cuentas: cuentas.map((c) => ({
         rol: c.rol,
         etiqueta: ETIQUETA_ROL[c.rol],
         nombre: c.nombre,
@@ -122,6 +130,29 @@ export class AuthOperacionService implements OnApplicationBootstrap {
         codigo: codigoTotp(this.secretoDemo(c.rol)),
       })),
     };
+  }
+
+  /** Cuenta de demostración del administrador de una empresa cliente. Solo con el simulador. */
+  async crearCuentaDemoEmpresa(empresaId: string): Promise<void> {
+    if (!this.config.SIMULADOR) return;
+    const email = this.correoDemo('empresa');
+    const [existe] = await this.bd.db
+      .select({ id: empleado.usuarioId })
+      .from(empleado)
+      .where(eq(empleado.email, email));
+    if (existe) return;
+    await this.empleados.crear(
+      {
+        nombre: 'Elena Empresaria',
+        telefono: '+576060000020',
+        email,
+        contrasena: CONTRASENA_DEMO,
+        roles: ['empresa'],
+        totpSecreto: this.secretoDemo('empresa'),
+        empresaId,
+      },
+      null,
+    );
   }
 
   private chequearBloqueo(email: string): void {

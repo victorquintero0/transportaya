@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { auditoria, empleado, sesion, usuario, usuarioRol } from '@transportaya/db';
+import { auditoria, empleado, empresa, sesion, usuario, usuarioRol } from '@transportaya/db';
 import { permisosDe, type RolInterno } from '@transportaya/dominio';
 import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
 import { BaseDeDatos, type DbOTx } from '../bd/bd.module.js';
@@ -16,6 +16,8 @@ export interface NuevoEmpleado {
   roles: RolInterno[];
   /** Solo para cuentas de demostración: deja el segundo factor ya configurado. */
   totpSecreto?: string;
+  /** Administrador de una empresa cliente (rol `empresa`): la empresa que puede ver. */
+  empresaId?: string;
 }
 
 /** Personal interno: crear, listar, cambiar roles, desactivar y reiniciar el segundo factor (OPE-11). */
@@ -45,6 +47,7 @@ export class EmpleadosService {
         usuarioId: persona.id,
         email,
         contrasenaHash: hash,
+        ...(d.empresaId ? { empresaId: d.empresaId } : {}),
         ...(d.totpSecreto
           ? { totpSecretoCifrado: this.cifrado.cifrar(d.totpSecreto), totpActivo: true }
           : {}),
@@ -81,6 +84,8 @@ export class EmpleadosService {
       })
       .from(empleado)
       .innerJoin(usuario, eq(usuario.id, empleado.usuarioId))
+      // Los administradores de empresas clientes se gestionan desde la empresa, no aquí.
+      .where(isNull(empleado.empresaId))
       .orderBy(usuario.nombre);
     const roles = await this.bd.db.select().from(usuarioRol);
     return filas.map((f) => {
@@ -105,9 +110,16 @@ export class EmpleadosService {
 
   async perfil(id: string) {
     const [f] = await this.bd.db
-      .select({ id: empleado.usuarioId, nombre: usuario.nombre, email: empleado.email })
+      .select({
+        id: empleado.usuarioId,
+        nombre: usuario.nombre,
+        email: empleado.email,
+        empresaId: empleado.empresaId,
+        empresa: empresa.nombre,
+      })
       .from(empleado)
       .innerJoin(usuario, eq(usuario.id, empleado.usuarioId))
+      .leftJoin(empresa, eq(empresa.id, empleado.empresaId))
       .where(eq(empleado.usuarioId, id));
     if (!f) throw noEncontrado('EMPLEADO_NO_ENCONTRADO', 'No encontramos a esa persona.');
     const roles = await this.rolesDe(id);
@@ -135,6 +147,11 @@ export class EmpleadosService {
       if (d.roles && !d.roles.includes('admin') && antes.roles.includes('admin'))
         throw conflicto('NO_PUEDES_QUITARTE_ADMIN', 'No puedes quitarte el rol de administrador.');
     }
+    if (emp?.empresaId && d.roles)
+      throw conflicto(
+        'ADMIN_DE_EMPRESA',
+        'Esa cuenta es de una empresa cliente: su rol no se cambia desde Usuarios.',
+      );
     if (d.roles && d.roles.length === 0) throw solicitudInvalida('Elige al menos un rol.');
     await this.bd.db.transaction(async (tx) => {
       if (d.roles) {

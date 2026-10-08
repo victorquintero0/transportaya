@@ -28,7 +28,7 @@
 | OPE-07 | Liquidaciones y saldos de conductores | MVP |
 | OPE-08 | Soporte y PQRS | MVP (básico) / F2 (completo) |
 | OPE-09 | Reservas programadas | F2 · hecho |
-| OPE-10 | Clientes corporativos | F3 |
+| OPE-10 | Clientes corporativos | F3 · hecho |
 | OPE-11 | Usuarios internos, roles y auditoría | MVP |
 | OPE-12 | Configuración general y plantillas de notificación | MVP |
 
@@ -206,8 +206,22 @@ de control. Los tiempos se editan en Configuración → Reservas.
 
 ## OPE-10 · Clientes corporativos (F3)
 
-Empresas, contratos (tarifa pactada, dinámica, cupo, día de corte), administradores (**usuarios externos con rol
-limitado, que solo ven los datos de su empresa**), empleados, centros de costo, políticas, consumo frente al cupo y **estados de cuenta** mensuales con su estado de pago.
+> **Implementado.** Pantalla **Empresas** (permiso `corporativo.ver`: soporte, finanzas, supervisión y administración;
+> `corporativo.gestionar`: finanzas, supervisión y administración) y portal **Mi empresa** (rol externo `empresa`).
+
+**Empresas (personal de TransporteYa).** Lista con empleados, descuento, cupo, lo que debe y lo que falta por facturar,
+y la pestaña global de **estados de cuenta**. Cada empresa tiene: *Resumen* (contrato, consumo frente al cupo, ciclo
+vigente, mora), *Empleados*, *Centros de costo*, *Políticas*, *Viajes*, *Estados de cuenta* y *Administradores*.
+Finanzas crea la empresa, **pacta el contrato** (descuento, dinámica, cupo, día de corte, plazo de pago) con motivo,
+la suspende o reactiva, crea a sus administradores (contraseña temporal que se muestra una sola vez), genera estados de
+cuenta, **registra su pago** con la referencia o los **anula**. Soporte solo consulta. Todo cambio queda en la auditoría.
+
+**Mi empresa (administrador corporativo).** Es un usuario externo con el rol `empresa`, con contraseña y segundo
+factor como el personal, que **solo ve su empresa**: la API la lee de su cuenta y nunca de la petición, y rechaza
+cualquier otra pantalla de la operación (D-09, D-42). Puede invitar y retirar empleados, cambiarles el centro de
+costo y la política, crear centros y políticas, y ver los viajes y los estados de cuenta con su detalle por empleado y
+por centro de costo. No puede tocar el contrato ni registrar pagos. En modo demostración hay una empresa de ejemplo
+con su administrador.
 
 ## OPE-11 · Usuarios internos y auditoría
 

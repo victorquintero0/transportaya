@@ -2,8 +2,10 @@ import { randomInt } from 'node:crypto';
 import {
   alerta,
   calificacion,
+  centroCosto,
   conductor,
   cotizacion,
+  empresa,
   metodoPago,
   movimientoSaldo,
   pago,
@@ -25,6 +27,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, ErrorNegocio, noEncontrado } from '../comun/errores.js';
+import { EmpresaPasajeroService } from '../corporativo/empresa-pasajero.service.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
 import { CancelacionPasajeroService } from '../viajes/cancelacion-pasajero.service.js';
@@ -71,6 +74,7 @@ export class ViajesPasajeroService {
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(CancelacionPasajeroService) private readonly cancelacion: CancelacionPasajeroService,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
+    @Inject(EmpresaPasajeroService) private readonly empresa: EmpresaPasajeroService,
   ) {}
 
   /** PAS-24: confirma un viaje a partir de una cotización y empieza a buscar conductor. */
@@ -78,9 +82,12 @@ export class ViajesPasajeroService {
     pasajeroId: string,
     d: {
       cotizacionId: string;
-      metodoPago: 'efectivo' | 'tarjeta';
+      metodoPago: 'efectivo' | 'tarjeta' | 'corporativo';
       metodoPagoId?: string | undefined;
       nota?: string | undefined;
+      /** Solo con pago corporativo (PAS-61): a qué centro de costo se carga y para qué es el viaje. */
+      centroCostoId?: string | undefined;
+      motivo?: string | undefined;
     },
   ) {
     const { db } = this.bd;
@@ -176,6 +183,19 @@ export class ViajesPasajeroService {
         metodoPagoId = m.id;
       }
 
+      // Viaje a cargo de la empresa: política y contrato se comprueban otra vez aquí, no solo al cotizar (RN-103, RN-104).
+      const corporativo =
+        d.metodoPago === 'corporativo'
+          ? await this.empresa.autorizar(tx, pasajeroId, {
+              instante: cot.programadoPara ?? new Date(),
+              categoria: cot.categoria,
+              tipoServicio: cot.tipoServicio,
+              precioMaximo: cot.precioMax,
+              centroCostoId: d.centroCostoId,
+              motivo: d.motivo,
+            })
+          : null;
+
       const pin = String(randomInt(0, 10_000)).padStart(4, '0');
       const [v] = await tx
         .insert(viaje)
@@ -194,6 +214,14 @@ export class ViajesPasajeroService {
           multiplicadorDinamico: cot.multiplicadorDinamico,
           metodoPago: d.metodoPago,
           metodoPagoId,
+          ...(corporativo
+            ? {
+                empresaId: corporativo.empresaId,
+                vinculoEmpresaId: corporativo.vinculoEmpresaId,
+                centroCostoId: corporativo.centroCostoId,
+                motivoCorporativo: corporativo.motivo,
+              }
+            : {}),
           pinInicio: pin,
           precioEstimadoMin: cot.precioMin,
           precioEstimadoMax: cot.precioMax,
@@ -333,6 +361,13 @@ export class ViajesPasajeroService {
           sql`${viajeCompartido.expiraEn} is null or ${viajeCompartido.expiraEn} > now()`,
         ),
       );
+    const [corp] = v.empresaId
+      ? await db
+          .select({ empresa: empresa.nombre, centroCosto: centroCosto.nombre })
+          .from(empresa)
+          .leftJoin(centroCosto, eq(centroCosto.id, v.centroCostoId ?? sql`null`))
+          .where(eq(empresa.id, v.empresaId))
+      : [];
     const finalizado = v.estado === 'finalizado';
     const dentroDeVentana =
       finalizado && Date.now() - (v.finalizadoEn?.getTime() ?? 0) < VENTANA_CALIFICAR_MS;
@@ -355,6 +390,14 @@ export class ViajesPasajeroService {
         : null,
       metodoPago: v.metodoPago,
       estadoPago: v.estadoPago,
+      corporativo: corp
+        ? {
+            empresa: corp.empresa,
+            centroCosto: corp.centroCosto,
+            motivo: v.motivoCorporativo,
+            descuento: v.descuentoCorporativo,
+          }
+        : null,
       pin: ['asignado', 'en_sitio'].includes(v.estado) ? v.pinInicio : null,
       precioEstimado: { min: v.precioEstimadoMin, max: v.precioEstimadoMax },
       precioFinal: v.precioFinal,
@@ -528,6 +571,7 @@ export class ViajesPasajeroService {
         : null,
       metodoPago: v.metodoPago,
       estadoPago: v.estadoPago,
+      corporativo: v.corporativo,
       mediciones: {
         distanciaM: fila?.distanciaM ?? null,
         duracionS: fila?.duracionS ?? null,

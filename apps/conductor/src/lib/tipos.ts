@@ -100,7 +100,7 @@ export interface Oferta {
   destino: { zona: string; distanciaViajeM: number };
   gananciaEstimada: number;
   precioEstimado: { min: number; max: number };
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   categoria: string;
   tipoServicio: string;
   pasajero: { nombre: string; calificacion: number | null };
@@ -123,7 +123,7 @@ export interface ViajeActual {
   recogida: { lat: number; lng: number; direccion: string | null };
   destino: { lat: number; lng: number; direccion: string | null };
   nota: string | null;
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   pinRequerido: boolean;
   precioEstimado: { min: number; max: number };
   tarifa: {
@@ -149,7 +149,7 @@ export interface ViajeActual {
 export interface ResultadoFinalizar {
   viajeId: string;
   codigo: string;
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   precioFinal: number;
   totalCarrera: number;
   cobroEspera: number;

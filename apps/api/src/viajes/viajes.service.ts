@@ -3,6 +3,7 @@ import {
   calificacion,
   conductor,
   cotizacion,
+  empresa,
   metodoPago,
   movimientoSaldo,
   oferta,
@@ -16,6 +17,7 @@ import {
   viaje,
 } from '@transportaya/db';
 import { Inject, Injectable } from '@nestjs/common';
+import { descuentoDeEmpresa } from './descuento-corporativo.js';
 import {
   ambitoComision,
   calcularComision,
@@ -23,6 +25,7 @@ import {
   calcularTarifaUrbana,
   COMISION_PUNTOS_BASICOS,
   compararMediciones,
+  descuentoCorporativo,
   distanciaMetros,
   movimientosDeViaje,
   resumirTrayectoria,
@@ -301,6 +304,11 @@ export class ViajesService {
           }
         : taximetro;
 
+      // Viaje a cargo de una empresa: su contrato decide si lleva dinámica y cuánto se le descuenta (RN-100).
+      const [contrato] = v.empresaId
+        ? await tx.select().from(empresa).where(eq(empresa.id, v.empresaId))
+        : [];
+
       // Precio.
       const [ruta] = v.rutaFijaId
         ? await tx.select().from(rutaFija).where(eq(rutaFija.id, v.rutaFijaId))
@@ -345,7 +353,7 @@ export class ViajesService {
           },
           distanciaM: cobrado.distanciaM,
           tiempoCobrableS: cobrado.tiempoDetenidoS,
-          multiplicadorDinamico: v.multiplicadorDinamico,
+          multiplicadorDinamico: contrato && !contrato.aplicaDinamica ? 1 : v.multiplicadorDinamico,
           recargos,
           cobroEspera,
         });
@@ -369,20 +377,25 @@ export class ViajesService {
       const comision = calcularComision({ totalRedondeado: totalCarrera, cobroEspera }, ambito);
       const precioFinal = totalCarrera + cobroEspera + peajes;
       const efectivo = v.metodoPago === 'efectivo';
+      const corporativo = v.metodoPago === 'corporativo';
+      const descuento = contrato ? descuentoCorporativo(precioFinal, contrato.descuentoPb) : 0;
       // Con tarjeta, el cobro lo resuelve la pasarela. Mientras no hay Wompi, el simulador aprueba todo salvo las
       // tarjetas de prueba rechazadas; en ese caso el viaje queda como deuda del pasajero (RN-053, HU-PAS-04).
       let tarjetaRechazada = false;
-      if (!efectivo && this.config.SIMULADOR && v.metodoPagoId) {
+      if (!efectivo && !corporativo && this.config.SIMULADOR && v.metodoPagoId) {
         const [m] = await tx.select().from(metodoPago).where(eq(metodoPago.id, v.metodoPagoId));
         tarjetaRechazada = cobroSimulado(m?.tokenProveedor) === 'rechazado';
       }
+      // Lo corporativo no pasa por la pasarela: se cobra a la empresa en su estado de cuenta (RN-105).
       const estadoPago = efectivo
         ? 'pendiente'
-        : tarjetaRechazada
-          ? 'fallido'
-          : this.config.SIMULADOR
-            ? 'pagado'
-            : 'pendiente';
+        : corporativo
+          ? 'pagado'
+          : tarjetaRechazada
+            ? 'fallido'
+            : this.config.SIMULADOR
+              ? 'pagado'
+              : 'pendiente';
 
       await tx
         .update(viaje)
@@ -415,6 +428,7 @@ export class ViajesService {
           precioFinal,
           comision,
           comisionPb: COMISION_PUNTOS_BASICOS[ambito],
+          descuentoCorporativo: descuento,
         })
         .where(eq(viaje.id, v.id));
 
@@ -593,9 +607,10 @@ export class ViajesService {
             estadoPago:
               v.metodoPago === 'efectivo'
                 ? 'pendiente'
-                : this.config.SIMULADOR
+                : v.metodoPago === 'corporativo' || this.config.SIMULADOR
                   ? 'pagado'
                   : 'pendiente',
+            descuentoCorporativo: await descuentoDeEmpresa(tx, v.empresaId, tarifaCancelacion),
           })
           .where(eq(viaje.id, v.id));
         // La tarifa de cancelación va al conductor menos la comisión (RN-044); si el pasajero pagaba en efectivo, queda como su deuda.

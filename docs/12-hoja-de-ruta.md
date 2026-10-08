@@ -93,8 +93,8 @@ y prueba de penetración sin hallazgos críticos abiertos.
 
 ## Fase 3 · Corporativo y expansión
 
-- Cuentas corporativas: empresas, contratos, empleados, centros de costo, políticas y estados de cuenta.
-- Rol de administrador corporativo (usuario externo con acceso limitado a su empresa) dentro de la App Operación.
+- Cuentas corporativas: empresas, contratos, empleados, centros de costo, políticas y estados de cuenta. **Hecho** (falta la facturación electrónica).
+- Rol de administrador corporativo (usuario externo con acceso limitado a su empresa) dentro de la App Operación. **Hecho.**
 - Integración con el proveedor de facturación electrónica de las comisiones y de las cuentas corporativas (D-02).
 - Nuevas ciudades.
 - Evaluación de app nativa (Capacitor) para conductores según los datos del piloto.

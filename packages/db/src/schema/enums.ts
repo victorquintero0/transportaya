@@ -1,7 +1,10 @@
 import {
   CATEGORIAS_VEHICULO,
+  ESTADOS_EMPRESA,
   ESTADOS_PAGO,
   ESTADOS_VIAJE,
+  ESTADOS_VINCULO,
+  ROLES_INTERNOS,
   TIPOS_MOVIMIENTO,
   TIPOS_SERVICIO,
 } from '@transportaya/dominio';
@@ -15,13 +18,15 @@ export const tipoServicio = pgEnum('tipo_servicio', TIPOS_SERVICIO);
 export const tipoMovimiento = pgEnum('tipo_movimiento', TIPOS_MOVIMIENTO);
 
 export const estadoUsuario = pgEnum('estado_usuario', ['activo', 'bloqueado', 'anonimizado']);
-export const rolInterno = pgEnum('rol_interno', [
-  'monitor',
-  'soporte',
-  'cumplimiento',
-  'financiero',
-  'supervisor',
-  'admin',
+export const rolInterno = pgEnum('rol_interno', ROLES_INTERNOS);
+
+/** Empresas clientes (RN-100 a RN-105). */
+export const estadoEmpresa = pgEnum('estado_empresa', ESTADOS_EMPRESA);
+export const estadoVinculo = pgEnum('estado_vinculo', ESTADOS_VINCULO);
+export const estadoCuentaEmpresa = pgEnum('estado_cuenta_empresa', [
+  'emitido',
+  'pagado',
+  'anulado',
 ]);
 
 export const estadoHabilitacion = pgEnum('estado_habilitacion', [
@@ -78,7 +83,12 @@ export const tipoZona = pgEnum('tipo_zona', [
 ]);
 export const modalidadRuta = pgEnum('modalidad_ruta', ['solo_ida', 'ida_y_vuelta']);
 
-export const metodoPagoViaje = pgEnum('metodo_pago_viaje', ['efectivo', 'tarjeta', 'local']);
+export const metodoPagoViaje = pgEnum('metodo_pago_viaje', [
+  'efectivo',
+  'tarjeta',
+  'local',
+  'corporativo',
+]);
 export const tipoMetodoPago = pgEnum('tipo_metodo_pago', ['tarjeta', 'nequi', 'pse', 'bre_b']);
 export const tipoPago = pgEnum('tipo_pago', ['efectivo', 'electronico']);
 export const actorTipo = pgEnum('actor_tipo', ['pasajero', 'conductor', 'operacion', 'sistema']);

@@ -2,7 +2,7 @@ import { api, Icono, Logo, type NombreIcono, useSesion } from '@transportaya/ui'
 import { ETIQUETA_ROL, tienePermiso, type Permiso } from '@transportaya/dominio';
 import { useQueryClient } from '@tanstack/react-query';
 import { Suspense, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAjustes } from '../estado/ajustes.ts';
 import { Notificaciones } from './Notificaciones.tsx';
 import { Cargando } from './ui.tsx';
@@ -20,6 +20,8 @@ export const DESTINOS: Destino[] = [
   { ruta: '/', titulo: 'Torre de control', icono: 'velocimetro', permiso: 'torre.ver' },
   { ruta: '/viajes', titulo: 'Viajes', icono: 'carro', permiso: 'viajes.ver' },
   { ruta: '/reservas', titulo: 'Reservas', icono: 'reloj', permiso: 'viajes.ver' },
+  { ruta: '/empresas', titulo: 'Empresas', icono: 'maletin', permiso: 'corporativo.ver' },
+  { ruta: '/mi-empresa', titulo: 'Mi empresa', icono: 'maletin', permiso: 'empresa.portal' },
   { ruta: '/conductores', titulo: 'Conductores', icono: 'maletin', permiso: 'conductores.ver' },
   { ruta: '/pasajeros', titulo: 'Pasajeros', icono: 'usuario', permiso: 'pasajeros.ver' },
   { ruta: '/soporte', titulo: 'Soporte', icono: 'mensaje', permiso: 'tickets.ver' },
@@ -37,6 +39,7 @@ export const DESTINOS: Destino[] = [
 export function Layout() {
   const qc = useQueryClient();
   const navegar = useNavigate();
+  const { pathname } = useLocation();
   const { data: perfil } = usePerfilOperador();
   const conectado = useConexion((s) => s.conectado);
   const simulador = useSimulador();
@@ -52,6 +55,12 @@ export function Layout() {
     );
 
   const permitidos = DESTINOS.filter((d) => tienePermiso(perfil.roles, d.permiso));
+  // Una dirección escrita a mano a la que no se tiene permiso lleva a la primera pantalla propia.
+  const pedida = DESTINOS.find(
+    (d) => d.ruta !== '/' && (pathname === d.ruta || pathname.startsWith(`${d.ruta}/`)),
+  );
+  if (pedida && !permitidos.includes(pedida) && permitidos[0])
+    return <Navigate to={permitidos[0].ruta} replace />;
   const salir = async () => {
     try {
       await api.post('/v1/auth/salir');

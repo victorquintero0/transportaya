@@ -6,6 +6,7 @@ import { BdModule } from './bd/bd.module.js';
 import { FiltroProblemas } from './comun/errores.js';
 import { DineroModule } from './dinero/dinero.module.js';
 import { ConductorModule } from './conductor/conductor.module.js';
+import { CorporativoModule } from './corporativo/corporativo.module.js';
 import { ConfigModule } from './config.module.js';
 import { OperacionModule } from './operacion/operacion.module.js';
 import { ParametrosModule } from './operacion/parametros.service.js';
@@ -34,6 +35,7 @@ import { SaludController } from './salud.controller.js';
     PasajeroModule,
     PrivacidadModule,
     OperacionModule,
+    CorporativoModule,
     SimuladorModule,
   ],
   controllers: [SaludController],

@@ -56,6 +56,6 @@ import { UsuariosOperacionController } from './usuarios-op.controller.js';
     ReportesOperacionService,
     MapaConfigService,
   ],
-  exports: [EmpleadosService],
+  exports: [EmpleadosService, AuthOperacionService],
 })
 export class OperacionModule {}

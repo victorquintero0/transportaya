@@ -300,6 +300,32 @@ El simulador de la App Operación y las pruebas automáticas del paquete `domini
 - **RN-104** Si la empresa supera su cupo o tiene estados de cuenta vencidos `[> 15 días]`, se suspende el
   perfil corporativo de sus empleados (pueden seguir pidiendo viajes personales).
 - **RN-105** Cada mes se genera un **estado de cuenta** con el detalle por empleado y centro de costo.
+- **RN-106** *Cómo se aplica el contrato.* El **descuento** pactado lo absorbe TransporteYa: el conductor cobra el viaje
+  completo y la comisión se calcula sobre el valor completo (RN-060); la empresa paga el valor menos el descuento. Si
+  el contrato **no aplica dinámica**, el viaje se cobra con multiplicador 1 aunque se haya pedido en un momento de alta
+  demanda. Un viaje corporativo no pasa por la pasarela: para el conductor es como un pago electrónico (RN-050), sin
+  efectivo por cobrar y sin propina.
+- **RN-107** *Cupo.* El **cupo de crédito** cuenta lo que la empresa ya debe: los estados de cuenta por pagar más los
+  viajes hechos o reservados que todavía no están en ninguno (con su descuento y al precio máximo estimado si aún no
+  terminan). El viaje que haría pasar el cupo no se puede cargar a la empresa. Sin cupo, no hay tope.
+- **RN-108** *Mora.* Cada estado de cuenta se paga en `[15 días]` (parámetro del contrato). Pasado ese plazo sin pago
+  está **vencido** y el perfil corporativo de todos los empleados queda suspendido hasta que se registre el pago
+  (RN-104); la suspensión se calcula al pedir el viaje, sin esperar a un trabajo programado. TransporteYa también puede
+  suspender y reactivar una empresa con motivo.
+- **RN-109** *Ciclo y estado de cuenta.* El ciclo empieza el **día de corte** (1 a 28) de cada mes. Cada día a las 00:10
+  un trabajo genera el estado de cuenta del último ciclo cerrado de cada empresa (también al arrancar la API, por si
+  estuvo caída); si no hay viajes cobrables no se emite. Incluye los viajes finalizados y las cancelaciones con costo
+  (con su descuento), y queda ligado a esos viajes: ya no se pueden ajustar ni se cobran dos veces. Finanzas puede
+  generarlo a mano, **registrar su pago** o **anularlo** (los viajes pasan al siguiente), siempre con motivo.
+- **RN-110** *Cancelaciones y correcciones.* Una cancelación con costo de un viaje corporativo se carga a la empresa
+  (con descuento), no al pasajero. Lo cobrado a una empresa no se reembolsa a una tarjeta: si hay un error, finanzas
+  anula el estado de cuenta y corrige el precio del viaje.
+- **RN-111** *Empleados.* Una persona está activa en **una sola empresa** a la vez. La invitación llega al celular
+  (formato de Colombia) y no se puede aceptar desde otra cuenta. Salir de la empresa o ser retirado quita el perfil
+  corporativo pero no los viajes ya hechos. Cada empresa nace con un centro de costo «General» y una política sin
+  restricciones.
+- **RN-112** *Pendiente.* Zonas permitidas dentro de la política, tarifa propia de la empresa (solo hay descuento),
+  invitaciones por correo y facturación electrónica del estado de cuenta (D-02).
 
 ## 12. Habilitación de conductores y vehículos
 

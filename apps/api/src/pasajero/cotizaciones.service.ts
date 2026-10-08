@@ -15,6 +15,7 @@ import { and, desc, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, ErrorNegocio, noEncontrado, solicitudInvalida } from '../comun/errores.js';
 import { DespachoService } from '../viajes/despacho.service.js';
+import { EmpresaPasajeroService } from '../corporativo/empresa-pasajero.service.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
 import { PrecioService } from '../viajes/precio.service.js';
 import { UBICACION_DESTINOS } from './destinos-nacionales.js';
@@ -61,6 +62,7 @@ export class CotizacionesService {
     @Inject(PrecioService) private readonly precios: PrecioService,
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
+    @Inject(EmpresaPasajeroService) private readonly empresa: EmpresaPasajeroService,
   ) {}
 
   /** Destinos con tarifa fija que se ofrecen en la app: los que tienen ubicación conocida (D-29). */
@@ -148,7 +150,28 @@ export class CotizacionesService {
     return Math.max(1, r.rows[0]?.m ?? 1);
   }
 
+  /** Cotiza y, si la persona pertenece a una empresa, indica por opción si se puede cargar a la empresa (RN-103). */
   async cotizar(pasajeroId: string, e: EntradaCotizacion) {
+    const r = await this.cotizarBase(pasajeroId, e);
+    const instante = e.programadoPara ?? new Date();
+    const primera = r.opciones[0];
+    const evaluadas = primera
+      ? await this.empresa.evaluarOpciones(
+          pasajeroId,
+          { instante, tipoServicio: primera.tipoServicio },
+          r.opciones.map((o) => ({ id: o.id, categoria: o.categoria, precioMaximo: o.precio.max })),
+        )
+      : null;
+    return {
+      ...r,
+      opciones: r.opciones.map((o) => ({
+        ...o,
+        corporativo: evaluadas?.get(o.id) ?? null,
+      })),
+    };
+  }
+
+  private async cotizarBase(pasajeroId: string, e: EntradaCotizacion) {
     const ciudadId = await this.ciudadActiva();
     const ahoraReal = new Date();
     if (e.programadoPara) {

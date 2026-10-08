@@ -6,6 +6,9 @@ export interface PerfilOperador {
   email: string;
   roles: RolInterno[];
   permisos: Permiso[];
+  /** Solo para el administrador de una empresa cliente: su empresa. */
+  empresaId?: string | null;
+  empresa?: string | null;
 }
 
 export interface Pagina<T> {
@@ -124,6 +127,15 @@ export interface ViajeDetalleDatos {
     tipoServicio: string;
     categoria: string;
     metodoPago: string;
+    /** Si el viaje se carga a una empresa cliente (OPE-10). */
+    corporativo: {
+      empresaId: string;
+      empresa: string;
+      centroCosto: string | null;
+      motivo: string | null;
+      descuento: number;
+      estadoCuentaId: string | null;
+    } | null;
     origen: Coord;
     destino: Coord;
     origenDireccion: string | null;
@@ -740,4 +752,144 @@ export interface CeldaCalor {
   lat: number;
   lng: number;
   n: number;
+}
+
+// ───────────────────────────────────────────────────────────── clientes corporativos (OPE-10)
+
+export interface EmpresaResumen {
+  id: string;
+  nombre: string;
+  nit: string;
+  contactoNombre: string;
+  contactoTelefono: string | null;
+  contactoEmail: string | null;
+  estado: 'activa' | 'suspendida';
+  motivoSuspension: string | null;
+  /** 500 = 5 %. */
+  descuentoPb: number;
+  aplicaDinamica: boolean;
+  cupo: number | null;
+  diaCorte: number;
+  diasPago: number;
+  creadaEn: string;
+  empleadosActivos: number;
+  /** Estados de cuenta emitidos y sin pagar. */
+  porPagar: number;
+  /** Viajes hechos o reservados que todavía no están en un estado de cuenta. */
+  sinFacturar: number;
+  total: number;
+  vencimientoMasAntiguo: string | null;
+}
+
+export interface EmpresaDetalleDatos extends EmpresaResumen {
+  cicloVigente: { desde: string; hasta: string };
+  disponible: number | null;
+  enMora: boolean;
+}
+
+export interface CentroCostoEmpresa {
+  id: string;
+  codigo: string;
+  nombre: string;
+  activo: boolean;
+  empleados: number;
+}
+
+export interface PoliticaEmpresa {
+  id: string;
+  nombre: string;
+  dias: number[];
+  desdeMin: number;
+  hastaMin: number;
+  montoMaximo: number | null;
+  categorias: string[];
+  tiposServicio: string[];
+  motivoObligatorio: boolean;
+  activa: boolean;
+  empleados: number;
+}
+
+export interface EmpleadoEmpresa {
+  id: string;
+  nombre: string;
+  telefono: string;
+  estado: 'invitado' | 'activo' | 'retirado';
+  centroCostoId: string | null;
+  centroCosto: string | null;
+  politicaId: string | null;
+  politica: string | null;
+  invitadoEn: string;
+  aceptadoEn: string | null;
+  viajes: number;
+}
+
+export interface AdministradorEmpresa {
+  id: string;
+  nombre: string;
+  email: string;
+  telefono: string;
+  activo: boolean;
+}
+
+export interface ViajeEmpresa {
+  id: string;
+  codigo: string;
+  estado: string;
+  solicitadoEn: string;
+  programadoPara: string | null;
+  empleado: string | null;
+  centroCosto: string | null;
+  motivo: string | null;
+  origen: string | null;
+  destino: string | null;
+  precioFinal: number | null;
+  descuento: number;
+  estadoCuentaId: string | null;
+}
+
+export type EstadoCuentaMostrado = 'emitido' | 'vencido' | 'pagado' | 'anulado';
+
+export interface EstadoCuentaFila {
+  id: string;
+  codigo: string;
+  empresaId: string;
+  empresa: string;
+  periodoDesde: string;
+  periodoHasta: string;
+  viajes: number;
+  subtotal: number;
+  descuento: number;
+  total: number;
+  estado: EstadoCuentaMostrado;
+  emitidoEn: string;
+  venceEn: string;
+  diasDeMora: number;
+  pagadoEn: string | null;
+  referenciaPago: string | null;
+}
+
+export interface GrupoEstadoCuenta {
+  nombre: string;
+  viajes: number;
+  subtotal: number;
+  descuento: number;
+  total: number;
+}
+
+export interface EstadoCuentaDetalle extends EstadoCuentaFila {
+  porEmpleado: GrupoEstadoCuenta[];
+  porCentroCosto: GrupoEstadoCuenta[];
+  viajesDetalle: {
+    id: string;
+    codigo: string;
+    fecha: string;
+    estado: string;
+    empleado: string;
+    centroCosto: string;
+    motivo: string | null;
+    origen: string | null;
+    destino: string | null;
+    valor: number;
+    descuento: number;
+  }[];
 }

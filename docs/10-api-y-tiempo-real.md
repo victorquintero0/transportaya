@@ -65,8 +65,8 @@ Todas las rutas requieren el rol `pasajero` (el celular entra con `app: "pasajer
 | GET | `/v1/pasajero/lugares/buscar?q=&lat=&lng=` | Lugares y direcciones (`Cra 23 # 62-14`) y destinos recientes |
 | GET | `/v1/pasajero/lugares/inversa?lat=&lng=` | Nombre del punto del mapa |
 | GET | `/v1/pasajero/rutas` | Destinos con tarifa fija y su precio `solo_ida` / `ida_y_vuelta` |
-| POST | `/v1/pasajero/cotizaciones` | Precio por categoría (rango), recargos, dinámica y ETA; o la tarifa fija de una ruta |
-| POST | `/v1/pasajero/viajes` | Crear el viaje desde una cotización vigente, con PIN; empieza a buscar conductor |
+| POST | `/v1/pasajero/cotizaciones` | Precio por categoría (rango), recargos, dinámica y ETA; o la tarifa fija de una ruta. Con `programadoPara` cotiza una reserva; si la persona pertenece a una empresa, cada opción trae `corporativo: {permitido, codigo, detalle}` |
+| POST | `/v1/pasajero/viajes` | Crear el viaje desde una cotización vigente, con PIN; empieza a buscar conductor (o queda reservado). `metodoPago` puede ser `corporativo`, con `centroCostoId` y `motivo`: la política y el contrato se comprueban otra vez aquí |
 | GET | `/v1/pasajero/viaje-actual` | El viaje activo, o el que acaba de terminar y falta calificar |
 | GET | `/v1/pasajero/viajes[?estado=&antes=]` · `/{id}` · `/{id}/recibo` | Historial, detalle y recibo con cada concepto del precio |
 | POST | `/v1/pasajero/viajes/{id}/cancelar` | Cancelar (gratis al buscar y 2 min tras la asignación; después, tarifa de cancelación) |
@@ -77,6 +77,8 @@ Todas las rutas requieren el rol `pasajero` (el celular entra con `app: "pasajer
 | POST | `/v1/pasajero/sos` | SOS: alerta crítica con el viaje y la ubicación; avisa cuántos contactos de confianza hay |
 | POST | `/v1/pasajero/metodos-pago` | Agregar tarjeta con el token de la pasarela; `PUT .../{id}/predeterminado`, `DELETE .../{id}` |
 | POST | `/v1/pasajero/deuda/pagar` | Pagar la deuda con una tarjeta |
+| GET | `/v1/pasajero/empresa` | Su empresa (con centros de costo y si su perfil corporativo está disponible) y las invitaciones recibidas (PAS-60) |
+| POST | `/v1/pasajero/empresa/invitaciones/{id}/aceptar` · `/rechazar` · `/v1/pasajero/empresa/salir` | Aceptar o rechazar una invitación; salir de la empresa |
 | GET / POST | `/v1/pasajero/soporte/tickets` | Reportar un problema u objeto perdido ligado a un viaje; ver mis reportes |
 
 ### Modo demostración para el pasajero
@@ -154,6 +156,13 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | GET | `/v1/op/reservas?desde=&hasta=&estado=` | `viajes.ver` | Reservas por hora, con estado, resumen y las que están en riesgo |
 | GET | `/v1/op/reservas/{id}/conductores?q=` | `viajes.despachar` | Conductores que podrían tomar esa reserva |
 | POST | `/v1/op/reservas/{id}/asignar` · `/liberar` | `viajes.despachar` | Poner o quitar el conductor de una reserva, con motivo |
+| GET | `/v1/op/empresas` · `/{id}` · `/{id}/empleados` · `/centros` · `/politicas` · `/viajes` · `/estados-cuenta` · `/administradores` | `corporativo.ver` | Empresas clientes y todo lo suyo |
+| POST | `/v1/op/empresas` | `corporativo.gestionar` | Crear una empresa (queda con centro y política «General») |
+| PATCH | `/v1/op/empresas/{id}/contrato` · POST `/suspender` · `/reactivar` | `corporativo.gestionar` | Contrato (descuento, dinámica, cupo, corte, plazo), suspender y reactivar; siempre con motivo |
+| POST / PUT / PATCH / DELETE | `/v1/op/empresas/{id}/empleados` · `/centros` · `/politicas` | `corporativo.gestionar` | Invitar y retirar empleados, centros de costo y políticas |
+| POST | `/v1/op/empresas/{id}/administradores` · `/{usuarioId}/restablecer` · `/reiniciar-segundo-factor` | `corporativo.gestionar` | Administradores corporativos (rol externo) |
+| POST | `/v1/op/empresas/{id}/estados-cuenta/generar` · `/v1/op/empresas/estados-cuenta/{id}/pago` · `/anular` | `corporativo.gestionar` | Generar un estado de cuenta, registrar su pago o anularlo (con motivo) |
+| GET / POST / PATCH / PUT / DELETE | `/v1/op/mi-empresa` y `/centros` · `/politicas` · `/empleados` · `/viajes` · `/estados-cuenta` | `empresa.portal` | Portal del administrador corporativo: solo su empresa, que sale de su cuenta |
 | POST | `/v1/op/viajes/{id}/ajustar-precio` | `viajes.ajustar_tarifa` | Corrige el precio de un viaje finalizado; la diferencia del conductor queda como ajuste de saldo pendiente |
 | GET | `/v1/op/conductores?estado=&q=` · `/{id}` · `/v1/op/vencimientos` | `conductores.ver` | Cola de revisión, ficha completa y documentos por vencer |
 | GET | `/v1/op/documentos/{id}/archivo` | `conductores.aprobar` | Imagen del documento (queda en la auditoría) |

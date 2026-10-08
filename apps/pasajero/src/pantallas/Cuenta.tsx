@@ -20,7 +20,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAjustes } from '../estado/ajustes.ts';
 import { usePedido } from '../estado/pedido.ts';
-import { usePerfil, useSimulador } from '../lib/consultas.ts';
+import { useEmpresa, usePerfil, useSimulador } from '../lib/consultas.ts';
 import { CENTRO_MANIZALES, useUbicacion } from '../servicios/ubicacion.ts';
 
 const ENTRADA =
@@ -32,6 +32,92 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <h2 className="mb-2 text-xl font-black">{titulo}</h2>
       {children}
     </section>
+  );
+}
+
+/** PAS-60: invitaciones de empresas y la empresa a la que pertenece la persona. */
+function MiEmpresa() {
+  const qc = useQueryClient();
+  const { data } = useEmpresa();
+  const cambiar = useMutation({
+    mutationFn: ({ ruta }: { ruta: string }) => api.post(ruta),
+    onSuccess: (_r, { ruta }) => {
+      void qc.invalidateQueries({ queryKey: ['empresa'] });
+      avisar(
+        ruta.includes('aceptar')
+          ? 'Listo: ya puedes cargar viajes a tu empresa'
+          : ruta.includes('salir')
+            ? 'Saliste de la empresa'
+            : 'Rechazaste la invitación',
+        'exito',
+      );
+    },
+    onError: (e) => avisar(mensajeDe(e), 'error'),
+  });
+  if (!data || (!data.vinculo && data.invitaciones.length === 0)) return null;
+  return (
+    <Seccion titulo="Mi empresa">
+      <div className="space-y-3" id="mi-empresa">
+        {data.invitaciones.map((i) => (
+          <Tarjeta
+            key={i.id}
+            className="space-y-3 border-ty/50 bg-ty/5"
+            data-invitacion={i.empresa}
+          >
+            <p className="font-extrabold">
+              {i.empresa} te invitó a cargar tus viajes de trabajo a la empresa.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Boton
+                id={`aceptar-invitacion`}
+                alPulsar={() =>
+                  cambiar.mutate({ ruta: `/v1/pasajero/empresa/invitaciones/${i.id}/aceptar` })
+                }
+              >
+                Aceptar
+              </Boton>
+              <Boton
+                variante="secundario"
+                alPulsar={() =>
+                  cambiar.mutate({ ruta: `/v1/pasajero/empresa/invitaciones/${i.id}/rechazar` })
+                }
+              >
+                Rechazar
+              </Boton>
+            </div>
+          </Tarjeta>
+        ))}
+        {data.vinculo && (
+          <Tarjeta className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-ty/15 text-ty">
+                <Icono nombre="maletin" tamano={20} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-extrabold" id="nombre-empresa">
+                  {data.vinculo.empresa.nombre}
+                </span>
+                <span className="block text-sm text-suave">
+                  {data.vinculo.perfilDisponible
+                    ? 'Perfil corporativo activo: elige «Empresa» al pagar'
+                    : (data.vinculo.razon ?? 'Perfil corporativo no disponible')}
+                </span>
+              </span>
+              <Chip tono={data.vinculo.perfilDisponible ? 'ok' : 'aviso'}>
+                {data.vinculo.perfilDisponible ? 'Activo' : 'Suspendido'}
+              </Chip>
+            </div>
+            <Boton
+              variante="fantasma"
+              id="salir-empresa"
+              alPulsar={() => cambiar.mutate({ ruta: '/v1/pasajero/empresa/salir' })}
+            >
+              Salir de la empresa
+            </Boton>
+          </Tarjeta>
+        )}
+      </div>
+    </Seccion>
   );
 }
 
@@ -192,6 +278,8 @@ export function Cuenta() {
             detalle="Reportes, objetos perdidos y soporte"
           />
         </Tarjeta>
+
+        <MiEmpresa />
 
         <Seccion titulo="Mis lugares">
           <Tarjeta className="divide-y divide-borde p-0">

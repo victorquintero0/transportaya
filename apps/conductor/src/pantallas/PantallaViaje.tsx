@@ -73,7 +73,11 @@ function Cabecera({ viaje, etapa }: { viaje: ViajeActual; etapa: string }) {
       )}
       <Chip tono={viaje.metodoPago === 'efectivo' ? 'aviso' : 'info'}>
         <Icono nombre={viaje.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'} tamano={14} />
-        {viaje.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}
+        {viaje.metodoPago === 'efectivo'
+          ? 'Efectivo'
+          : viaje.metodoPago === 'corporativo'
+            ? 'Empresa'
+            : 'Tarjeta'}
       </Chip>
       <BotonChat viaje={viaje} />
       <BotonSos />

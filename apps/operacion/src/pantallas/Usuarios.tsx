@@ -1,5 +1,5 @@
 import { api } from '@transportaya/ui';
-import { ETIQUETA_ROL, ROLES_INTERNOS, type RolInterno } from '@transportaya/dominio';
+import { ETIQUETA_ROL, ROLES_PERSONAL, type RolInterno } from '@transportaya/dominio';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Encabezado } from '../componentes/Layout.tsx';
@@ -26,7 +26,7 @@ function SelectorRoles({
 }) {
   return (
     <fieldset className="flex flex-wrap gap-3">
-      {ROLES_INTERNOS.map((r) => (
+      {ROLES_PERSONAL.map((r) => (
         <label key={r} className="flex items-center gap-2 text-sm font-bold">
           <input
             type="checkbox"

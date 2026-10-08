@@ -254,6 +254,17 @@ Además borra mensajes del viaje, recorridos GPS, códigos OTP y sesiones vencid
 
 `peaje`: nombre único, `ubicacion` (punto con índice espacial), `valor` en pesos y `activo`. Al finalizar un viaje, el servidor arma una línea con las posiciones recibidas entre «Iniciar» y «Finalizar» y cobra cada peaje activo que quede a menos de `peajes.radio_m` (150 m por defecto). El valor queda en `viaje.peajes` y el detalle en `viaje.desglose.peajesCruzados`.
 
+### Clientes corporativos
+
+Migración `0010_corporativo`. Tablas: **`empresa`** (NIT único, estado, `descuento_pb` 0–5000, `aplica_dinamica`, `cupo`,
+`dia_corte` 1–28, `dias_pago`), **`centro_costo`** (código único por empresa), **`politica_uso`** (días, ventana horaria,
+tope, categorías, servicios, motivo obligatorio; las listas vacías significan «sin restricción»), **`vinculo_empresa`**
+(la invitación por celular y, al aceptarla, el `usuario_id`; un índice único parcial permite **una sola empresa activa
+por persona**) y **`estado_cuenta`** (código y ciclo únicos por empresa, total = subtotal − descuento, pagado ⇔ fecha de
+pago). `viaje` suma `empresa_id`, `vinculo_empresa_id`, `centro_costo_id`, `motivo_corporativo`, `descuento_corporativo`
+y `estado_cuenta_id` (con un `CHECK` que mantiene coherentes empresa y vínculo). `metodo_pago_viaje` suma
+`corporativo`; `rol_interno` suma `empresa` y `empleado.empresa_id` ata al administrador a su empresa.
+
 ### Reservas
 
 Una reserva es una fila de `viaje` con `programado_para` y estado `programado` (`CHECK viaje_programado_con_hora`). Columnas
@@ -271,8 +282,6 @@ ejecutada), `vence_en` (10 o 15 días hábiles), la `respuesta` y quién la dio.
 
 ## Fuera de esta versión
 
-- **Clientes corporativos (F3):** `empresa`, `centro_costo`, `empleado_empresa` y `estado_cuenta`. Se agregan en una migración
-  nueva cuando se construya esa fase; `viaje` ya podrá referenciarlas.
 - **Calendario de festivos:** la tabla `festivo` existe pero falta cargar los de cada año.
 - **Dinámica automática (F2):** las celdas H3 y sus mediciones no se guardan; viven en Redis. Aquí solo está la dinámica manual por zona.
 - **Cifrado de columnas:** `valor_cifrado` (cuentas de pago) y `totp_secreto_cifrado` guardan texto ya cifrado por la aplicación

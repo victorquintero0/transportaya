@@ -125,9 +125,11 @@ export function ViajeDetalle() {
             <p className="text-sm font-bold text-suave">
               {reserva
                 ? 'Precio estimado · cerrado'
-                : v.metodoPago === 'tarjeta'
-                  ? 'Pagado con tarjeta'
-                  : 'Pagado en efectivo'}
+                : v.corporativo
+                  ? `Cargado a ${v.corporativo.empresa}${v.corporativo.centroCosto ? ` · ${v.corporativo.centroCosto}` : ''}`
+                  : v.metodoPago === 'tarjeta'
+                    ? 'Pagado con tarjeta'
+                    : 'Pagado en efectivo'}
             </p>
             <p className="numeros text-3xl font-black">
               {reserva
@@ -143,6 +145,20 @@ export function ViajeDetalle() {
             </span>
           )}
         </div>
+
+        {v.corporativo && (
+          <div
+            id="cargo-empresa"
+            className="flex items-center gap-3 rounded-tarjeta border border-ty/40 bg-ty/5 p-4"
+          >
+            <Icono nombre="maletin" className="shrink-0 text-ty" />
+            <p className="text-sm font-bold">
+              Cargado a {v.corporativo.empresa}
+              {v.corporativo.centroCosto ? ` · ${v.corporativo.centroCosto}` : ''}
+              {v.corporativo.motivo ? ` · ${v.corporativo.motivo}` : ''}
+            </p>
+          </div>
+        )}
 
         {c && (
           <div className="flex items-center gap-4 rounded-tarjeta border border-borde bg-superficie p-4">

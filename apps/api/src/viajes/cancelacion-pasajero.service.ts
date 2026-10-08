@@ -14,6 +14,7 @@ import { conflicto, noEncontrado } from '../comun/errores.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
 import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from './despacho.service.js';
+import { descuentoDeEmpresa } from './descuento-corporativo.js';
 import { registrarEvento } from './eventos-viaje.js';
 
 export interface CostoDeCancelar {
@@ -107,6 +108,7 @@ export class CancelacionPasajeroService {
                 comisionPb: conductorId ? COMISION_PUNTOS_BASICOS[ambito] : 10_000,
                 estadoPago:
                   v.metodoPago === 'efectivo' ? ('pendiente' as const) : ('pagado' as const),
+                descuentoCorporativo: await descuentoDeEmpresa(tx, v.empresaId, costo),
               }
             : { estadoPago: 'no_aplica' as const }),
         })
@@ -204,6 +206,7 @@ export class CancelacionPasajeroService {
                 comision,
                 comisionPb: COMISION_PUNTOS_BASICOS[ambito],
                 estadoPago: v.metodoPago === 'efectivo' ? 'pendiente' : 'pagado',
+                descuentoCorporativo: await descuentoDeEmpresa(tx, v.empresaId, costo),
               }
             : { estadoPago: 'no_aplica' as const }),
         })

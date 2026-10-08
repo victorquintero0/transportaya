@@ -11,7 +11,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
-import { estadoUsuario, rolInterno, tipoMetodoPago } from './enums.js';
+import { estadoEmpresa, estadoUsuario, rolInterno, tipoMetodoPago } from './enums.js';
 import { actualizadoEn, cop, creadoEn, id, marca, punto } from './tipos.js';
 
 /** Toda persona del sistema: pasajero, conductor o empleado. El teléfono es el identificador de ingreso. */
@@ -33,6 +33,40 @@ export const usuario = pgTable(
   ],
 );
 
+/**
+ * Empresa cliente con contrato (RN-100). El descuento lo absorbe TransporteYa: el conductor cobra el viaje completo.
+ * `cupo` es el crédito máximo en pesos (sin tope si es nulo) y el ciclo de facturación empieza el `dia_corte`.
+ */
+export const empresa = pgTable(
+  'empresa',
+  {
+    id: id(),
+    nombre: text('nombre').notNull(),
+    nit: text('nit').notNull(),
+    contactoNombre: text('contacto_nombre').notNull(),
+    contactoTelefono: text('contacto_telefono'),
+    contactoEmail: text('contacto_email'),
+    estado: estadoEmpresa('estado').notNull().default('activa'),
+    motivoSuspension: text('motivo_suspension'),
+    /** Descuento pactado en puntos básicos (500 = 5 %). */
+    descuentoPb: integer('descuento_pb').notNull().default(0),
+    /** Si los viajes de la empresa pagan la tarifa dinámica (RN-100). */
+    aplicaDinamica: boolean('aplica_dinamica').notNull().default(false),
+    cupo: cop('cupo'),
+    diaCorte: integer('dia_corte').notNull().default(1),
+    diasPago: integer('dias_pago').notNull().default(15),
+    creadoEn: creadoEn(),
+    actualizadoEn: actualizadoEn(),
+  },
+  (t) => [
+    uniqueIndex('empresa_nit_uq').on(t.nit),
+    check('empresa_descuento', sql`${t.descuentoPb} between 0 and 5000`),
+    check('empresa_dia_corte', sql`${t.diaCorte} between 1 and 28`),
+    check('empresa_dias_pago', sql`${t.diasPago} between 0 and 90`),
+    check('empresa_cupo', sql`${t.cupo} is null or ${t.cupo} > 0`),
+  ],
+);
+
 /** Personal interno de TransporteYa que entra a la App Operación. */
 export const empleado = pgTable(
   'empleado',
@@ -46,10 +80,17 @@ export const empleado = pgTable(
     totpSecretoCifrado: text('totp_secreto_cifrado'),
     totpActivo: boolean('totp_activo').notNull().default(false),
     activo: boolean('activo').notNull().default(true),
+    /** Solo para el administrador de una empresa cliente (rol `empresa`): la única empresa que puede ver. */
+    empresaId: uuid('empresa_id').references(() => empresa.id),
     ultimoIngresoEn: marca('ultimo_ingreso_en'),
     creadoEn: creadoEn(),
   },
-  (t) => [uniqueIndex('empleado_email_uq').on(t.email)],
+  (t) => [
+    uniqueIndex('empleado_email_uq').on(t.email),
+    index('empleado_empresa_idx')
+      .on(t.empresaId)
+      .where(sql`${t.empresaId} is not null`),
+  ],
 );
 
 export const usuarioRol = pgTable(

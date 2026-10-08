@@ -21,7 +21,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Mapa } from '../componentes/Mapa.tsx';
 import { usePedido } from '../estado/pedido.ts';
 import { useSeguimiento } from '../estado/seguimiento.ts';
-import { usePerfil } from '../lib/consultas.ts';
+import { useEmpresa, usePerfil } from '../lib/consultas.ts';
 import { aCampoFechaHora, deCampoFechaHora, fechaReserva } from '../lib/fechas.ts';
 import type { Cotizacion, OpcionCotizacion, Viaje } from '../lib/tipos.ts';
 
@@ -42,6 +42,10 @@ export function Cotizar() {
   const ruta = usePedido((s) => s.ruta);
   const metodoPago = usePedido((s) => s.metodoPago);
   const nota = usePedido((s) => s.nota);
+  const centroElegido = usePedido((s) => s.centroCostoId);
+  const motivo = usePedido((s) => s.motivo);
+  const { data: miEmpresa } = useEmpresa();
+  const vinculo = miEmpresa?.vinculo ?? null;
   const programadoPara = usePedido((s) => s.programadoPara);
   const [elegida, setElegida] = useState<string | null>(null);
   const [pagos, setPagos] = useState(false);
@@ -84,13 +88,32 @@ export function Cotizar() {
   const tarjeta =
     perfil?.metodosPago.find((m) => m.predeterminado) ?? perfil?.metodosPago[0] ?? null;
   const pagaConTarjeta = metodoPago === 'tarjeta' && tarjeta !== null;
+  // Viaje a cargo de la empresa (PAS-61): centro de costo y motivo, y lo que diga la política (RN-103).
+  const pagaConEmpresa = metodoPago === 'corporativo' && vinculo !== null;
+  const centroCostoId =
+    centroElegido ?? vinculo?.centroCostoId ?? vinculo?.centrosCosto[0]?.id ?? null;
+  const bloqueoEmpresa = !pagaConEmpresa
+    ? null
+    : !vinculo.perfilDisponible
+      ? (vinculo.razon ?? 'El perfil corporativo no está disponible.')
+      : opcion?.corporativo && !opcion.corporativo.permitido
+        ? opcion.corporativo.detalle
+        : null;
+  const faltaMotivo =
+    pagaConEmpresa && vinculo.politica.motivoObligatorio && motivo.trim().length < 2;
 
   const pedir = useMutation({
     mutationFn: () =>
       api.post<Viaje>('/v1/pasajero/viajes', {
         cotizacionId: opcion!.id,
-        metodoPago: pagaConTarjeta ? 'tarjeta' : 'efectivo',
+        metodoPago: pagaConEmpresa ? 'corporativo' : pagaConTarjeta ? 'tarjeta' : 'efectivo',
         ...(pagaConTarjeta ? { metodoPagoId: tarjeta!.id } : {}),
+        ...(pagaConEmpresa
+          ? {
+              ...(centroCostoId ? { centroCostoId } : {}),
+              ...(motivo.trim() ? { motivo: motivo.trim() } : {}),
+            }
+          : {}),
         ...(nota.trim() ? { nota: nota.trim() } : {}),
       }),
     onSuccess: (viaje) => {
@@ -300,14 +323,68 @@ export function Cotizar() {
               onClick={() => setPagos(true)}
               className="flex min-h-14 items-center gap-3 rounded-2xl border border-borde bg-superficie px-4 text-left"
             >
-              <Icono nombre={pagaConTarjeta ? 'tarjeta' : 'efectivo'} className="text-ty" />
+              <Icono
+                nombre={pagaConEmpresa ? 'maletin' : pagaConTarjeta ? 'tarjeta' : 'efectivo'}
+                className="text-ty"
+              />
               <span className="flex-1 font-extrabold">
-                {pagaConTarjeta
-                  ? `${tarjeta!.marca ?? 'Tarjeta'} •••• ${tarjeta!.ultimos4}`
-                  : 'Efectivo'}
+                {pagaConEmpresa
+                  ? `Empresa · ${vinculo.empresa.nombre}`
+                  : pagaConTarjeta
+                    ? `${tarjeta!.marca ?? 'Tarjeta'} •••• ${tarjeta!.ultimos4}`
+                    : 'Efectivo'}
               </span>
               <span className="text-sm font-extrabold text-ty">Cambiar</span>
             </button>
+            {pagaConEmpresa && (
+              <div
+                className="space-y-2.5 rounded-2xl border border-ty/40 bg-ty/5 p-3"
+                id="datos-empresa"
+              >
+                {bloqueoEmpresa && (
+                  <div className="space-y-2 rounded-xl bg-sol/10 p-3" id="bloqueo-empresa">
+                    <p className="font-bold text-sol">{bloqueoEmpresa}</p>
+                    <Boton
+                      variante="secundario"
+                      id="pagar-como-persona"
+                      alPulsar={() => usePedido.getState().ponerMetodo('efectivo')}
+                    >
+                      Pagar yo, como persona
+                    </Boton>
+                  </div>
+                )}
+                <label className="block">
+                  <span className="mb-1 block text-sm font-extrabold text-suave">
+                    Centro de costo
+                  </span>
+                  <select
+                    id="centro-costo"
+                    value={centroCostoId ?? ''}
+                    onChange={(e) => usePedido.getState().ponerCentroCosto(e.target.value || null)}
+                    className="min-h-12 w-full rounded-xl border border-borde bg-fondo px-3 font-bold"
+                  >
+                    {vinculo.centrosCosto.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.codigo} · {c.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-extrabold text-suave">
+                    Motivo del viaje{vinculo.politica.motivoObligatorio ? '' : ' (opcional)'}
+                  </span>
+                  <input
+                    id="motivo-viaje"
+                    value={motivo}
+                    maxLength={200}
+                    onChange={(e) => usePedido.getState().ponerMotivo(e.target.value)}
+                    placeholder="Visita a cliente, reunión…"
+                    className="min-h-12 w-full rounded-xl border border-borde bg-fondo px-3 font-bold outline-none placeholder:font-semibold placeholder:text-borde"
+                  />
+                </label>
+              </div>
+            )}
             <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-borde bg-superficie px-4">
               <Icono nombre="mensaje" className="text-suave" />
               <input
@@ -327,7 +404,7 @@ export function Cotizar() {
             id="pedir-viaje"
             tamano="grande"
             icono="rayo"
-            deshabilitado={!opcion}
+            deshabilitado={!opcion || !!bloqueoEmpresa || faltaMotivo}
             cargando={pedir.isPending}
             alPulsar={() => pedir.mutate()}
           >
@@ -353,8 +430,25 @@ export function Cotizar() {
 
       <Hoja abierta={pagos} alCerrar={() => setPagos(false)} titulo="¿Cómo vas a pagar?">
         <div className="space-y-2.5 pb-4">
+          {vinculo && (
+            <OpcionPago
+              activa={metodoPago === 'corporativo'}
+              icono="maletin"
+              titulo={`Empresa · ${vinculo.empresa.nombre}`}
+              detalle={
+                vinculo.perfilDisponible
+                  ? 'Se carga a tu empresa, no pagas nada'
+                  : (vinculo.razon ?? 'Perfil corporativo no disponible')
+              }
+              deshabilitada={!vinculo.perfilDisponible}
+              alPulsar={() => {
+                usePedido.getState().ponerMetodo('corporativo');
+                setPagos(false);
+              }}
+            />
+          )}
           <OpcionPago
-            activa={metodoPago === 'efectivo' || !tarjeta}
+            activa={metodoPago === 'efectivo' || (!tarjeta && metodoPago !== 'corporativo')}
             icono="efectivo"
             titulo="Efectivo"
             detalle="Le pagas al conductor al terminar"
@@ -395,12 +489,14 @@ function OpcionPago({
   icono,
   titulo,
   detalle,
+  deshabilitada = false,
   alPulsar,
 }: {
   activa: boolean;
   icono: NombreIcono;
   titulo: string;
   detalle: string;
+  deshabilitada?: boolean;
   alPulsar: () => void;
 }) {
   return (
@@ -408,7 +504,8 @@ function OpcionPago({
       type="button"
       onClick={alPulsar}
       aria-pressed={activa}
-      className={`flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 px-4 text-left ${activa ? 'border-ty bg-ty/10' : 'border-borde bg-superficie'}`}
+      disabled={deshabilitada}
+      className={`flex min-h-16 w-full items-center gap-3 rounded-2xl border-2 px-4 text-left disabled:opacity-50 ${activa ? 'border-ty bg-ty/10' : 'border-borde bg-superficie'}`}
     >
       <Icono nombre={icono} className={activa ? 'text-ty' : 'text-suave'} />
       <span className="flex-1">

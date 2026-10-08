@@ -10,7 +10,7 @@ export type EstadoViaje =
   | 'cancelado'
   | 'sin_conductor';
 
-export type MetodoPago = 'efectivo' | 'tarjeta';
+export type MetodoPago = 'efectivo' | 'tarjeta' | 'corporativo';
 
 export interface Perfil {
   usuario: { id: string; nombre: string; telefono: string; email: string | null };
@@ -73,6 +73,8 @@ export interface OpcionCotizacion {
   dinamica: number | null;
   conductoresCerca: number;
   etaRecogidaS: number | null;
+  /** Si la persona pertenece a una empresa: ¿se puede cargar este viaje a la empresa? (RN-103). */
+  corporativo: { permitido: boolean; codigo: string | null; detalle: string | null } | null;
 }
 
 export interface Cotizacion {
@@ -116,9 +118,16 @@ export interface Viaje {
   /** Si es una reserva: la hora del servicio y cómo va (RN-080 a RN-085). */
   programadoPara: string | null;
   reserva: { estado: string; conductorConfirmado: boolean } | null;
-  metodoPago: MetodoPago | 'local';
+  metodoPago: MetodoPago | 'local' | 'corporativo';
   estadoPago: string;
   pin: string | null;
+  /** Si el viaje se cargó a una empresa (PAS-61). */
+  corporativo: {
+    empresa: string;
+    centroCosto: string | null;
+    motivo: string | null;
+    descuento: number;
+  } | null;
   precioEstimado: { min: number; max: number };
   precioFinal: number | null;
   cobroEspera: number;
@@ -169,6 +178,12 @@ export interface Recibo {
   conductor: { nombre: string; vehiculo: ConductorAsignado['vehiculo'] } | null;
   metodoPago: string;
   estadoPago: string;
+  corporativo: {
+    empresa: string;
+    centroCosto: string | null;
+    motivo: string | null;
+    descuento: number;
+  } | null;
   mediciones: {
     distanciaM: number | null;
     duracionS: number | null;
@@ -222,4 +237,18 @@ export interface Reserva {
   destino: { direccion: string | null };
   precioEstimado: { min: number; max: number };
   conductorConfirmado: boolean;
+}
+
+/** La empresa a la que pertenece la persona y las invitaciones que tiene (PAS-60). */
+export interface MiEmpresa {
+  vinculo: {
+    id: string;
+    empresa: { id: string; nombre: string };
+    centrosCosto: { id: string; codigo: string; nombre: string }[];
+    centroCostoId: string | null;
+    politica: { nombre: string | null; motivoObligatorio: boolean; montoMaximo: number | null };
+    perfilDisponible: boolean;
+    razon: string | null;
+  } | null;
+  invitaciones: { id: string; empresa: string; invitadoEn: string }[];
 }

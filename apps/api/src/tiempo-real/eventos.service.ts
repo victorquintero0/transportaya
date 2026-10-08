@@ -59,7 +59,7 @@ export interface OfertaParaConductor {
   destino: { zona: string; distanciaViajeM: number };
   gananciaEstimada: number;
   precioEstimado: { min: number; max: number };
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   categoria: string;
   tipoServicio: string;
   pasajero: { nombre: string; calificacion: number | null };

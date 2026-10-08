@@ -115,6 +115,7 @@ export const METODO_PAGO: Record<string, string> = {
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
   local: 'Pago local',
+  corporativo: 'Empresa',
 };
 
 export const CATEGORIA: Record<string, string> = {

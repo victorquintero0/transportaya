@@ -24,7 +24,8 @@ import {
   tipoAlerta,
   tipoServicio,
 } from './enums.js';
-import { metodoPago, pasajero, usuario } from './identidad.js';
+import { centroCosto, estadoCuenta, vinculoEmpresa } from './corporativo.js';
+import { empresa, metodoPago, pasajero, usuario } from './identidad.js';
 import { actualizadoEn, cop, creadoEn, id, lineaGeografica, marca, punto } from './tipos.js';
 
 /** Precio estimado que ve el pasajero antes de confirmar (D-10): un rango, no un valor cerrado. */
@@ -123,6 +124,15 @@ export const viaje = pgTable(
       .default(1),
     metodoPago: metodoPagoViaje('metodo_pago').notNull(),
     metodoPagoId: uuid('metodo_pago_id').references(() => metodoPago.id),
+    /** Viaje corporativo (RN-103): a qué empresa se carga, quién lo pidió, a qué centro de costo y para qué. */
+    empresaId: uuid('empresa_id').references(() => empresa.id),
+    vinculoEmpresaId: uuid('vinculo_empresa_id').references(() => vinculoEmpresa.id),
+    centroCostoId: uuid('centro_costo_id').references(() => centroCosto.id),
+    motivoCorporativo: text('motivo_corporativo'),
+    /** Lo que se le descuenta a la empresa por su contrato; lo absorbe TransporteYa, el conductor cobra completo. */
+    descuentoCorporativo: cop('descuento_corporativo').notNull().default(0),
+    /** El estado de cuenta en el que se cobró este viaje. */
+    estadoCuentaId: uuid('estado_cuenta_id').references(() => estadoCuenta.id),
     pinInicio: text('pin_inicio'),
     precioEstimadoMin: cop('precio_estimado_min').notNull(),
     precioEstimadoMax: cop('precio_estimado_max').notNull(),
@@ -189,6 +199,18 @@ export const viaje = pgTable(
       'viaje_reserva_coherente',
       sql`(${t.reservaTomadaEn} is null) = (${t.reservaConductorId} is null)
         and (${t.reservaConfirmadaEn} is null or ${t.reservaConductorId} is not null)`,
+    ),
+    index('viaje_empresa_idx')
+      .on(t.empresaId, t.solicitadoEn)
+      .where(sql`${t.empresaId} is not null`),
+    index('viaje_estado_cuenta_idx')
+      .on(t.estadoCuentaId)
+      .where(sql`${t.estadoCuentaId} is not null`),
+    check(
+      'viaje_corporativo_coherente',
+      sql`(${t.empresaId} is null) = (${t.vinculoEmpresaId} is null)
+        and (${t.empresaId} is not null or (${t.centroCostoId} is null and ${t.descuentoCorporativo} = 0
+          and ${t.estadoCuentaId} is null))`,
     ),
     check('viaje_codigo_formato', sql`${t.codigo} ~ '^TY-[0-9A-Z]{6}$'`),
     check('viaje_pin_formato', sql`${t.pinInicio} is null or ${t.pinInicio} ~ '^[0-9]{4}$'`),

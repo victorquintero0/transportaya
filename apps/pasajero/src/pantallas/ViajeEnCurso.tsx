@@ -142,8 +142,21 @@ function ResumenDelPedido({ viaje }: { viaje: Viaje }) {
       </div>
       <div className="flex items-center justify-between border-t border-borde pt-2 text-sm font-bold text-suave">
         <span className="flex items-center gap-1.5">
-          <Icono nombre={viaje.metodoPago === 'tarjeta' ? 'tarjeta' : 'efectivo'} tamano={16} />
-          {viaje.metodoPago === 'tarjeta' ? 'Tarjeta' : 'Efectivo'}
+          <Icono
+            nombre={
+              viaje.metodoPago === 'corporativo'
+                ? 'maletin'
+                : viaje.metodoPago === 'tarjeta'
+                  ? 'tarjeta'
+                  : 'efectivo'
+            }
+            tamano={16}
+          />
+          {viaje.metodoPago === 'corporativo'
+            ? 'Empresa'
+            : viaje.metodoPago === 'tarjeta'
+              ? 'Tarjeta'
+              : 'Efectivo'}
         </span>
         <span className="numeros text-texto">
           {viaje.precioEstimado.min === viaje.precioEstimado.max
@@ -351,8 +364,21 @@ function Seguimiento({ viaje }: { viaje: Viaje }) {
 
         <div className="flex items-center justify-between rounded-xl bg-superficie-2 px-4 py-3 text-sm font-bold">
           <span className="flex items-center gap-2 text-suave">
-            <Icono nombre={viaje.metodoPago === 'tarjeta' ? 'tarjeta' : 'efectivo'} tamano={18} />
-            {viaje.metodoPago === 'tarjeta' ? 'Pagas con tarjeta' : 'Pagas en efectivo'}
+            <Icono
+              nombre={
+                viaje.metodoPago === 'corporativo'
+                  ? 'maletin'
+                  : viaje.metodoPago === 'tarjeta'
+                    ? 'tarjeta'
+                    : 'efectivo'
+              }
+              tamano={18}
+            />
+            {viaje.metodoPago === 'corporativo'
+              ? `Lo paga ${viaje.corporativo?.empresa ?? 'tu empresa'}`
+              : viaje.metodoPago === 'tarjeta'
+                ? 'Pagas con tarjeta'
+                : 'Pagas en efectivo'}
           </span>
           <span className="numeros text-texto">
             {viaje.precioEstimado.min === viaje.precioEstimado.max

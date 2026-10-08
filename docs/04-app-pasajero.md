@@ -53,9 +53,9 @@
 | PAS-51 | Reportar objeto perdido | MVP |
 | PAS-52 | Radicar PQRS y consultar su estado | F2 |
 | **Corporativo** | | |
-| PAS-60 | Vincular el perfil a una empresa por invitación | F3 |
-| PAS-61 | Elegir perfil personal o corporativo al pedir; elegir centro de costo y motivo | F3 |
-| PAS-62 | Sección **Empresa** para administradores: empleados, centros de costo, políticas, viajes y estados de cuenta | F3 |
+| PAS-60 | Vincular el perfil a una empresa por invitación (llega al celular, se acepta en Cuenta → «Mi empresa»; se puede salir de la empresa) | F3 · hecho |
+| PAS-61 | Elegir perfil personal o corporativo al pedir («Empresa · nombre» entre las formas de pago); elegir centro de costo y motivo; la política avisa antes de confirmar | F3 · hecho |
+| PAS-62 | Sección **Empresa** para administradores: empleados, centros de costo, políticas, viajes y estados de cuenta. Por D-09 vive en la **App Operación** («Mi empresa»), no en esta app | F3 · hecho en Operación |
 | **Notificaciones** | | |
 | PAS-70 | Push: conductor asignado, conductor llegó, viaje finalizado, recordatorios de reserva, respuestas de soporte | MVP |
 
@@ -137,6 +137,7 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 | **Inicio** | Mapa, "te recogemos en…" con la ubicación del teléfono (solo se pide al fijar la recogida, PAS-20), "¿A dónde vas?", Casa y Trabajo, recientes y viajes a otras ciudades |
 | **Buscar destino** | Lugares y barrios (sin importar tildes), direcciones al estilo colombiano (`Cra 23 # 62-14`, marcadas como aproximadas), lugares guardados y recientes (PAS-21) |
 | **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor; «Ahora» o **reservar para más tarde** (PAS-22, PAS-23, PAS-25) |
+| **Cuenta → Mi empresa** | Las invitaciones de empresas (aceptar o rechazar) y la empresa a la que pertenece la persona, con aviso si su perfil corporativo está suspendido (PAS-60) |
 | **Mis reservas** | Las reservas abiertas con su hora y estado («Buscaremos conductor», «Conductor confirmado»…); el detalle muestra el conductor confirmado y permite cancelar, avisando si ya cuesta (RN-084, RN-089). Se entra desde Inicio |
 | **Otra ciudad** | Destinos con tarifa fija, solo ida o ida y vuelta, con el valor cerrado antes de confirmar (PAS-26) |
 | **Buscando** | Radar sobre la recogida, cuenta regresiva de los 2 minutos y cancelar sin costo. Si nadie acepta, lo explica y deja reintentar sin volver a escribir el destino |
@@ -153,5 +154,5 @@ y el pasajero no puede pedir otro viaje hasta pagarla con otra tarjeta (ver D-30
 > **Datos personales.** Cuenta → «Mis datos y privacidad»: política, descarga de datos, solicitudes con su respuesta y eliminar la cuenta ([doc 15](15-observabilidad-y-privacidad.md)).
 
 **Pendiente.** Buscador de direcciones real y proveedor de mapas definitivo (D-27; el mapa de calles ya está, ADR-0009), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
-notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, recordatorios de reserva por *push*, llamada enmascarada (F2) y la parte corporativa (F3).
+notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, recordatorios de reserva por *push*, llamada enmascarada (F2) y el pago corporativo con facturación electrónica a la empresa.
 

@@ -148,7 +148,12 @@ export function Reservas() {
               {mostrada.pasajero.calificacion !== null
                 ? ` · ★ ${mostrada.pasajero.calificacion}`
                 : ''}{' '}
-              · {mostrada.metodoPago === 'efectivo' ? 'Paga en efectivo' : 'Pago electrónico'}
+              ·{' '}
+              {mostrada.metodoPago === 'efectivo'
+                ? 'Paga en efectivo'
+                : mostrada.metodoPago === 'corporativo'
+                  ? 'Lo paga una empresa'
+                  : 'Pago electrónico'}
             </p>
             {!esMia && (
               <Boton

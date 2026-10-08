@@ -132,7 +132,13 @@ export function OfertaEntrante({ oferta }: { oferta: Oferta }) {
           <div className="flex flex-wrap items-center gap-2 border-t border-borde pt-3">
             <Chip tono={efectivo ? 'aviso' : 'info'}>
               <Icono nombre={efectivo ? 'efectivo' : 'tarjeta'} tamano={14} />{' '}
-              {efectivo ? 'Efectivo' : oferta.metodoPago === 'tarjeta' ? 'Tarjeta' : 'Pago local'}
+              {efectivo
+                ? 'Efectivo'
+                : oferta.metodoPago === 'tarjeta'
+                  ? 'Tarjeta'
+                  : oferta.metodoPago === 'corporativo'
+                    ? 'Empresa'
+                    : 'Pago local'}
             </Chip>
             <Chip>{NOMBRE_CATEGORIA[oferta.categoria] ?? oferta.categoria}</Chip>
             <span className="ml-auto flex items-center gap-1.5 font-bold">
