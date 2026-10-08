@@ -1,5 +1,6 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { contextoActual } from '../observabilidad/contexto.js';
 import { noAutenticado, prohibido } from '../comun/errores.js';
 import { tienePermiso } from '@transportaya/dominio';
 import { PERMISO, PUBLICO, ROLES, type UsuarioAutenticado } from './decoradores.js';
@@ -47,6 +48,11 @@ export class GuardAutenticacion implements CanActivate {
       }
     }
     req.usuario = usuario;
+    const solicitud = contextoActual();
+    if (solicitud) {
+      solicitud.usuarioId = usuario.id;
+      solicitud.rol = usuario.rol;
+    }
     return true;
   }
 }

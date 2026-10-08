@@ -14,6 +14,8 @@ export class ErrorApi extends Error {
     readonly codigo: string,
     readonly detalle: string,
     readonly extra: Record<string, unknown> = {},
+    /** Identificador de la solicitud: con él, soporte encuentra el error en los registros del servidor. */
+    readonly idSolicitud: string | null = null,
   ) {
     super(detalle);
     this.name = 'ErrorApi';
@@ -49,7 +51,14 @@ function aError(res: Response, cuerpo: unknown): ErrorApi {
         ? title
         : 'No pudimos completar la acción',
     extra,
+    res.headers.get('x-request-id'),
   );
+}
+
+/** `crypto.randomUUID` solo existe en páginas seguras (HTTPS o localhost); en una red local de pruebas se arma a mano. */
+function nuevoIdSolicitud(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 }
 
 /** Un solo refresco a la vez: si varias peticiones fallan juntas, todas esperan al mismo. */
@@ -91,6 +100,7 @@ async function pedir<T>(
   const res = await fetch(ruta, {
     method: metodo,
     headers: {
+      'x-request-id': nuevoIdSolicitud(),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
       ...(form || cuerpo === undefined ? {} : { 'content-type': 'application/json' }),
     },
@@ -145,7 +155,12 @@ export const auth = {
 
 /** Mensaje amable para mostrar ante cualquier error. */
 export function mensajeDe(error: unknown): string {
-  if (error instanceof ErrorApi) return error.detalle;
+  if (error instanceof ErrorApi) {
+    // En un error del servidor se muestra una referencia corta para que soporte lo pueda buscar.
+    return error.estado >= 500 && error.idSolicitud
+      ? `${error.detalle} (ref. ${error.idSolicitud.slice(0, 8)})`
+      : error.detalle;
+  }
   if (error instanceof TypeError) return 'No hay conexión con TransporteYa. Revisa tu internet.';
   return 'Algo salió mal. Intenta de nuevo.';
 }

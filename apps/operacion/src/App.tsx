@@ -32,6 +32,7 @@ const Pasajeros = lazy(() =>
 const Reportes = lazy(() =>
   import('./pantallas/Reportes.tsx').then((m) => ({ default: m.Reportes })),
 );
+const Sistema = lazy(() => import('./pantallas/Sistema.tsx').then((m) => ({ default: m.Sistema })));
 const Soporte = lazy(() => import('./pantallas/Soporte.tsx').then((m) => ({ default: m.Soporte })));
 const Tarifas = lazy(() => import('./pantallas/Tarifas.tsx').then((m) => ({ default: m.Tarifas })));
 const TicketDetalle = lazy(() =>
@@ -84,6 +85,7 @@ export function App() {
         <Route path="usuarios" element={<Usuarios />} />
         <Route path="auditoria" element={<Auditoria />} />
         <Route path="configuracion" element={<Configuracion />} />
+        <Route path="sistema" element={<Sistema />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

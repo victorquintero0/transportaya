@@ -49,6 +49,30 @@ services:
       - '1025:1025'
       - '8025:8025'
 
+  # Métricas y tablero (perfil opcional): `docker compose --profile observabilidad up -d`.
+  # Prometheus: http://localhost:9090 · Grafana: http://localhost:3001 (admin / admin). Ver infra/observabilidad.
+  prometheus:
+    profiles: ['observabilidad']
+    image: prom/prometheus:latest
+    ports:
+      - '9090:9090'
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    volumes:
+      - ../observabilidad/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../observabilidad/alertas.yml:/etc/prometheus/alertas.yml:ro
+
+  grafana:
+    profiles: ['observabilidad']
+    image: grafana/grafana:latest
+    ports:
+      - '3001:3000'
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ../observabilidad/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../observabilidad/grafana/tableros:/var/lib/grafana/tableros:ro
+
 volumes:
   postgres-datos:
   minio-datos:

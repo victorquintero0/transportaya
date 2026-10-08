@@ -56,6 +56,8 @@ export const PERMISOS = {
   'usuarios.gestionar': ['admin'],
   'config.ver': ['supervisor', 'admin'],
   'config.editar': ['admin'],
+  /** Pantalla «Sistema»: salud, tareas programadas y tráfico de la API. */
+  'sistema.ver': ['supervisor', 'admin'],
 } as const satisfies Record<string, readonly RolInterno[]>;
 
 export type Permiso = keyof typeof PERMISOS;

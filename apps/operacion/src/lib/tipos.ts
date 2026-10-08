@@ -633,3 +633,45 @@ export interface VencimientoFila {
   telefono: string | null;
   placa: string | null;
 }
+
+export interface TareaSistema {
+  nombre: string;
+  descripcion: string;
+  cadaMs: number;
+  ejecuciones: number;
+  fallos: number;
+  ultimaEjecucionEn: string | null;
+  ultimoExitoEn: string | null;
+  ultimoError: string | null;
+  ultimaDuracionMs: number | null;
+  atrasada: boolean;
+}
+
+export interface EstadoSistema {
+  estado: 'ok' | 'degradado' | 'caido';
+  problemas: string[];
+  version: string;
+  entorno: string;
+  simulador: boolean;
+  inicioEn: string;
+  memoriaMb: number;
+  baseDatos: {
+    ok: boolean;
+    latenciaMs: number | null;
+    pool: { total: number; ociosas: number; esperando: number };
+  };
+  tiempoReal: Record<string, number>;
+  http: {
+    ultimos15min: {
+      solicitudes: number;
+      errores4xx: number;
+      errores5xx: number;
+      p50Ms: number | null;
+      p95Ms: number | null;
+    };
+    serie: { minuto: string; solicitudes: number; errores5xx: number }[];
+  };
+  tareas: TareaSistema[];
+  negocio: { viajesActivos: Record<string, number>; conductores: Record<string, number> };
+  erroresDeApps15min: number;
+}

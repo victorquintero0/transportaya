@@ -318,6 +318,13 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await expect(p.getByText('Parámetro actualizado')).toBeVisible();
     await expect(p.locator('[data-parametro="despacho.oferta_s"]')).toContainText('Personalizado');
     await captura(p, 'configuracion');
+
+    // la pantalla Sistema muestra la salud técnica: base de datos, tareas programadas y tráfico
+    await p.getByRole('link', { name: 'Sistema' }).click();
+    await expect(p.getByText('Todo en orden')).toBeVisible();
+    await expect(p.locator('#tabla-tareas')).toContainText('vigilar_senal');
+    await expect(p.getByText('Base de datos', { exact: true })).toBeVisible();
+    await captura(p, 'sistema');
   });
 
   await test.step('el administrador crea un usuario y revisa la auditoría', async () => {

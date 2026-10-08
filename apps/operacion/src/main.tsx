@@ -1,4 +1,9 @@
-import { cargarConfigMapa, configurarApi, registrarPreferencias } from '@transportaya/ui';
+import {
+  cargarConfigMapa,
+  configurarApi,
+  instalarReporteErrores,
+  registrarPreferencias,
+} from '@transportaya/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -8,6 +13,7 @@ import { useAjustes } from './estado/ajustes.ts';
 import './estilos.css';
 
 configurarApi({ app: 'operacion' });
+instalarReporteErrores('operacion');
 void cargarConfigMapa();
 registrarPreferencias(() => ({ sonido: useAjustes.getState().sonido, vibracion: false }));
 

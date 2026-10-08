@@ -2,12 +2,18 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { cargarConfigMapa, configurarApi, registrarPreferencias } from '@transportaya/ui';
+import {
+  cargarConfigMapa,
+  configurarApi,
+  instalarReporteErrores,
+  registrarPreferencias,
+} from '@transportaya/ui';
 import { App } from './App.tsx';
 import { useAjustes } from './estado/ajustes.ts';
 import './estilos.css';
 
 configurarApi({ app: 'conductor' });
+instalarReporteErrores('conductor');
 void cargarConfigMapa();
 registrarPreferencias(() => useAjustes.getState());
 

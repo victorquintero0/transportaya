@@ -23,3 +23,4 @@ export * from './lib/tema.ts';
 export * from './lib/proyeccion.ts';
 export * from './mapa/BaseMapa.tsx';
 export * from './mapa/config.ts';
+export * from './lib/reporte-errores.ts';
