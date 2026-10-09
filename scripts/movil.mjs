@@ -14,6 +14,7 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { X509Certificate } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { createSocket } from 'node:dgram';
 import http from 'node:http';
 import { networkInterfaces } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -40,7 +41,13 @@ const verde = (t) => `\x1b[32m${t}\x1b[0m`;
 const rojo = (t) => `\x1b[31m${t}\x1b[0m`;
 const amarillo = (t) => `\x1b[33m${t}\x1b[0m`;
 
-/** Direcciones IPv4 de este computador en redes locales (las que ve un teléfono en el mismo Wi-Fi). */
+/** Redes que casi nunca son el Wi-Fi: VirtualBox (192.168.56.x), Docker Toolbox (192.168.99.x), WSL/Docker (172.x). */
+const REDES_VIRTUALES = /^(192\.168\.(56|99)\.|172\.)/;
+const NOMBRE_VIRTUAL =
+  /vethernet|wsl|docker|virtual|vbox|vpn|vmware|loopback|tailscale|zerotier|hyper-v/i;
+const NOMBRE_WIFI = /wi-?fi|wlan|wireless|inal[aá]mbric/i;
+
+/** Direcciones IPv4 de este computador en redes locales, con las más probables de ser el Wi-Fi primero. */
 function direccionesLocales() {
   const privada = (ip) =>
     /^192\.168\./.test(ip) || /^10\./.test(ip) || /^172\.(1[6-9]|2\d|3[01])\./.test(ip);
@@ -49,9 +56,32 @@ function direccionesLocales() {
     for (const i of interfaces ?? [])
       if (i.family === 'IPv4' && !i.internal && privada(i.address))
         lista.push({ nombre, ip: i.address });
-  // Wi-Fi primero; las redes virtuales (WSL, Docker, VPN) al final
-  const virtual = /vethernet|wsl|docker|virtual|vpn|vmware|loopback|tailscale|zerotier/i;
-  return lista.sort((a, b) => Number(virtual.test(a.nombre)) - Number(virtual.test(b.nombre)));
+  const puntos = ({ nombre, ip }) =>
+    (NOMBRE_WIFI.test(nombre) ? -2 : 0) +
+    (NOMBRE_VIRTUAL.test(nombre) ? 2 : 0) +
+    (REDES_VIRTUALES.test(ip) ? 2 : 0);
+  return lista.sort((a, b) => puntos(a) - puntos(b));
+}
+
+/**
+ * La dirección con la que este computador sale a internet, es decir, la de la red que tiene puerta de enlace
+ * (el Wi-Fi o el cable al router). Los adaptadores virtuales no la tienen. No se envía nada: conectar un socket UDP
+ * solo le pregunta al sistema qué interfaz usaría.
+ */
+function ipDeSalida() {
+  return new Promise((resolver) => {
+    const socket = createSocket('udp4');
+    const fin = (valor) => {
+      try {
+        socket.close();
+      } catch {
+        // ya estaba cerrado
+      }
+      resolver(valor);
+    };
+    socket.on('error', () => fin(null));
+    socket.connect(80, '8.8.8.8', () => fin(socket.address().address));
+  });
 }
 
 function salir(mensaje) {
@@ -60,7 +90,9 @@ function salir(mensaje) {
 }
 
 const locales = direccionesLocales();
-const ip = ipPedida ?? locales[0]?.ip;
+const salida = await ipDeSalida();
+// Primero la que se pidió; si no, la de la red con salida a internet (si es local); si no, la más probable
+const ip = ipPedida ?? (locales.some((l) => l.ip === salida) ? salida : locales[0]?.ip);
 if (!ip)
   salir(
     'No encontré la dirección de red de este computador. ¿Está conectado al Wi-Fi? Si sí, indícala: pnpm movil --ip=192.168.1.20',

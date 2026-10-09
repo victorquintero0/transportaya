@@ -148,6 +148,7 @@ Desde **Diagnóstico del teléfono → Copiar informe** se copia un texto con to
 | Aviso de certificado no confiable | No se instaló la autoridad (paso 3) o, en iPhone, falta activar su confianza. |
 | Diagnóstico: «Conexión segura: No» | Se abrió con `http://` o por una IP que no está en el certificado. Usa `https://` y la IP que muestra `pnpm movil`. |
 | «Funciona sin conexión: Casi» | El service worker se registró pero aún no controla la página: recarga una vez. |
+| `pnpm movil` elige otra red (VirtualBox, WSL, Docker) | Normalmente elige la red que tiene salida a internet, pero si se equivoca: `pnpm movil --ip=192.168.1.20` con la IP de tu Wi-Fi (y el certificado debe estar creado con esa misma IP). |
 | `pnpm movil` dice que el certificado no incluye la IP | El router cambió la IP del computador: repite el paso 1.3. |
 | «La API NO responde» | Falta el paso 2.2, o la variable `DATABASE_URL` no está puesta en esa terminal. |
 | No aparece «Instalar» en Android | Chrome ofrece instalar solo con HTTPS de confianza y cuando ya pasó un momento desde la primera visita; usa el menú ⋮ → *Instalar app*. |
