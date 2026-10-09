@@ -53,7 +53,10 @@ flowchart LR
 | Usuarios internos con doble factor (correo, contraseña y TOTP), roles y permisos | Hecho (D-31, [ADR-0008](adr/0008-app-operacion-web-con-segundo-factor.md)) |
 | API de la App Operación: torre, viajes, conductores, tarifas, finanzas, soporte, reportes, usuarios, auditoría y parámetros | Hecho, con 56 pruebas contra PostgreSQL real ([docs/10](10-api-y-tiempo-real.md)) |
 | App Operación de escritorio, con prueba de punta a punta con navegador real | Hecho ([docs/06](06-app-operacion.md)); alcance en D-32 |
-| Servicios de mapas (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
+| Mapa de calles con MapLibre y proveedor configurable desde la App Operación ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)) | Hecho |
+| Observabilidad: registro JSON con identificador de solicitud, métricas, salud, pantalla Sistema y alertas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta Alertmanager y trazas |
+| Protección de datos: política versionada, derechos del titular, anonimización, retención y particiones automáticas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta revisión de Legal, RNBD |
+| Servicios de mapas propios (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |
 | Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |
 
@@ -77,7 +80,7 @@ y prueba de penetración sin hallazgos críticos abiertos.
 
 ## Fase 2 · Más servicios y automatización
 
-- Viajes programados y tablero de reservas.
+- Viajes programados y tablero de reservas. **Hecho** (recordatorios por *push* pendientes de proveedor).
 - Rutas con tarifa por categoría, tarifas desde otras ciudades y peajes.
 - Métodos de pago locales y pago de la comisión desde la app del conductor con habilitación automática.
 - Dinámica automática por celdas H3.
@@ -90,8 +93,8 @@ y prueba de penetración sin hallazgos críticos abiertos.
 
 ## Fase 3 · Corporativo y expansión
 
-- Cuentas corporativas: empresas, contratos, empleados, centros de costo, políticas y estados de cuenta.
-- Rol de administrador corporativo (usuario externo con acceso limitado a su empresa) dentro de la App Operación.
+- Cuentas corporativas: empresas, contratos, empleados, centros de costo, políticas y estados de cuenta. **Hecho** (falta la facturación electrónica).
+- Rol de administrador corporativo (usuario externo con acceso limitado a su empresa) dentro de la App Operación. **Hecho.**
 - Integración con el proveedor de facturación electrónica de las comisiones y de las cuentas corporativas (D-02).
 - Nuevas ciudades.
 - Evaluación de app nativa (Capacitor) para conductores según los datos del piloto.

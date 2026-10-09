@@ -1,5 +1,6 @@
 import { Global, Inject, Injectable, Module } from '@nestjs/common';
 import { parametro } from '@transportaya/db';
+import { RESERVA_POR_DEFECTO, type ParametrosReserva } from '@transportaya/dominio';
 import { like } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { CATALOGO_PARAMETROS, type ClaveParametro } from './parametros.js';
@@ -28,6 +29,33 @@ export class ParametrosService {
   async numero(clave: ClaveParametro): Promise<number> {
     const v = (await this.valores()).get(clave);
     return typeof v === 'number' && Number.isFinite(v) ? v : CATALOGO_PARAMETROS[clave].defecto;
+  }
+
+  /** Los plazos de las reservas (RN-080 a RN-085) con los cambios que haya hecho Operación. */
+  async reservas(): Promise<ParametrosReserva> {
+    const [a, b, c, d, e, f, g, h, i] = await Promise.all([
+      this.numero('reservas.anticipacion_min_min'),
+      this.numero('reservas.anticipacion_max_dias'),
+      this.numero('reservas.tablero_h'),
+      this.numero('reservas.confirmar_min'),
+      this.numero('reservas.despacho_min'),
+      this.numero('reservas.alerta_min'),
+      this.numero('reservas.cancelacion_gratis_min'),
+      this.numero('reservas.soltar_min'),
+      this.numero('reservas.espera_extra_min'),
+    ]);
+    return {
+      ...RESERVA_POR_DEFECTO,
+      anticipacionMinMin: a,
+      anticipacionMaxDias: b,
+      tableroH: c,
+      confirmarMin: d,
+      despachoMin: e,
+      alertaMin: f,
+      cancelacionGratisMin: g,
+      soltarMin: h,
+      esperaExtraMin: i,
+    };
   }
 
   /** Los valores que alguien cambió a propósito, sin los que siguen en su valor por defecto. */

@@ -1,4 +1,4 @@
-import { Chip, Icono, Logo } from '@transportaya/ui';
+import { Chip, Icono, Logo, PantallaCargando } from '@transportaya/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { Mapa } from '../componentes/Mapa.tsx';
@@ -38,12 +38,7 @@ export function Compartido() {
         </div>
       </main>
     );
-  if (!data)
-    return (
-      <div className="grid min-h-dvh place-items-center">
-        <div className="size-12 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      </div>
-    );
+  if (!data) return <PantallaCargando />;
 
   const e = ESTADO[data.estado] ?? { texto: data.estado, tono: 'info' as const };
   const c = data.conductor;

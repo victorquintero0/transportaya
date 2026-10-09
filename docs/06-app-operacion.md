@@ -27,8 +27,8 @@
 | OPE-06 | Tarifas, zonas y dinámica | MVP |
 | OPE-07 | Liquidaciones y saldos de conductores | MVP |
 | OPE-08 | Soporte y PQRS | MVP (básico) / F2 (completo) |
-| OPE-09 | Reservas programadas | F2 |
-| OPE-10 | Clientes corporativos | F3 |
+| OPE-09 | Reservas programadas | F2 · hecho |
+| OPE-10 | Clientes corporativos | F3 · hecho |
 | OPE-11 | Usuarios internos, roles y auditoría | MVP |
 | OPE-12 | Configuración general y plantillas de notificación | MVP |
 
@@ -154,7 +154,9 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 
 ## OPE-06 · Tarifas, zonas y dinámica
 
-> **Implementado.** Versiones de tarifa con recargos (programables a futuro), simulador, festivos, rutas fijas, zonas por vértices y dinámica manual. Faltan la tabla de peajes y los parámetros de dinámica automática (F2).
+> **Implementado.** Versiones de tarifa con recargos (programables a futuro), simulador, festivos, rutas fijas, **zonas que se dibujan sobre el mapa** (un clic por vértice), **tabla de peajes** y dinámica manual. Faltan los parámetros de dinámica automática (F2).
+>
+> **Peajes.** Cada peaje tiene nombre, ubicación y valor (categoría I). Si el recorrido que midió el servidor pasa a menos de `peajes.radio_m` (150 m) de un peaje activo, su valor se suma al precio del viaje (RN-041), se acredita completo al conductor y **no entra en la comisión**. Las rutas con tarifa fija no los suman. Mientras la tabla esté vacía, ningún viaje cambia de precio (D-39).
 
 - **Tarifas** por ciudad, categoría y tipo de servicio: base, km, minuto, mínima, cancelación, espera.
   Cada cambio crea una **nueva versión** con fecha de vigencia; se puede programar a futuro.
@@ -163,6 +165,10 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 - **Zonas** dibujadas en el mapa: área de servicio, aeropuerto, zonas restringidas, puntos de encuentro.
 - **Dinámica:** parámetros por ciudad (tramos, tope, suavizado) y **control manual** por zona y horario.
 - **Simulador:** calcula el precio de un trayecto con la configuración vigente o con una versión futura antes de publicarla.
+
+## OPE-13 · Catálogo de vehículos
+
+> **Implementado.** Pantalla **Catálogo** (`catalogo.ver`; editan cumplimiento, supervisión y administración): buscar, agregar y reclasificar vehículos en Media, Media Alta y Alta, y desactivarlos. Cambiar una categoría rige para los vehículos que se registren desde ese momento; si se pide, también para los ya registrados con esa entrada. La pestaña **Fuera del catálogo** lista los vehículos que el conductor escribió a mano: se resuelven agregando el modelo al catálogo con la categoría que se decida, o asignándolos a una entrada que ya existe. Todo pide motivo y queda en la auditoría.
 
 ## OPE-07 · Cierre diario, pagos y saldos
 
@@ -188,13 +194,34 @@ calificación, tickets y bloqueos. Bloquear a un pasajero exige motivo.
 
 ## OPE-09 · Reservas programadas (F2)
 
-Calendario y lista de reservas por hora, con estado (sin conductor, tomada, confirmada, en curso),
-asignación manual y alertas de reservas en riesgo.
+> **Implementado.** Pantalla **Reservas** (permiso `viajes.ver`; asignar y liberar piden `viajes.despachar`).
+
+Lista de reservas por hora (ventana de 1, 3 u 8 días) con su estado (sin conductor, por confirmar, confirmada,
+buscando, asignada, en curso), el pasajero, el conductor, el recorrido y el precio. Arriba, el resumen por estado y
+cuántas están **en riesgo** (faltan menos de `[30 min]` y no hay conductor firme). Por fila: **Asignar / Cambiar**
+(lista de conductores habilitados que pueden hacer ese servicio sin cruzarse con otra reserva; queda confirmada de una
+vez), **Liberar** (vuelve al tablero y se avisa al conductor) y **Ver** el viaje. Asignar y liberar piden motivo y
+quedan en la auditoría. Si a `[15 min]` no hay conductor, se genera la alerta alta «Reserva sin conductor» en la Torre
+de control. Los tiempos se editan en Configuración → Reservas.
 
 ## OPE-10 · Clientes corporativos (F3)
 
-Empresas, contratos (tarifa pactada, dinámica, cupo, día de corte), administradores (**usuarios externos con rol
-limitado, que solo ven los datos de su empresa**), empleados, centros de costo, políticas, consumo frente al cupo y **estados de cuenta** mensuales con su estado de pago.
+> **Implementado.** Pantalla **Empresas** (permiso `corporativo.ver`: soporte, finanzas, supervisión y administración;
+> `corporativo.gestionar`: finanzas, supervisión y administración) y portal **Mi empresa** (rol externo `empresa`).
+
+**Empresas (personal de TransporteYa).** Lista con empleados, descuento, cupo, lo que debe y lo que falta por facturar,
+y la pestaña global de **estados de cuenta**. Cada empresa tiene: *Resumen* (contrato, consumo frente al cupo, ciclo
+vigente, mora), *Empleados*, *Centros de costo*, *Políticas*, *Viajes*, *Estados de cuenta* y *Administradores*.
+Finanzas crea la empresa, **pacta el contrato** (descuento, dinámica, cupo, día de corte, plazo de pago) con motivo,
+la suspende o reactiva, crea a sus administradores (contraseña temporal que se muestra una sola vez), genera estados de
+cuenta, **registra su pago** con la referencia o los **anula**. Soporte solo consulta. Todo cambio queda en la auditoría.
+
+**Mi empresa (administrador corporativo).** Es un usuario externo con el rol `empresa`, con contraseña y segundo
+factor como el personal, que **solo ve su empresa**: la API la lee de su cuenta y nunca de la petición, y rechaza
+cualquier otra pantalla de la operación (D-09, D-42). Puede invitar y retirar empleados, cambiarles el centro de
+costo y la política, crear centros y políticas, y ver los viajes y los estados de cuenta con su detalle por empleado y
+por centro de costo. No puede tocar el contrato ni registrar pagos. En modo demostración hay una empresa de ejemplo
+con su administrador.
 
 ## OPE-11 · Usuarios internos y auditoría
 
@@ -203,9 +230,19 @@ limitado, que solo ven los datos de su empresa**), empleados, centros de costo, 
 - Alta y baja de usuarios internos, asignación de roles, doble factor obligatorio.
 - **Auditoría** consultable: quién hizo qué, cuándo, sobre qué registro, valor anterior y nuevo, y motivo.
 
+## OPE-03 (ampliación) · Filtros y mapa de calor
+
+> **Implementado.** Los reportes de tiempos y movimientos se pueden recortar por **categoría** del vehículo y por **zona de origen**, y se exportan a CSV con el mismo filtro (queda en la auditoría). Las horas en línea y la utilización de la flota no se recortan por viaje: con un filtro no se muestran. El **mapa de calor** agrupa los orígenes de los viajes en celdas de unos 330 m, para todas las solicitudes o solo las que quedaron sin conductor; no trae ningún dato de personas.
+
+## Privacidad y Sistema
+
+> **Implementado.** **Privacidad** (soporte, supervisión, administración): cola de solicitudes de las personas sobre sus datos con su plazo legal y semáforo; responder, rechazar o aceptar borrar los datos (solo supervisión y administración). **Sistema** (supervisión, administración): salud técnica, tareas programadas y tráfico. Ver [doc 15](15-observabilidad-y-privacidad.md).
+
 ## OPE-12 · Configuración general
 
 > **Implementado (parámetros).** Los que el sistema lee de verdad, con su rango, y cada cambio pide motivo (D-35). Las plantillas de notificación llegan con el proveedor de mensajería.
 
 Parámetros operativos (tiempos de espera, radios de búsqueda, límites de deuda, intervalos de GPS, umbrales
 de alertas) y plantillas de notificaciones (push, SMS, correo). Todo cambio queda en auditoría.
+
+> **Implementado (mapa).** Configuración → *Mapa de las apps* elige el proveedor del mapa de las tres apps (OpenFreeMap, MapTiler, otro `style.json` o el esquemático), con botón «Probar estilo», clave cifrada y motivo ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)).

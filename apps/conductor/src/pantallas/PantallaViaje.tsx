@@ -7,6 +7,7 @@ import {
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { MapaViaje } from '../componentes/MapaViaje.tsx';
 import { Radar } from '../componentes/Radar.tsx';
 import { Boton } from '@transportaya/ui';
 import { Chip } from '@transportaya/ui';
@@ -72,7 +73,11 @@ function Cabecera({ viaje, etapa }: { viaje: ViajeActual; etapa: string }) {
       )}
       <Chip tono={viaje.metodoPago === 'efectivo' ? 'aviso' : 'info'}>
         <Icono nombre={viaje.metodoPago === 'efectivo' ? 'efectivo' : 'tarjeta'} tamano={14} />
-        {viaje.metodoPago === 'efectivo' ? 'Efectivo' : 'Tarjeta'}
+        {viaje.metodoPago === 'efectivo'
+          ? 'Efectivo'
+          : viaje.metodoPago === 'corporativo'
+            ? 'Empresa'
+            : 'Tarjeta'}
       </Chip>
       <BotonChat viaje={viaje} />
       <BotonSos />
@@ -287,11 +292,17 @@ function EnCamino({ viaje }: { viaje: ViajeActual }) {
     <>
       <Cabecera viaje={viaje} etapa="Rumbo al pasajero" />
       <div className="flex flex-1 flex-col items-center justify-center gap-3 px-5">
+        <MapaViaje
+          objetivo={viaje.recogida}
+          etiqueta={viaje.recogida.direccion ?? 'Recogida'}
+          tipo="recogida"
+        />
         <Radar
           rumbo={rumbo}
           distanciaM={distanciaM}
           orientacion={orientacion}
           etiquetaObjetivo="Recogida"
+          tamano={170}
         />
         <p className="text-center text-xl font-extrabold">
           {viaje.recogida.direccion ?? 'Recoge al pasajero'}
@@ -507,12 +518,17 @@ function EnViaje({ viaje }: { viaje: ViajeActual }) {
           />
         </div>
 
+        <MapaViaje
+          objetivo={viaje.destino}
+          etiqueta={viaje.destino.direccion ?? 'Destino'}
+          tipo="destino"
+        />
         <Radar
           rumbo={rumbo}
           distanciaM={distanciaM}
           orientacion={orientacion}
           etiquetaObjetivo={viaje.destino.direccion ?? 'Destino'}
-          tamano={210}
+          tamano={150}
         />
       </div>
       <div className="area-segura-abajo space-y-3 px-5 pt-2">

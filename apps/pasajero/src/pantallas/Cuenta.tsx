@@ -3,7 +3,9 @@ import {
   Chip,
   Hoja,
   Icono,
+  InstalarApp,
   Interruptor,
+  PanelPrivacidad,
   Tarjeta,
   api,
   auth,
@@ -19,7 +21,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAjustes } from '../estado/ajustes.ts';
 import { usePedido } from '../estado/pedido.ts';
-import { usePerfil, useSimulador } from '../lib/consultas.ts';
+import { useEmpresa, usePerfil, useSimulador } from '../lib/consultas.ts';
 import { CENTRO_MANIZALES, useUbicacion } from '../servicios/ubicacion.ts';
 
 const ENTRADA =
@@ -31,6 +33,92 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <h2 className="mb-2 text-xl font-black">{titulo}</h2>
       {children}
     </section>
+  );
+}
+
+/** PAS-60: invitaciones de empresas y la empresa a la que pertenece la persona. */
+function MiEmpresa() {
+  const qc = useQueryClient();
+  const { data } = useEmpresa();
+  const cambiar = useMutation({
+    mutationFn: ({ ruta }: { ruta: string }) => api.post(ruta),
+    onSuccess: (_r, { ruta }) => {
+      void qc.invalidateQueries({ queryKey: ['empresa'] });
+      avisar(
+        ruta.includes('aceptar')
+          ? 'Listo: ya puedes cargar viajes a tu empresa'
+          : ruta.includes('salir')
+            ? 'Saliste de la empresa'
+            : 'Rechazaste la invitación',
+        'exito',
+      );
+    },
+    onError: (e) => avisar(mensajeDe(e), 'error'),
+  });
+  if (!data || (!data.vinculo && data.invitaciones.length === 0)) return null;
+  return (
+    <Seccion titulo="Mi empresa">
+      <div className="space-y-3" id="mi-empresa">
+        {data.invitaciones.map((i) => (
+          <Tarjeta
+            key={i.id}
+            className="space-y-3 border-ty/50 bg-ty/5"
+            data-invitacion={i.empresa}
+          >
+            <p className="font-extrabold">
+              {i.empresa} te invitó a cargar tus viajes de trabajo a la empresa.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Boton
+                id={`aceptar-invitacion`}
+                alPulsar={() =>
+                  cambiar.mutate({ ruta: `/v1/pasajero/empresa/invitaciones/${i.id}/aceptar` })
+                }
+              >
+                Aceptar
+              </Boton>
+              <Boton
+                variante="secundario"
+                alPulsar={() =>
+                  cambiar.mutate({ ruta: `/v1/pasajero/empresa/invitaciones/${i.id}/rechazar` })
+                }
+              >
+                Rechazar
+              </Boton>
+            </div>
+          </Tarjeta>
+        ))}
+        {data.vinculo && (
+          <Tarjeta className="space-y-2">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 place-items-center rounded-xl bg-ty/15 text-ty">
+                <Icono nombre="maletin" tamano={20} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-extrabold" id="nombre-empresa">
+                  {data.vinculo.empresa.nombre}
+                </span>
+                <span className="block text-sm text-suave">
+                  {data.vinculo.perfilDisponible
+                    ? 'Perfil corporativo activo: elige «Empresa» al pagar'
+                    : (data.vinculo.razon ?? 'Perfil corporativo no disponible')}
+                </span>
+              </span>
+              <Chip tono={data.vinculo.perfilDisponible ? 'ok' : 'aviso'}>
+                {data.vinculo.perfilDisponible ? 'Activo' : 'Suspendido'}
+              </Chip>
+            </div>
+            <Boton
+              variante="fantasma"
+              id="salir-empresa"
+              alPulsar={() => cambiar.mutate({ ruta: '/v1/pasajero/empresa/salir' })}
+            >
+              Salir de la empresa
+            </Boton>
+          </Tarjeta>
+        )}
+      </div>
+    </Seccion>
   );
 }
 
@@ -121,22 +209,6 @@ export function Cuenta() {
     onError: (e) => avisar(mensajeDe(e), 'error'),
   });
 
-  const descargar = async () => {
-    try {
-      const datos = await api.get('/v1/pasajero/mis-datos');
-      const url = URL.createObjectURL(
-        new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' }),
-      );
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'mis-datos-transporteya.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      avisar(mensajeDe(e), 'error');
-    }
-  };
-
   const demo = useMutation({
     mutationFn: (accion: 'crear' | 'detener') => {
       const o = usePedido.getState().origen ?? useUbicacion.getState().posicion ?? CENTRO_MANIZALES;
@@ -206,7 +278,17 @@ export function Cuenta() {
             titulo="Ayuda"
             detalle="Reportes, objetos perdidos y soporte"
           />
+          <Enlace
+            a="/diagnostico"
+            icono="telefono"
+            titulo="Diagnóstico del teléfono"
+            detalle="Instalación, ubicación y modo sin conexión"
+          />
         </Tarjeta>
+
+        <InstalarApp />
+
+        <MiEmpresa />
 
         <Seccion titulo="Mis lugares">
           <Tarjeta className="divide-y divide-borde p-0">
@@ -328,11 +410,8 @@ export function Cuenta() {
           </Tarjeta>
         </Seccion>
 
-        <Seccion titulo="Privacidad">
-          <Tarjeta className="space-y-2.5">
-            <Boton variante="secundario" icono="descargar" alPulsar={() => void descargar()}>
-              Descargar mis datos
-            </Boton>
+        <Seccion titulo="Mis datos y privacidad">
+          <PanelPrivacidad>
             <Boton
               id="eliminar-cuenta"
               variante="fantasma"
@@ -341,7 +420,7 @@ export function Cuenta() {
             >
               Eliminar mi cuenta
             </Boton>
-          </Tarjeta>
+          </PanelPrivacidad>
         </Seccion>
 
         {simulador && (

@@ -68,7 +68,9 @@ export function ReciboHoja({
               </li>
             </ul>
             <p className="text-sm text-suave">
-              Pagado con {data.metodoPago === 'tarjeta' ? 'tarjeta' : 'efectivo'}
+              {data.metodoPago === 'corporativo'
+                ? `Cargado a ${data.corporativo?.empresa ?? 'tu empresa'}`
+                : `Pagado con ${data.metodoPago === 'tarjeta' ? 'tarjeta' : 'efectivo'}`}
               {data.mediciones.distanciaM ? ` · ${distancia(data.mediciones.distanciaM)}` : ''}
               {data.mediciones.duracionS ? ` · ${duracion(data.mediciones.duracionS)}` : ''}
             </p>

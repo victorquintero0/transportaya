@@ -2,11 +2,17 @@ import { expect, test, type Browser, type BrowserContext, type Page } from '@pla
 import {
   completarViaje,
   crearConductor,
+  crearPasajero,
   entrarConOtp,
   llamar,
   pedirViajeDeMentira,
   ponerEnLinea,
+  reservarDeMentira,
+  serieDePlacas,
 } from './ayudas-api.js';
+
+// Esta prueba nombra las placas en pantalla (TYE101, TYE102).
+serieDePlacas('TYE');
 
 let capturas = 0;
 async function captura(page: Page, nombre: string) {
@@ -29,6 +35,8 @@ async function sesionComo(
     colorScheme: 'dark',
     baseURL: 'http://localhost:5183',
   });
+  // El mapa de calles sale a internet: aquí se corta para que la prueba use siempre el mapa esquemático.
+  await context.route('https://tiles.openfreemap.org/**', (r) => r.abort());
   const page = await context.newPage();
   page.on('pageerror', (e) => console.log(`ERROR EN LA PÁGINA (${rol}):`, e.message));
   await page.goto('/');
@@ -169,6 +177,43 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     expect(viaje.viajeId).toBeTruthy();
   });
 
+  await test.step('el monitor ve las reservas y asigna y libera un conductor a mano', async () => {
+    const p = monitor.page;
+    const pasajero = await crearPasajero(
+      `3${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`,
+      'Sofía Marín',
+    );
+    const reserva = await reservarDeMentira(pasajero.token, 300);
+    await p.getByRole('link', { name: 'Reservas' }).click();
+    await expect(p.locator('#resumen-reservas')).toContainText('Sin conductor');
+    const fila = p.locator('#tabla-reservas tr', { hasText: reserva.codigo });
+    await expect(fila).toContainText('Sofía Marín');
+    await captura(p, 'reservas');
+
+    await p.locator(`#asignar-${reserva.codigo}`).click();
+    await p
+      .getByRole('dialog')
+      .locator('li', { hasText: 'Natalia Ospina Rojas' })
+      .locator('input')
+      .check();
+    await p.locator('#motivo-asignar-reserva').fill('Cliente frecuente que pidió a este conductor');
+    await p.locator('#confirmar-asignar-reserva').click();
+    await expect(p.getByText('Conductor asignado a la reserva')).toBeVisible();
+    await expect(fila).toContainText('Natalia Ospina Rojas');
+    await expect(fila).toContainText('Confirmada');
+    await captura(p, 'reservas-asignada');
+
+    await p.locator(`#liberar-${reserva.codigo}`).click();
+    await p
+      .getByRole('dialog')
+      .locator('textarea, input')
+      .first()
+      .fill('El conductor avisó que no puede');
+    await p.getByRole('dialog').getByRole('button', { name: 'Liberar', exact: true }).click();
+    await expect(p.getByText('Reserva liberada')).toBeVisible();
+    await expect(fila).toContainText('Sin conductor');
+  });
+
   await test.step('una alerta SOS llega en vivo y el monitor la toma y la cierra con una nota', async () => {
     const p = monitor.page;
     await p.getByRole('link', { name: 'Torre de control' }).click();
@@ -177,12 +222,14 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await p.getByRole('tab', { name: /Alertas/ }).click();
     await expect(p.locator('#lista-alertas [data-alerta="sos"]')).toBeVisible();
     await captura(p, 'torre-alerta-sos');
-    await p.locator('#lista-alertas').getByRole('button', { name: 'Tomar' }).click();
-    await expect(p.locator('#lista-alertas')).toContainText('La atiende');
-    await p.locator('#lista-alertas').getByRole('button', { name: 'Cerrar' }).click();
+    // Otras alertas pueden estar abiertas (por ejemplo un conductor de otra prueba sin señal): se trabaja solo la del SOS.
+    const sos = p.locator('#lista-alertas [data-alerta="sos"]');
+    await sos.getByRole('button', { name: 'Tomar' }).click();
+    await expect(sos).toContainText('La atiende');
+    await sos.getByRole('button', { name: 'Cerrar' }).click();
     await p.getByRole('dialog').locator('textarea').fill('Hablé con el conductor: falsa alarma');
     await p.getByRole('dialog').getByRole('button', { name: 'Cerrar alerta' }).click();
-    await expect(p.getByText('Sin alertas abiertas')).toBeVisible();
+    await expect(p.locator('#lista-alertas [data-alerta="sos"]')).toHaveCount(0);
   });
 
   // ── Un viaje completo para que haya dinero que cerrar ──
@@ -291,6 +338,33 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await p.locator('#resolver').click();
     await expect(p.getByText('Ticket resuelto')).toBeVisible();
   });
+  // ── Privacidad: una persona pide corregir sus datos y soporte le responde ──
+  const titular = await entrarConOtp('3109000077', 'pasajero');
+  await llamar('PATCH', '/v1/pasajero/yo', { nombre: 'Marcela Titular Datos' }, titular.token);
+  await llamar(
+    'POST',
+    '/v1/datos/solicitudes',
+    { tipo: 'rectificacion', detalle: 'Mi correo está mal escrito' },
+    titular.token,
+  );
+  await test.step('soporte atiende una solicitud de datos dentro del plazo de la ley', async () => {
+    const p = soporte.page;
+    await p.getByRole('link', { name: 'Privacidad' }).click();
+    await expect(p.locator('#tabla-privacidad')).toContainText('Marcela Titular Datos');
+    await p.locator('#tabla-privacidad').getByText('Marcela Titular Datos').click();
+    await expect(p.locator('#atender-solicitud')).toContainText('Mi correo está mal escrito');
+    await p.locator('#tomar-solicitud').click();
+    await expect(p.locator('#atender-solicitud')).toContainText('En trámite');
+    await p.locator('#aceptar-solicitud').click();
+    await p
+      .getByRole('dialog')
+      .locator('textarea')
+      .fill('Corregimos tu correo, gracias por avisarnos.');
+    await p.getByRole('dialog').getByRole('button', { name: 'Responder' }).click();
+    await expect(p.getByText('Solicitud resuelta')).toBeVisible();
+    await captura(p, 'privacidad');
+  });
+
   await soporte.context.close();
 
   // ── Tarifas y configuración (administrador) ──
@@ -318,6 +392,71 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await expect(p.getByText('Parámetro actualizado')).toBeVisible();
     await expect(p.locator('[data-parametro="despacho.oferta_s"]')).toContainText('Personalizado');
     await captura(p, 'configuracion');
+
+    // la pantalla Sistema muestra la salud técnica: base de datos, tareas programadas y tráfico
+    await p.getByRole('link', { name: 'Sistema' }).click();
+    await expect(p.getByText('Todo en orden')).toBeVisible();
+    await expect(p.locator('#tabla-tareas')).toContainText('vigilar_senal');
+    await expect(p.getByText('Base de datos', { exact: true })).toBeVisible();
+    await captura(p, 'sistema');
+
+    // catálogo: se agrega un vehículo nuevo y queda en la tabla
+    await p.getByRole('link', { name: 'Catálogo', exact: true }).click();
+    await p.locator('#nuevo-vehiculo-catalogo').click();
+    const d = p.getByRole('dialog');
+    await d.getByLabel('Marca').fill('Zhidou');
+    await d.getByLabel('Línea').fill('D2');
+    await d.locator('textarea').fill('Vehículo eléctrico nuevo en el mercado');
+    await d.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Vehículo agregado al catálogo')).toBeVisible();
+    await expect(p.locator('#tabla-catalogo')).toContainText('Zhidou D2');
+    await captura(p, 'catalogo');
+
+    // peajes: se crea uno y la tabla lo muestra
+    await p.getByRole('link', { name: 'Tarifas y zonas' }).click();
+    await p.getByRole('tab', { name: 'Peajes' }).click();
+    await p.locator('#nuevo-peaje').click();
+    const dp = p.getByRole('dialog');
+    await dp.getByLabel('Nombre').fill('Peaje Tres Puertas');
+    await dp.getByLabel('Latitud').fill('5.0301');
+    await dp.getByLabel('Longitud').fill('-75.4382');
+    await dp.getByLabel('Valor (COP)').fill('12400');
+    await dp.locator('textarea').fill('Tarifa oficial 2026');
+    await dp.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Peaje creado')).toBeVisible();
+    await expect(p.locator('#tabla-peajes')).toContainText('Peaje Tres Puertas');
+    await expect(p.locator('#tabla-peajes')).toContainText('$ 12.400');
+
+    // zonas: se dibuja una sobre el mapa con tres clics
+    await p.getByRole('tab', { name: 'Zonas' }).click();
+    const mapa = p.locator('#mapa-zonas');
+    await expect(mapa).toBeVisible();
+    const caja = (await mapa.boundingBox())!;
+    for (const [fx, fy] of [
+      [0.3, 0.3],
+      [0.6, 0.35],
+      [0.45, 0.65],
+    ] as const)
+      await p.mouse.click(caja.x + caja.width * fx, caja.y + caja.height * fy);
+    await expect(p.locator('#conteo-vertices')).toContainText('3 vértices');
+    await p.locator('#zona-nombre').fill('Punto de encuentro del centro');
+    await captura(p, 'zonas-dibujo');
+    await p.locator('#guardar-zona').click();
+    await p.getByRole('dialog').locator('textarea').fill('Punto de encuentro para el centro');
+    await p.getByRole('dialog').getByRole('button', { name: 'Confirmar' }).click();
+    await expect(p.getByText('Zona creada')).toBeVisible();
+    await expect(p.locator('#tabla-zonas')).toContainText('Punto de encuentro del centro');
+    await expect(p.locator('#conteo-vertices')).toContainText('0 vértices');
+
+    // reportes: filtro por categoría y mapa de calor
+    await p.getByRole('link', { name: 'Reportes' }).click();
+    await p.locator('#filtro-categoria').selectOption('media');
+    await p.getByRole('button', { name: 'Aplicar' }).click();
+    await expect(p.locator('#kpis-reporte')).toBeVisible();
+    await expect(p.locator('#panel-calor')).toBeVisible();
+    await p.getByRole('button', { name: 'Sin conductor', exact: true }).click();
+    await expect(p.locator('#panel-calor')).toContainText('No se muestran personas');
+    await captura(p, 'reportes-calor');
   });
 
   await test.step('el administrador crea un usuario y revisa la auditoría', async () => {

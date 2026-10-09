@@ -1,10 +1,11 @@
+import { EnlacePolitica } from '@transportaya/ui';
 import { useMutation } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Boton } from '@transportaya/ui';
 import { Icono } from '@transportaya/ui';
-import { Logo } from '@transportaya/ui';
+import { MarcaAnimada } from '@transportaya/ui';
 import { useSesion } from '@transportaya/ui';
 import { auth, mensajeDe } from '@transportaya/ui';
 import { telefonoLegible } from '@transportaya/ui';
@@ -67,14 +68,9 @@ export function Entrar() {
       <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full bg-ty/20 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-32 -left-24 size-80 rounded-full bg-ty/10 blur-3xl" />
 
-      <motion.div
-        className="relative mx-auto mt-6 animate-flotar"
-        initial={{ scale: 0.6, opacity: 0, rotate: -8 }}
-        animate={{ scale: 1, opacity: 1, rotate: 0 }}
-        transition={{ type: 'spring', stiffness: 160, damping: 14 }}
-      >
-        <Logo tamano={210} />
-      </motion.div>
+      <div className="relative mx-auto mt-6 animate-flotar">
+        <MarcaAnimada modo="armar" ancho={210} />
+      </div>
 
       <div className="relative mx-auto mt-2 w-full max-w-md flex-1">
         <AnimatePresence mode="wait" initial={false}>
@@ -230,6 +226,7 @@ export function Entrar() {
           )}
         </AnimatePresence>
       </div>
+      <EnlacePolitica />
     </main>
   );
 }

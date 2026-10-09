@@ -2,7 +2,9 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   ajusteSaldo,
   alerta,
+  centroCosto,
   conductor,
+  empresa,
   oferta,
   pago,
   pasajero,
@@ -22,6 +24,7 @@ import { conflicto, noEncontrado, solicitudInvalida } from '../comun/errores.js'
 import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from '../viajes/despacho.service.js';
 import { registrarEvento } from '../viajes/eventos-viaje.js';
+import { descuentoDeEmpresa } from '../viajes/descuento-corporativo.js';
 import { type Operador, auditar } from './auditoria.js';
 import { comodines } from './comun.js';
 
@@ -224,9 +227,27 @@ export class ViajesOperacionService {
       .from(pasajero)
       .where(eq(pasajero.usuarioId, v.pasajeroId));
 
+    const [corp] = v.empresaId
+      ? await db
+          .select({ id: empresa.id, empresa: empresa.nombre, centroCosto: centroCosto.nombre })
+          .from(empresa)
+          .leftJoin(centroCosto, eq(centroCosto.id, v.centroCostoId ?? sql`null`))
+          .where(eq(empresa.id, v.empresaId))
+      : [];
+
     const activo = (ESTADOS_ACTIVOS as readonly string[]).includes(v.estado);
     return {
       viaje: {
+        corporativo: corp
+          ? {
+              empresaId: corp.id,
+              empresa: corp.empresa,
+              centroCosto: corp.centroCosto,
+              motivo: v.motivoCorporativo,
+              descuento: v.descuentoCorporativo,
+              estadoCuentaId: v.estadoCuentaId,
+            }
+          : null,
         id: v.id,
         codigo: v.codigo,
         estado: v.estado,
@@ -492,6 +513,11 @@ export class ViajesOperacionService {
         estadoOperativo: 'disponible',
       });
     }
+    if (previo.reservaConductorId && previo.reservaConductorId !== previo.conductorId)
+      this.eventos.aConductor(previo.reservaConductorId, 'reserva:cambio', {
+        viajeId,
+        motivo: 'cancelada',
+      });
     this.eventos.aPasajero(previo.pasajeroId, 'viaje:estado', {
       viajeId,
       estado: 'cancelado',
@@ -524,7 +550,14 @@ export class ViajesOperacionService {
 
       const [cobro] = await tx.select().from(pago).where(eq(pago.viajeId, v.id));
       const electronico = v.metodoPago !== 'efectivo';
-      const cobrado = !!cobro && cobro.estado === 'pagado' && electronico;
+      const corporativo = v.metodoPago === 'corporativo';
+      // Lo corporativo se cobra a la empresa en su estado de cuenta: no hay tarjeta que reembolsar.
+      if (corporativo && v.estadoCuentaId)
+        throw conflicto(
+          'EN_ESTADO_DE_CUENTA',
+          'Ese viaje ya está en un estado de cuenta de la empresa: anúlalo primero para poder ajustarlo.',
+        );
+      const cobrado = !!cobro && cobro.estado === 'pagado' && electronico && !corporativo;
       if (cobrado && nuevoPrecio > v.precioFinal)
         throw conflicto(
           'NO_SE_PUEDE_COBRAR_MAS',
@@ -561,6 +594,9 @@ export class ViajesOperacionService {
           totalCarrera: nuevoTotal,
           precioFinal: nuevoPrecio,
           comision: comisionNueva,
+          ...(corporativo
+            ? { descuentoCorporativo: await descuentoDeEmpresa(tx, v.empresaId, nuevoPrecio) }
+            : {}),
           desglose: sql`coalesce(${viaje.desglose}, '{}'::jsonb) || ${JSON.stringify({
             ajusteManual: { anterior: v.precioFinal, nuevo: nuevoPrecio, motivo, por: operador.id },
           })}::jsonb`,

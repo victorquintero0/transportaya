@@ -1,8 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Boton } from '@transportaya/ui';
 import { Chip } from '@transportaya/ui';
 import { Icono } from '@transportaya/ui';
+import { InstalarApp } from '@transportaya/ui';
 import { Interruptor } from '@transportaya/ui';
+import { PanelPrivacidad } from '@transportaya/ui';
 import { Tarjeta } from '@transportaya/ui';
 import { avisar } from '@transportaya/ui';
 import { useAjustes, type Tema } from '../estado/ajustes.ts';
@@ -113,6 +116,22 @@ export function Perfil() {
           </Tarjeta>
         </div>
 
+        <InstalarApp nombre="TransporteYa Conductor" />
+        <Tarjeta className="p-0">
+          <Link to="/diagnostico" className="flex min-h-16 items-center gap-3 px-4 py-2">
+            <span className="grid size-10 place-items-center rounded-xl bg-ty/15 text-ty">
+              <Icono nombre="telefono" tamano={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-extrabold">Diagnóstico del teléfono</span>
+              <span className="block truncate text-sm text-suave">
+                GPS, pantalla encendida, sonido y modo sin conexión
+              </span>
+            </span>
+            <Icono nombre="derecha" className="text-suave" tamano={20} />
+          </Link>
+        </Tarjeta>
+
         {perfil.cuentaPago && (
           <Tarjeta className="flex items-center gap-3">
             <Icono nombre="billetera" className="text-ty" />
@@ -125,6 +144,10 @@ export function Perfil() {
 
         <Preferencias perfil={perfil} />
         <Historial />
+        <div>
+          <h2 className="mb-2 text-xl font-black">Mis datos y privacidad</h2>
+          <PanelPrivacidad />
+        </div>
         <Demostracion />
 
         <Boton

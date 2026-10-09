@@ -243,17 +243,45 @@ Estas reglas no dependen de que la aplicación se comporte bien. Cada una tiene 
 `posicion_conductor` es una tabla **particionada por día** (corte a la medianoche de Bogotá). La migración crea 14 días hacia
 adelante y una partición por defecto que recibe lo que no tenga partición propia, para no perder datos.
 
-Un trabajo programado debe, cada día:
+Un trabajo programado hace, cada día a las 03:30 (Bogotá) y al arrancar la API ([doc 15](15-observabilidad-y-privacidad.md)):
 
-1. `SELECT crear_particiones_posicion(current_date, 14)`: asegura los días siguientes.
-2. `SELECT eliminar_particiones_posicion(current_date - 180)`: aplica la retención de `[6 meses]` ([RNF-64](11-requisitos-no-funcionales.md)).
+1. `crear_particiones_posicion(hoy, 8)`: asegura los días siguientes. Si había posiciones de ese día en la partición por defecto, las pasa a la nueva.
+2. `eliminar_particiones_posicion(hoy - retencion.posiciones_dias)`: aplica la retención ([RNF-64](11-requisitos-no-funcionales.md)); 180 días por defecto.
 
-Pendiente: implementar ese trabajo en `apps/api` (BullMQ).
+Además borra mensajes del viaje, recorridos GPS, códigos OTP y sesiones vencidas según su plazo. Pendiente: pasar el trabajo a BullMQ cuando haya varias instancias.
+
+### Peajes
+
+`peaje`: nombre único, `ubicacion` (punto con índice espacial), `valor` en pesos y `activo`. Al finalizar un viaje, el servidor arma una línea con las posiciones recibidas entre «Iniciar» y «Finalizar» y cobra cada peaje activo que quede a menos de `peajes.radio_m` (150 m por defecto). El valor queda en `viaje.peajes` y el detalle en `viaje.desglose.peajesCruzados`.
+
+### Clientes corporativos
+
+Migración `0010_corporativo`. Tablas: **`empresa`** (NIT único, estado, `descuento_pb` 0–5000, `aplica_dinamica`, `cupo`,
+`dia_corte` 1–28, `dias_pago`), **`centro_costo`** (código único por empresa), **`politica_uso`** (días, ventana horaria,
+tope, categorías, servicios, motivo obligatorio; las listas vacías significan «sin restricción»), **`vinculo_empresa`**
+(la invitación por celular y, al aceptarla, el `usuario_id`; un índice único parcial permite **una sola empresa activa
+por persona**) y **`estado_cuenta`** (código y ciclo únicos por empresa, total = subtotal − descuento, pagado ⇔ fecha de
+pago). `viaje` suma `empresa_id`, `vinculo_empresa_id`, `centro_costo_id`, `motivo_corporativo`, `descuento_corporativo`
+y `estado_cuenta_id` (con un `CHECK` que mantiene coherentes empresa y vínculo). `metodo_pago_viaje` suma
+`corporativo`; `rol_interno` suma `empresa` y `empleado.empresa_id` ata al administrador a su empresa.
+
+### Reservas
+
+Una reserva es una fila de `viaje` con `programado_para` y estado `programado` (`CHECK viaje_programado_con_hora`). Columnas
+propias: `reserva_conductor_id` (quien la tomó), `reserva_tomada_en`, `reserva_confirmada_en` (la confirmación exige haberla
+tomado, `CHECK viaje_reserva_coherente`) y `busqueda_desde` (cuándo se activó la búsqueda). `cotizacion.programado_para` guarda
+la hora cotizada. Los índices `viaje_reservas_idx` y `viaje_reserva_conductor_idx` sirven al tablero y a la tarea que las
+mantiene. El estado que ven las personas (sin conductor, por confirmar, confirmada…) se calcula con `estadoDeReserva`
+(`packages/dominio/src/reservas.ts`); no se guarda.
+
+### Solicitudes sobre datos personales
+
+`solicitud_datos`: quién (`usuario_id`, `rol`), qué (`tipo`: consulta, rectificación, supresión, revocatoria), `estado` (recibida, en trámite, aceptada, rechazada,
+ejecutada), `vence_en` (10 o 15 días hábiles), la `respuesta` y quién la dio. La base exige que una solicitud resuelta tenga fecha de resolución y que un rechazo traiga explicación.
+`conductor` guarda `acepto_terminos_en` y `version_terminos`, igual que `pasajero`.
 
 ## Fuera de esta versión
 
-- **Clientes corporativos (F3):** `empresa`, `centro_costo`, `empleado_empresa` y `estado_cuenta`. Se agregan en una migración
-  nueva cuando se construya esa fase; `viaje` ya podrá referenciarlas.
 - **Calendario de festivos:** la tabla `festivo` existe pero falta cargar los de cada año.
 - **Dinámica automática (F2):** las celdas H3 y sus mediciones no se guardan; viven en Redis. Aquí solo está la dinámica manual por zona.
 - **Cifrado de columnas:** `valor_cifrado` (cuentas de pago) y `totp_secreto_cifrado` guardan texto ya cifrado por la aplicación

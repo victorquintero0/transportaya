@@ -455,6 +455,27 @@ export function ViajeDetalle() {
             </dl>
           </Panel>
 
+          {v.corporativo && (
+            <Panel titulo="Cargado a una empresa" id="panel-corporativo">
+              <dl>
+                <Dato etiqueta="Empresa">
+                  <Link
+                    className="text-ty hover:underline"
+                    to={`/empresas/${v.corporativo.empresaId}`}
+                  >
+                    {v.corporativo.empresa}
+                  </Link>
+                </Dato>
+                <Dato etiqueta="Centro de costo">{v.corporativo.centroCosto ?? '—'}</Dato>
+                <Dato etiqueta="Motivo">{v.corporativo.motivo ?? '—'}</Dato>
+                <Dato etiqueta="Descuento">{pesos(v.corporativo.descuento)}</Dato>
+                <Dato etiqueta="Estado de cuenta">
+                  {v.corporativo.estadoCuentaId ? 'Ya está facturado' : 'Sin facturar'}
+                </Dato>
+              </dl>
+            </Panel>
+          )}
+
           <Panel titulo="Ruta">
             <dl>
               <Dato etiqueta="Recogida">{v.origenDireccion ?? '—'}</Dato>

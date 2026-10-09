@@ -3,6 +3,7 @@ import {
   ConnectedSocket,
   MessageBody,
   type OnGatewayConnection,
+  type OnGatewayDisconnect,
   type OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
@@ -13,6 +14,7 @@ import { tienePermiso } from '@transportaya/dominio';
 import type { UsuarioAutenticado } from '../auth/decoradores.js';
 import { TokensService } from '../auth/tokens.service.js';
 import { UbicacionesService } from '../conductor/ubicaciones.service.js';
+import { MetricasService } from '../observabilidad/metricas.service.js';
 import { Eventos } from './eventos.service.js';
 
 const mensajeUbicacion = z.object({
@@ -36,11 +38,12 @@ const mensajeUbicacion = z.object({
  * sala. Los cambios de estado se hacen siempre por REST; aquí solo se reciben posiciones y se envían avisos.
  */
 @WebSocketGateway({ transports: ['websocket', 'polling'] })
-export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection {
+export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     @Inject(TokensService) private readonly tokens: TokensService,
     @Inject(UbicacionesService) private readonly ubicaciones: UbicacionesService,
     @Inject(Eventos) private readonly eventos: Eventos,
+    @Inject(MetricasService) private readonly metricas: MetricasService,
   ) {}
 
   afterInit(server: Server): void {
@@ -57,11 +60,17 @@ export class TiempoRealGateway implements OnGatewayInit, OnGatewayConnection {
       return;
     }
     socket.data['usuario'] = usuario;
+    this.metricas.conexion(usuario.rol, 1);
     await socket.join(`${usuario.rol}:${usuario.id}`);
     // El personal interno que puede ver la torre de control recibe sus avisos (sala `operacion`).
     if (usuario.rol === 'interno' && tienePermiso(usuario.roles ?? [], 'torre.ver'))
       await socket.join('operacion');
     socket.emit('listo', { conductorId: usuario.id });
+  }
+
+  handleDisconnect(socket: Socket): void {
+    const usuario = socket.data['usuario'] as UsuarioAutenticado | undefined;
+    if (usuario) this.metricas.conexion(usuario.rol, -1);
   }
 
   /** Posiciones en vivo. Responde con el resultado para que la app sepa qué quedó guardado. */

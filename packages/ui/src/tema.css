@@ -40,6 +40,7 @@
   --animate-flotar: flotar 3.2s ease-in-out infinite;
   --animate-radar: radar 2.8s ease-out infinite;
   --animate-brillo: brillo 2.2s linear infinite;
+  --animate-entrada: entrada 0.3s ease-out backwards;
 
   @keyframes pulso-suave {
     0%,
@@ -69,6 +70,14 @@
     100% {
       transform: scale(2.4);
       opacity: 0;
+    }
+  }
+  @keyframes entrada {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
     }
   }
   @keyframes brillo {
@@ -136,4 +145,50 @@ body {
 }
 [data-tema='claro'] .logo-sobre-oscuro {
   display: none;
+}
+
+/* Indicador de carga con el carro de la marca (componente Cargando). */
+.carga-carro {
+  animation: carga-salto 0.55s ease-in-out infinite;
+}
+.carga-rueda {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: carga-giro 0.6s linear infinite;
+}
+.carga-ruta {
+  animation: carga-ruta 0.45s linear infinite;
+}
+.carga-linea {
+  animation: carga-linea 0.7s ease-in-out infinite;
+}
+@keyframes carga-salto {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+@keyframes carga-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes carga-ruta {
+  to {
+    stroke-dashoffset: -64;
+  }
+}
+@keyframes carga-linea {
+  0%,
+  100% {
+    transform: translateX(0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateX(-26px);
+    opacity: 0.2;
+  }
 }

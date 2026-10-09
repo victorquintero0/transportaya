@@ -1,4 +1,4 @@
-import { ErrorApi, Logo, api, mensajeDe, useSesion } from '@transportaya/ui';
+import { ErrorApi, MarcaAnimada, api, mensajeDe, useSesion } from '@transportaya/ui';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -71,7 +71,7 @@ export function Ingresar() {
     <main className="grid min-h-dvh place-items-center p-6">
       <div className="grid w-full max-w-4xl gap-6 md:grid-cols-[1fr_20rem]">
         <section className="rounded-2xl border border-borde bg-superficie p-8">
-          <Logo tamano={150} />
+          <MarcaAnimada modo="armar" ancho={150} />
           <h1 className="mt-6 text-2xl font-extrabold">Ingreso a Operación</h1>
           <p className="mt-1 text-sm text-suave">
             Personal autorizado de TransporteYa. Cada ingreso pide tu contraseña y un código de tu

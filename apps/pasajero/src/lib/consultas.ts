@@ -1,6 +1,6 @@
 import { api, useSesion } from '@transportaya/ui';
 import { useQuery } from '@tanstack/react-query';
-import type { Perfil, Viaje } from './tipos.ts';
+import type { MiEmpresa, Perfil, Viaje } from './tipos.ts';
 
 export function usePerfil() {
   const hayToken = useSesion((s) => s.accessToken !== null);
@@ -33,4 +33,15 @@ export function useSimulador(): boolean {
     retry: 1,
   });
   return data?.simulador === true;
+}
+
+/** PAS-60: la empresa de la persona (si tiene) y sus invitaciones pendientes. */
+export function useEmpresa() {
+  const hayToken = useSesion((s) => s.accessToken !== null);
+  return useQuery({
+    enabled: hayToken,
+    queryKey: ['empresa'],
+    queryFn: () => api.get<MiEmpresa>('/v1/pasajero/empresa'),
+    staleTime: 15_000,
+  });
 }

@@ -1,4 +1,13 @@
-import { Avisos, useSesion, useTemaDocumento } from '@transportaya/ui';
+import {
+  AvisoSinConexion,
+  Avisos,
+  EntradaPagina,
+  PantallaCargando,
+  PantallaDiagnostico,
+  Splash,
+  useSesion,
+  useTemaDocumento,
+} from '@transportaya/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Boton, Hoja, Icono } from '@transportaya/ui';
 import { useEffect, useState } from 'react';
@@ -21,6 +30,7 @@ import { Inicio } from './pantallas/Inicio.tsx';
 import { Pagos } from './pantallas/Pagos.tsx';
 import { ViajeDetalle } from './pantallas/ViajeDetalle.tsx';
 import { ViajeEnCurso } from './pantallas/ViajeEnCurso.tsx';
+import { Reservas } from './pantallas/Reservas.tsx';
 import { Viajes } from './pantallas/Viajes.tsx';
 import { iniciarMotor } from './servicios/motor.ts';
 
@@ -66,7 +76,9 @@ function Principal() {
 
   return (
     <>
-      <Outlet />
+      <EntradaPagina clave={pathname}>
+        <Outlet />
+      </EntradaPagina>
       {conBarra && <BarraInferior aviso={(perfil?.deuda ?? 0) > 0} />}
       <SinConductor abierta={sinConductor} />
     </>
@@ -113,12 +125,7 @@ function Protegida() {
   const token = useSesion((s) => s.accessToken);
   const { data: perfil, isLoading, isError } = usePerfil();
   if (!token) return <Navigate to="/entrar" replace />;
-  if (isLoading || isError || !perfil)
-    return (
-      <main className="grid min-h-dvh place-items-center">
-        <div className="size-12 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      </main>
-    );
+  if (isLoading || isError || !perfil) return <PantallaCargando />;
   if (!perfil.terminos.aceptados || perfil.usuario.nombre.trim().length < 3)
     return <Bienvenida perfil={perfil} />;
   return <Principal />;
@@ -132,9 +139,11 @@ export function App() {
       <Routes>
         <Route path="/entrar" element={token ? <Navigate to="/" replace /> : <Entrar />} />
         <Route path="/c/:token" element={<Compartido />} />
+        <Route path="/diagnostico" element={<PantallaDiagnostico app="App Pasajero" />} />
         <Route element={<Protegida />}>
           <Route index element={<Inicio />} />
           <Route path="viajes" element={<Viajes />} />
+          <Route path="reservas" element={<Reservas />} />
           <Route path="cuenta" element={<Cuenta />} />
           <Route path="viajes/:id" element={<ViajeDetalle />} />
           <Route path="destino" element={<BuscarDestino />} />
@@ -146,6 +155,8 @@ export function App() {
         </Route>
       </Routes>
       <Avisos />
+      <AvisoSinConexion />
+      <Splash />
     </>
   );
 }

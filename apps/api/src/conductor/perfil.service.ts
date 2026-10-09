@@ -12,6 +12,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import {
   type DocumentoRegistrado,
   type EvaluacionDocumentos,
+  VERSION_TERMINOS,
   evaluarDocumentos,
   fechaBogota,
 } from '@transportaya/dominio';
@@ -59,6 +60,8 @@ export interface PerfilConductor {
   }[];
   cuentaPago: { tipo: string; valorEnmascarado: string; verificada: boolean } | null;
   documentos: EvaluacionDocumentos;
+  /** Autorización de tratamiento de datos (Ley 1581, RNF-60): hace falta para enviar el registro a revisión. */
+  terminos: { version: string; aceptados: boolean; aceptoEn: string | null };
   onboarding: { pasos: PasoOnboarding[]; puedeEnviarRevision: boolean };
   conexion: { puedeConectarse: boolean; motivos: MotivoNoConectar[] };
 }
@@ -129,8 +132,11 @@ export class PerfilService {
       },
     ];
     const listoParaEnviar = pasos.slice(0, 4).every((p) => p.completo);
+    const terminosAceptados = base.c.versionTerminos === VERSION_TERMINOS;
     const puedeEnviarRevision =
-      listoParaEnviar && ['registro_incompleto', 'rechazado'].includes(base.c.estadoHabilitacion);
+      listoParaEnviar &&
+      terminosAceptados &&
+      ['registro_incompleto', 'rechazado'].includes(base.c.estadoHabilitacion);
 
     const motivos = await this.motivos(base.c, evaluacion, conductorId);
     return {
@@ -169,6 +175,11 @@ export class PerfilService {
           }
         : null,
       documentos: evaluacion,
+      terminos: {
+        version: VERSION_TERMINOS,
+        aceptados: terminosAceptados,
+        aceptoEn: base.c.aceptoTerminosEn?.toISOString() ?? null,
+      },
       onboarding: { pasos, puedeEnviarRevision },
       conexion: { puedeConectarse: motivos.length === 0, motivos },
     };
@@ -305,6 +316,18 @@ export class PerfilService {
     return cuenta ? { ...cuenta, valor: this.cifrado.descifrar(cuenta.valorCifrado) } : null;
   }
 
+  /** Autorización previa, expresa e informada para el tratamiento de datos (RNF-60). */
+  async aceptarTerminos(conductorId: string, version: string): Promise<void> {
+    if (version !== VERSION_TERMINOS)
+      throw conflicto('VERSION_TERMINOS', 'Esa versión de los términos ya no está vigente.', {
+        versionVigente: VERSION_TERMINOS,
+      });
+    await this.bd.db
+      .update(conductor)
+      .set({ aceptoTerminosEn: new Date(), versionTerminos: version })
+      .where(eq(conductor.usuarioId, conductorId));
+  }
+
   async enviarARevision(conductorId: string): Promise<void> {
     const perfil = await this.obtener(conductorId);
     if (!['registro_incompleto', 'rechazado'].includes(perfil.conductor.estadoHabilitacion)) {
@@ -316,6 +339,10 @@ export class PerfilService {
         pendientes: faltan.map((p) => p.id),
       });
     }
+    if (!perfil.terminos.aceptados)
+      throw solicitudInvalida('Acepta la política de tratamiento de datos para continuar.', {
+        pendientes: ['terminos'],
+      });
     await this.bd.db
       .update(conductor)
       .set({ estadoHabilitacion: 'en_revision' })

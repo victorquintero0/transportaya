@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { crearConductor, llamar } from './ayudas-api.js';
 
 let capturas = 0;
 async function captura(page: Page, nombre: string) {
@@ -17,6 +18,9 @@ function celularNuevo(): string {
 const UBICACION = { latitude: 5.0548, longitude: -75.4945 };
 
 test.beforeEach(async ({ context }) => {
+  // El mapa de calles sale a internet: aquí se corta para que la prueba use siempre el mapa esquemático (lo de los
+  // mapas reales se prueba en mapa.spec.ts), sin depender de la red ni de la tarjeta gráfica de quien corre la prueba.
+  await context.route('https://tiles.openfreemap.org/**', (r) => r.abort());
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation(UBICACION);
 });
@@ -225,5 +229,84 @@ test('pasajero: cancela sin costo, paga con una tarjeta que el banco rechaza y q
     await page.locator('#pagar-deuda').click();
     await expect(page.locator('#deuda')).toHaveCount(0);
     await captura(page, 'deuda-pagada');
+  });
+});
+
+test('pasajero: reserva un viaje para más tarde, ve que un conductor lo confirma y lo cancela sin costo', async ({
+  page,
+}) => {
+  page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
+  await entrar(page);
+  await onboarding(page, 'Laura Gómez Ríos');
+  await expect(page.locator('#origen-actual')).toBeVisible();
+
+  await test.step('elige el destino y programa la hora', async () => {
+    await page.locator('#a-donde-vas').click();
+    await page.locator('#campo-busqueda').fill('hospital');
+    await page.locator('[data-resultado="hospital-de-caldas"]').click();
+    await expect(page.locator('[data-categoria="media"]')).toBeVisible();
+    await page.locator('#elegir-cuando').click();
+    // el campo trabaja en hora de Bogotá: dentro de 3 horas
+    const f = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(new Date(Date.now() + 3 * 3_600_000));
+    const v = (t: string) => f.find((p) => p.type === t)!.value;
+    await page
+      .locator('#reserva-fecha')
+      .fill(`${v('year')}-${v('month')}-${v('day')}T${v('hour')}:${v('minute')}`);
+    await captura(page, 'programar');
+    await page.locator('#reserva-confirmar-hora').click();
+    await expect(page.locator('#elegir-cuando')).toContainText('Reservar');
+    await expect(
+      page.locator('[data-categoria="media"]').getByText('Precio cerrado'),
+    ).toBeVisible();
+    await expect(page.getByText(/no hay conductores cerca/i)).toHaveCount(0);
+    await expect(page.locator('#pedir-viaje')).toHaveText('Reservar viaje');
+    await captura(page, 'cotizar-reserva');
+  });
+
+  await test.step('confirma y queda en Mis reservas', async () => {
+    await page.locator('#pedir-viaje').click();
+    await expect(page).toHaveURL(/\/reservas/);
+    await expect(page.locator('[data-reserva]')).toHaveCount(1);
+    await expect(page.getByText('Buscaremos conductor')).toBeVisible();
+    await captura(page, 'reservas');
+  });
+
+  await test.step('un conductor toma la reserva y la confirma', async () => {
+    const conductor = await crearConductor(celularNuevo(), {
+      nombre: 'Jorge Restrepo',
+      aprobar: true,
+    });
+    const tablero = await llamar<{ disponibles: { id: string }[] }>(
+      'GET',
+      '/v1/conductor/reservas',
+      undefined,
+      conductor.token,
+    );
+    expect(tablero.disponibles.length).toBeGreaterThan(0);
+    const id = tablero.disponibles[0]!.id;
+    await llamar('POST', `/v1/conductor/reservas/${id}/tomar`, undefined, conductor.token);
+    await llamar('POST', `/v1/conductor/reservas/${id}/confirmar`, undefined, conductor.token);
+    await page.reload();
+    await expect(page.getByText('Conductor confirmado')).toBeVisible();
+  });
+
+  await test.step('abre el detalle y cancela: más de una hora antes, sin costo', async () => {
+    await page.locator('[data-reserva]').click();
+    await expect(page.locator('#estado-reserva')).toContainText('ya confirmó');
+    await captura(page, 'reserva-detalle');
+    await page.locator('#cancelar-reserva').click();
+    await expect(page.locator('#costo-cancelar')).toContainText('sin costo');
+    await page.locator('#confirmar-cancelar-reserva').click();
+    await expect(page.getByText('Cancelaste la reserva sin costo')).toBeVisible();
+    await page.goto('/reservas');
+    await expect(page.getByText('No tienes reservas')).toBeVisible();
   });
 });

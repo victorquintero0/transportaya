@@ -16,6 +16,13 @@ const esquema = z
     /** Primera cuenta de administración (se crea al arrancar si no existe ningún empleado). */
     ADMIN_INICIAL_EMAIL: z.string().email().optional(),
     ADMIN_INICIAL_CONTRASENA: z.string().min(10).optional(),
+    /** Versión publicada (la pone el despliegue). Aparece en el registro y en la pantalla Sistema. */
+    VERSION: z.string().default('dev'),
+    /** `json` en producción (una línea por evento); `texto` legible en desarrollo. */
+    LOG_FORMATO: z.enum(['json', 'texto']).optional(),
+    LOG_NIVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+    /** Token con el que Prometheus consulta `/v1/metricas`. En producción, sin token, esa ruta no existe. */
+    METRICAS_TOKEN: z.string().min(16).optional(),
     ALMACENAMIENTO_DIR: z.string().default('.almacenamiento'),
     /** Llave Bre-B de TransporteYa a la que los conductores pagan su comisión (D-04). Pendiente de definir por Finanzas. */
     LLAVE_BRE_B_EMPRESA: z.string().trim().min(3).optional(),
@@ -50,6 +57,8 @@ const esquema = z
     // Valor fijo solo para desarrollo, para que las sesiones sobrevivan a un reinicio.
     JWT_SECRET: env.JWT_SECRET ?? 'desarrollo-transportaya-no-usar-en-produccion-0123456789',
     SIMULADOR: env.SIMULADOR ?? env.NODE_ENV !== 'production',
+    LOG_FORMATO:
+      env.LOG_FORMATO ?? (env.NODE_ENV === 'production' ? ('json' as const) : ('texto' as const)),
     LLAVE_BRE_B_EMPRESA:
       env.LLAVE_BRE_B_EMPRESA ?? (env.NODE_ENV !== 'production' ? '@transporteya-demo' : undefined),
   }));

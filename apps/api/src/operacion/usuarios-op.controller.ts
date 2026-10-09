@@ -11,7 +11,7 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ROLES_INTERNOS } from '@transportaya/dominio';
+import { ROLES_PERSONAL } from '@transportaya/dominio';
 import { z } from 'zod';
 import { RequierePermiso, UsuarioActual, type UsuarioAutenticado } from '../auth/decoradores.js';
 import { normalizarTelefono } from '../comun/telefono.js';
@@ -20,7 +20,7 @@ import { contrasenaTemporal } from './contrasena.js';
 import { EmpleadosService } from './empleados.service.js';
 import { paginacion } from './comun.js';
 
-const rol = z.enum(ROLES_INTERNOS);
+const rol = z.enum(ROLES_PERSONAL);
 const nuevo = z.object({
   nombre: z.string().trim().min(3).max(120),
   telefono: z.string().min(7).max(25),

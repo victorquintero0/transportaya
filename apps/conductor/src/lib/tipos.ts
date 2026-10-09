@@ -61,6 +61,7 @@ export interface Perfil {
   vehiculos: Vehiculo[];
   cuentaPago: { tipo: string; valorEnmascarado: string; verificada: boolean } | null;
   documentos: { requisitos: RequisitoDocumento[]; completo: boolean; habilitado: boolean };
+  terminos: { version: string; aceptados: boolean; aceptoEn: string | null };
   onboarding: {
     pasos: {
       id: 'datos' | 'vehiculo' | 'documentos' | 'cuenta' | 'revision';
@@ -99,7 +100,7 @@ export interface Oferta {
   destino: { zona: string; distanciaViajeM: number };
   gananciaEstimada: number;
   precioEstimado: { min: number; max: number };
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   categoria: string;
   tipoServicio: string;
   pasajero: { nombre: string; calificacion: number | null };
@@ -122,7 +123,7 @@ export interface ViajeActual {
   recogida: { lat: number; lng: number; direccion: string | null };
   destino: { lat: number; lng: number; direccion: string | null };
   nota: string | null;
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   pinRequerido: boolean;
   precioEstimado: { min: number; max: number };
   tarifa: {
@@ -148,10 +149,11 @@ export interface ViajeActual {
 export interface ResultadoFinalizar {
   viajeId: string;
   codigo: string;
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   precioFinal: number;
   totalCarrera: number;
   cobroEspera: number;
+  peajes?: number;
   comision: number;
   gananciaNeta: number;
   desglose: Record<string, unknown>;
@@ -236,4 +238,26 @@ export interface Mensaje {
   deQuien: 'pasajero' | 'conductor';
   cuerpo: string;
   creadoEn: string;
+}
+
+/** Una reserva en el tablero (RN-080 a RN-085). El destino se muestra solo como zona (D-11). */
+export interface ReservaTablero {
+  id: string;
+  codigo: string;
+  programadoPara: string;
+  categoria: string;
+  tipoServicio: string;
+  recogida: { lat: number; lng: number; direccion: string | null };
+  destino: { zona: string; distanciaViajeM: number };
+  precioEstimado: { min: number; max: number };
+  gananciaEstimada: number;
+  metodoPago: string;
+  pasajero: { nombre: string; calificacion: number | null };
+}
+
+export interface MiReserva extends ReservaTablero {
+  estado: 'tomada' | 'confirmada' | 'buscando';
+  /** Hora límite para confirmar (solo si falta). */
+  confirmarAntesDe: string | null;
+  puedeSoltar: boolean;
 }

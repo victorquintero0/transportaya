@@ -6,6 +6,24 @@
     <meta name="theme-color" content="#101010" />
     <link rel="icon" href="/marca/favicon-32.png" type="image/png" />
     <title>TransporteYa · Operación</title>
+    <style>
+      /* Mientras carga el código, el mismo fondo de la app (oscuro, o claro si así lo eligió la persona): sin destellos */
+      html,
+      body {
+        background: #101010;
+      }
+      html.tema-claro,
+      html.tema-claro body {
+        background: #f6f8f6;
+      }
+    </style>
+    <script>
+      try {
+        var t = JSON.parse(localStorage.getItem('ty.operacion.ajustes')).state.tema;
+        if (t === 'claro' || (t === 'auto' && matchMedia('(prefers-color-scheme: light)').matches))
+          document.documentElement.className = 'tema-claro';
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="raiz"></div>

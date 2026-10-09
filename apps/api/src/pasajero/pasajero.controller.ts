@@ -15,7 +15,9 @@ import {
 import { z } from 'zod';
 import { RequiereRol, UsuarioActual, type UsuarioAutenticado } from '../auth/decoradores.js';
 import { validar } from '../comun/zod.js';
+import { EmpresaPasajeroService } from '../corporativo/empresa-pasajero.service.js';
 import { MensajesViajeService } from '../viajes/mensajes.service.js';
+import { ReservasService } from '../viajes/reservas.service.js';
 import { CompartidoService } from './compartido.service.js';
 import { CotizacionesService } from './cotizaciones.service.js';
 import { LugaresService } from './lugares.service.js';
@@ -46,6 +48,12 @@ const lugar = z.object({
 const cotizar = z
   .object({
     origen: punto,
+    /** Una reserva: la hora del servicio, con zona horaria (por ejemplo 2026-10-12T08:30:00-05:00). */
+    programadoPara: z
+      .string()
+      .datetime({ offset: true })
+      .transform((v) => new Date(v))
+      .optional(),
     destino: punto.optional(),
     ruta: z
       .object({
@@ -57,9 +65,11 @@ const cotizar = z
   .refine((c) => c.destino || c.ruta, 'Indica a dónde vas');
 const crearViaje = z.object({
   cotizacionId: z.string().uuid(),
-  metodoPago: z.enum(['efectivo', 'tarjeta']),
+  metodoPago: z.enum(['efectivo', 'tarjeta', 'corporativo']),
   metodoPagoId: z.string().uuid().optional(),
   nota: z.string().trim().max(140).optional(),
+  centroCostoId: z.string().uuid().optional(),
+  motivo: z.string().trim().min(2).max(200).optional(),
 });
 const calificar = z.object({
   estrellas: z.number().int().min(1).max(5),
@@ -106,6 +116,8 @@ export class PasajeroController {
     @Inject(MensajesViajeService) private readonly mensajes: MensajesViajeService,
     @Inject(CompartidoService) private readonly compartido: CompartidoService,
     @Inject(SoportePasajeroService) private readonly soporte: SoportePasajeroService,
+    @Inject(ReservasService) private readonly reservas: ReservasService,
+    @Inject(EmpresaPasajeroService) private readonly empresa: EmpresaPasajeroService,
   ) {}
 
   // ---------------------------------------------------------------- cuenta
@@ -248,6 +260,46 @@ export class PasajeroController {
   @Post('viajes')
   async crear(@UsuarioActual() u: UsuarioAutenticado, @Body() cuerpo: unknown) {
     return this.viajes.crear(u.id, validar(crearViaje, cuerpo));
+  }
+
+  // ---------------------------------------------------------------- empresa (PAS-60)
+  /** Su empresa, si tiene, y las invitaciones que recibió. */
+  @Get('empresa')
+  miEmpresa(@UsuarioActual() u: UsuarioAutenticado) {
+    return this.empresa.mia(u.id);
+  }
+
+  @Post('empresa/invitaciones/:id/aceptar')
+  @HttpCode(200)
+  async aceptarInvitacion(
+    @UsuarioActual() u: UsuarioAutenticado,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    await this.empresa.aceptar(u.id, id);
+    return this.empresa.mia(u.id);
+  }
+
+  @Post('empresa/invitaciones/:id/rechazar')
+  @HttpCode(200)
+  async rechazarInvitacion(
+    @UsuarioActual() u: UsuarioAutenticado,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ) {
+    await this.empresa.rechazar(u.id, id);
+    return this.empresa.mia(u.id);
+  }
+
+  @Post('empresa/salir')
+  @HttpCode(200)
+  async salirDeLaEmpresa(@UsuarioActual() u: UsuarioAutenticado) {
+    await this.empresa.salir(u.id);
+    return this.empresa.mia(u.id);
+  }
+
+  /** Las reservas que tiene pendientes, de la más próxima a la más lejana (PAS-27). */
+  @Get('reservas')
+  async misReservas(@UsuarioActual() u: UsuarioAutenticado) {
+    return { reservas: await this.reservas.proximasDelPasajero(u.id) };
   }
 
   @Get('viaje-actual')

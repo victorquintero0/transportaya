@@ -79,6 +79,7 @@ describe.skipIf(!hayBase)('migraciones y funciones', () => {
             conductorId,
             vehiculoId,
             solicitadoEn: new Date('2026-10-06T10:00:00Z'),
+            programadoPara: new Date('2026-10-06T12:00:00Z'),
             iniciadoEn: new Date('2026-10-06T10:10:00Z'),
             finalizadoEn: new Date('2026-10-06T10:30:00Z'),
             precioFinal: 15_000,

@@ -30,7 +30,7 @@
 | PAS-22 | Elegir categoría con precio estimado, ETA de recogida y aviso de dinámica | MVP |
 | PAS-23 | Nota para el conductor (por ejemplo, "portería 2") | MVP |
 | PAS-24 | Confirmar viaje y ver el estado de la búsqueda de conductor | MVP |
-| PAS-25 | Programar viaje para una fecha y hora futura | F2 |
+| PAS-25 | Programar viaje para una fecha y hora futura (entre 45 min y 7 días), con precio cerrado; ver, abrir y cancelar mis reservas | MVP · hecho |
 | PAS-26 | Viaje intermunicipal o nacional: elegir destino de la lista de rutas con tarifa fija, `solo ida` o `ida y vuelta`, con el valor visible antes de confirmar | MVP |
 | **Durante el viaje** | | |
 | PAS-30 | Ver conductor asignado: nombre, foto, calificación, vehículo, color y **placa** | MVP |
@@ -53,9 +53,9 @@
 | PAS-51 | Reportar objeto perdido | MVP |
 | PAS-52 | Radicar PQRS y consultar su estado | F2 |
 | **Corporativo** | | |
-| PAS-60 | Vincular el perfil a una empresa por invitación | F3 |
-| PAS-61 | Elegir perfil personal o corporativo al pedir; elegir centro de costo y motivo | F3 |
-| PAS-62 | Sección **Empresa** para administradores: empleados, centros de costo, políticas, viajes y estados de cuenta | F3 |
+| PAS-60 | Vincular el perfil a una empresa por invitación (llega al celular, se acepta en Cuenta → «Mi empresa»; se puede salir de la empresa) | F3 · hecho |
+| PAS-61 | Elegir perfil personal o corporativo al pedir («Empresa · nombre» entre las formas de pago); elegir centro de costo y motivo; la política avisa antes de confirmar | F3 · hecho |
+| PAS-62 | Sección **Empresa** para administradores: empleados, centros de costo, políticas, viajes y estados de cuenta. Por D-09 vive en la **App Operación** («Mi empresa»), no en esta app | F3 · hecho en Operación |
 | **Notificaciones** | | |
 | PAS-70 | Push: conductor asignado, conductor llegó, viaje finalizado, recordatorios de reserva, respuestas de soporte | MVP |
 
@@ -113,14 +113,27 @@ flowchart LR
 - **Dado** que agregué una tarjeta, **cuando** termina el viaje, **entonces** se cobra el valor final y recibo el recibo por correo.
 - **Dado** que el cobro falla, **entonces** la app me muestra la deuda y no me permite pedir otro viaje hasta pagarla con otro método.
 
+## Marca y movimiento
+
+> **Implementado**, y común a las tres apps (componentes en `packages/ui`).
+
+- **Pantalla de arranque:** al abrir la app (una vez por sesión del navegador, es decir, cada vez que se abre la app instalada) el carro llega a toda velocidad, la burbuja del logo se arma a su alrededor, el carro pasa a ser la «ventana» del logo, aparece el nombre y el carro sale disparado por la derecha. Dura unos 2,7 s, se salta tocando la pantalla o con cualquier tecla, y va encima de la app, que ya está cargando por debajo. Con «reducir movimiento» activado en el sistema se ve el logo ya armado durante un instante y se va.
+- **Pantallas de ingreso:** el logo se arma (sin la salida del carro) y queda flotando suave.
+- **Carga:** donde antes había un círculo giratorio a pantalla completa, ahora el carro de la marca salta sobre la ruta con las líneas de velocidad (`CargandoCarro`, `PantallaCargando`). Los botones conservan su indicador pequeño.
+- **Cambio de pantalla:** cada pantalla aparece con un desvanecido corto (`EntradaPagina`). Es solo opacidad a propósito: un movimiento volvería relativos al contenedor los elementos fijos de la pantalla mientras dura.
+- **Cómo se ve o se prueba:** abrir cualquier app con `?splash` en la dirección fuerza la pantalla de arranque; el navegador automatizado de las pruebas no la muestra sola.
+- **Piezas:** el logo está dibujado en vectores (`marca/geometria.ts`, medido sobre el PNG) para animar la burbuja, el carro, las ruedas y las líneas por separado; los PNG siguen siendo el logo oficial estático.
+
 ## Consideraciones de la PWA
 
-- **Instalación:** invitar a instalar la app después del primer viaje completado, no al entrar.
+- **Instalación:** la tarjeta «Instala TransporteYa en tu teléfono» (Cuenta) abre el cuadro de instalación en Android y explica los pasos en iPhone, donde Safari no permite instalar con un botón. Queda pendiente invitar también tras el primer viaje completado.
+- **Probar en un teléfono real:** [guía](16-pruebas-en-telefono.md) (`pnpm movil`).
 - **iOS:** las notificaciones push solo funcionan si la PWA está **instalada** en la pantalla de inicio
   (iOS 16.4 o superior). La app debe explicarlo y, sin push, apoyarse en la conexión en tiempo real
   mientras está abierta.
-- **Sin conexión:** la interfaz base, el historial y los lugares guardados se guardan en caché.
+- **Sin conexión:** la interfaz base se guarda en el teléfono (service worker): la app abre sin internet y una franja avisa «Sin conexión: reintentando…» y «Conexión recuperada». El historial y los lugares guardados salen del servidor, así que no se ven sin conexión (pendiente).
   Pedir un viaje exige conexión; si se pierde durante el viaje, la app se reconecta y recupera el estado.
+- **Diagnóstico:** `/diagnostico` muestra qué permite el teléfono (HTTPS, instalación, sin conexión, ubicación, pantalla encendida, vibración, sonido) y copia un informe.
 - **Ubicación:** pedir el permiso solo al momento de fijar el origen, explicando para qué se usa.
 - **Datos móviles:** mapas vectoriales en caché y actualizaciones de posición del conductor limitadas
   a lo necesario para no consumir el plan del usuario.
@@ -136,7 +149,9 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 | **Entrar** y **Bienvenida** | Celular + código (simulado), nombre y **autorización de datos** (PAS-01, PAS-02). Sin aceptar no se puede pedir |
 | **Inicio** | Mapa, "te recogemos en…" con la ubicación del teléfono (solo se pide al fijar la recogida, PAS-20), "¿A dónde vas?", Casa y Trabajo, recientes y viajes a otras ciudades |
 | **Buscar destino** | Lugares y barrios (sin importar tildes), direcciones al estilo colombiano (`Cra 23 # 62-14`, marcadas como aproximadas), lugares guardados y recientes (PAS-21) |
-| **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor (PAS-22, PAS-23) |
+| **Cotizar** | Tres categorías con rango de precio, recargo de categoría, tiempo de llegada y aviso de dinámica; efectivo o tarjeta; nota para el conductor; «Ahora» o **reservar para más tarde** (PAS-22, PAS-23, PAS-25) |
+| **Cuenta → Mi empresa** | Las invitaciones de empresas (aceptar o rechazar) y la empresa a la que pertenece la persona, con aviso si su perfil corporativo está suspendido (PAS-60) |
+| **Mis reservas** | Las reservas abiertas con su hora y estado («Buscaremos conductor», «Conductor confirmado»…); el detalle muestra el conductor confirmado y permite cancelar, avisando si ya cuesta (RN-084, RN-089). Se entra desde Inicio |
 | **Otra ciudad** | Destinos con tarifa fija, solo ida o ida y vuelta, con el valor cerrado antes de confirmar (PAS-26) |
 | **Buscando** | Radar sobre la recogida, cuenta regresiva de los 2 minutos y cancelar sin costo. Si nadie acepta, lo explica y deja reintentar sin volver a escribir el destino |
 | **Conductor en camino / en viaje** | Mapa con el carro en vivo y el tiempo que falta, **PIN** grande, conductor con calificación, vehículo y **placa**, chat con respuestas rápidas, compartir el viaje, **SOS** (mantener 2 s) y cancelar con el costo claro antes de confirmar (PAS-30 a PAS-36) |
@@ -149,6 +164,8 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 **Cobros rechazados (HU-PAS-04).** Si el banco rechaza la tarjeta al terminar, el viaje queda como **deuda del pasajero**, el conductor cobra igual
 y el pasajero no puede pedir otro viaje hasta pagarla con otra tarjeta (ver D-30).
 
-**Pendiente.** Mapa de calles propio y direcciones reales (D-27), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
-notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, viajes programados (F2), llamada enmascarada (F2) y la parte corporativa (F3).
+> **Datos personales.** Cuenta → «Mis datos y privacidad»: política, descarga de datos, solicitudes con su respuesta y eliminar la cuenta ([doc 15](15-observabilidad-y-privacidad.md)).
+
+**Pendiente.** Buscador de direcciones real y proveedor de mapas definitivo (D-27; el mapa de calles ya está, ADR-0009), ubicación exacta de los destinos pequeños (D-29), proveedor real de OTP,
+notificaciones *push* (PAS-70), pago con Wompi real, recibo por correo, recordatorios de reserva por *push*, llamada enmascarada (F2) y el pago corporativo con facturación electrónica a la empresa.
 

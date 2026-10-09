@@ -1,4 +1,5 @@
-import { Icono } from '@transportaya/ui';
+import { desplazar } from '@transportaya/dominio';
+import { BaseMapa, Icono, type ControlMapa } from '@transportaya/ui';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { crearProyeccion, type Punto } from '../lib/mapa.ts';
 
@@ -27,6 +28,9 @@ interface Props {
   /** Recorrido de un viaje (reproducción) y hasta qué punto se ha reproducido. */
   recorrido?: Punto[];
   avance?: number;
+  /** Mapa de calor: celdas con cuántos viajes empezaron allí (ya agrupadas por el servidor, ~330 m). */
+  calor?: { lat: number; lng: number; n: number }[];
+  colorCalor?: string;
   /** Puntos extra que deben caber en el encuadre (por ejemplo, el origen y el destino del viaje abierto). */
   extra?: Punto[];
   className?: string;
@@ -55,9 +59,9 @@ export const LEYENDA_MAPA = [
 ] as const;
 
 /**
- * Mapa esquemático de la operación: la flota, los viajes activos y los recorridos. Se puede acercar con la rueda y
- * mover arrastrando. Igual que el de las apps, dibuja la cuadrícula de la ciudad con su inclinación real; el mapa de
- * calles con OpenStreetMap llega con el ADR-0002.
+ * Mapa de la operación: la flota, los viajes activos y los recorridos. Usa el proveedor de mapas que se configure en
+ * Configuración → Mapa (ADR-0009; OpenFreeMap por defecto) y se mueve con el ratón. Si el mapa de calles no carga,
+ * muestra el esquemático (la cuadrícula de la ciudad con su inclinación real), que se acerca con la rueda y se arrastra.
  */
 export function MapaOperacion({
   conductores = [],
@@ -68,12 +72,15 @@ export function MapaOperacion({
   recorrido = [],
   avance = 1,
   extra = [],
+  calor = [],
+  colorCalor = 'var(--color-mandarina)',
   className = '',
 }: Props) {
   const caja = useRef<HTMLDivElement>(null);
   const [tam, setTam] = useState({ w: 800, h: 520 });
   const [vista, setVista] = useState({ k: 1, tx: 0, ty: 0 });
   const [movida, setMovida] = useState(false);
+  const [real, setReal] = useState<ControlMapa | null>(null);
   const arrastre = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
 
   useEffect(() => {
@@ -93,9 +100,10 @@ export function MapaOperacion({
       ...viajes.flatMap((v) => [v.origen, v.destino]),
       ...recorrido,
       ...extra,
+      ...calor,
     ];
     return todos;
-  }, [conductores, viajes, recorrido, extra]);
+  }, [conductores, viajes, recorrido, extra, calor]);
 
   // El encuadre se calcula con la lista de puntos que se muestra; solo se vuelve a ajustar si la persona no ha movido el mapa.
   const proy = useMemo(
@@ -103,14 +111,18 @@ export function MapaOperacion({
     [puntos, tam.w, tam.h],
   );
 
-  const pos = (p: Punto) => ({
-    x: proy.x(p) * vista.k + vista.tx,
-    y: proy.y(p) * vista.k + vista.ty,
-  });
+  const pos = (p: Punto) =>
+    real
+      ? real.proyectar(p)
+      : { x: proy.x(p) * vista.k + vista.tx, y: proy.y(p) * vista.k + vista.ty };
   const bloque = Math.min(Math.max((90 / proy.metrosPorPixel) * vista.k, 24), 140);
 
   const acercar = (factor: number, cx = tam.w / 2, cy = tam.h / 2) => {
     setMovida(true);
+    if (real) {
+      real.acercar(Math.log2(factor));
+      return;
+    }
     setVista((v) => {
       const k = Math.min(12, Math.max(0.4, v.k * factor));
       const f = k / v.k;
@@ -128,12 +140,14 @@ export function MapaOperacion({
     <div
       ref={caja}
       className={`${className.includes('absolute') ? '' : 'relative'} cursor-grab overflow-hidden rounded-xl border border-borde bg-superficie-2 active:cursor-grabbing ${className}`}
+      data-mapa={real ? 'real' : 'esquematico'}
       onWheel={(e) => {
+        if (real) return;
         const r = e.currentTarget.getBoundingClientRect();
         acercar(e.deltaY < 0 ? 1.2 : 1 / 1.2, e.clientX - r.left, e.clientY - r.top);
       }}
       onPointerDown={(e) => {
-        if ((e.target as Element).closest('[data-marca]')) return;
+        if (real || (e.target as Element).closest('[data-marca]')) return;
         arrastre.current = { x: e.clientX, y: e.clientY, tx: vista.tx, ty: vista.ty };
         e.currentTarget.setPointerCapture(e.pointerId);
       }}
@@ -148,8 +162,16 @@ export function MapaOperacion({
       aria-label="Mapa de la operación"
       style={{ touchAction: 'none' }}
     >
+      <BaseMapa
+        puntos={puntos}
+        margen={60}
+        minSpanM={1200}
+        interactivo
+        alMoverUsuario={() => setMovida(true)}
+        alControl={setReal}
+      />
       <svg
-        className="absolute inset-0 h-full w-full"
+        className="pointer-events-none absolute inset-0 h-full w-full"
         viewBox={`0 0 ${tam.w} ${tam.h}`}
         aria-hidden="true"
       >
@@ -173,10 +195,34 @@ export function MapaOperacion({
             <rect width={bloque * 1.15} height="1.5" fill="var(--borde)" />
           </pattern>
         </defs>
-        <rect width={tam.w} height={tam.h} fill="var(--superficie-2)" />
-        <rect width={tam.w} height={tam.h} fill="url(#op-calles-a)" />
-        <rect width={tam.w} height={tam.h} fill="url(#op-calles-b)" />
+        {!real && (
+          <>
+            <rect width={tam.w} height={tam.h} fill="var(--superficie-2)" />
+            <rect width={tam.w} height={tam.h} fill="url(#op-calles-a)" />
+            <rect width={tam.w} height={tam.h} fill="url(#op-calles-b)" />
+          </>
+        )}
 
+        {calor.length > 0 &&
+          (() => {
+            const maximo = Math.max(1, ...calor.map((c) => c.n));
+            return calor.map((c) => {
+              const a = pos(c);
+              const borde = pos(desplazar(c, 165, 90));
+              const r = Math.max(6, Math.hypot(borde.x - a.x, borde.y - a.y));
+              return (
+                <circle
+                  key={`${c.lat},${c.lng}`}
+                  data-calor={c.n}
+                  cx={a.x}
+                  cy={a.y}
+                  r={r}
+                  fill={colorCalor}
+                  fillOpacity={0.15 + 0.6 * (c.n / maximo)}
+                />
+              );
+            });
+          })()}
         {viajes.map((v) => {
           const a = pos(v.origen);
           const b = pos(v.destino);
@@ -326,6 +372,7 @@ export function MapaOperacion({
             title="Ajustar a todo"
             onClick={() => {
               setVista({ k: 1, tx: 0, ty: 0 });
+              real?.encuadrar();
               setMovida(false);
             }}
             className="grid size-8 place-items-center border-t border-borde text-suave hover:bg-superficie-2 hover:text-texto"

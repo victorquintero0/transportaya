@@ -1,0 +1,5 @@
+# Los archivos de texto del repositorio van siempre con salto de línea LF, también en Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.woff2 binary

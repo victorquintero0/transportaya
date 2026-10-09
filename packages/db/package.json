@@ -37,6 +37,7 @@
     "semilla": "tsx src/cli-semilla.ts"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
     "@transportaya/dominio": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "pg": "^8.23.1"

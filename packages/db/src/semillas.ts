@@ -16,7 +16,8 @@ type Categoria = (typeof categoriaVehiculo.enumValues)[number];
 const DATOS = new URL('../../../docs/datos/', import.meta.url);
 
 function leerCsv(nombre: string): Record<string, string>[] {
-  const [encabezado, ...filas] = readFileSync(new URL(nombre, DATOS), 'utf8').trim().split('\n');
+  // Acepta saltos de línea de Windows (CRLF): git los pone así al clonar en ese sistema.
+  const [encabezado, ...filas] = readFileSync(new URL(nombre, DATOS), 'utf8').trim().split(/\r?\n/);
   const columnas = (encabezado ?? '').split(',');
   return filas.map((fila) => {
     const valores = fila.split(',');

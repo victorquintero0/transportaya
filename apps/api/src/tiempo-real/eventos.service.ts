@@ -12,6 +12,8 @@ export interface EventosAConductor {
   'viaje:estado': { viajeId: string; estado: string; [clave: string]: unknown };
   'conductor:estado': { estadoOperativo: string; motivo?: string };
   'viaje:mensaje': MensajeDeViaje;
+  /** Cambió una de sus reservas (la operación se la asignó o se la quitó). */
+  'reserva:cambio': { viajeId: string; motivo: 'asignada' | 'liberada' | 'cancelada' };
 }
 
 /** Eventos del servidor hacia el pasajero (docs/10). */
@@ -57,7 +59,7 @@ export interface OfertaParaConductor {
   destino: { zona: string; distanciaViajeM: number };
   gananciaEstimada: number;
   precioEstimado: { min: number; max: number };
-  metodoPago: 'efectivo' | 'tarjeta' | 'local';
+  metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   categoria: string;
   tipoServicio: string;
   pasajero: { nombre: string; calificacion: number | null };

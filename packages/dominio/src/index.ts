@@ -10,3 +10,7 @@ export * from './taximetro.js';
 export * from './tiempo.js';
 export * from './habilitacion.js';
 export * from './permisos.js';
+export * from './mapa.js';
+export * from './privacidad.js';
+export * from './reservas.js';
+export * from './corporativo.js';

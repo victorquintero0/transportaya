@@ -24,7 +24,8 @@ import {
   tipoAlerta,
   tipoServicio,
 } from './enums.js';
-import { metodoPago, pasajero, usuario } from './identidad.js';
+import { centroCosto, estadoCuenta, vinculoEmpresa } from './corporativo.js';
+import { empresa, metodoPago, pasajero, usuario } from './identidad.js';
 import { actualizadoEn, cop, creadoEn, id, lineaGeografica, marca, punto } from './tipos.js';
 
 /** Precio estimado que ve el pasajero antes de confirmar (D-10): un rango, no un valor cerrado. */
@@ -62,6 +63,8 @@ export const cotizacion = pgTable(
     precioMax: cop('precio_max').notNull(),
     /** Recargos aplicados en el momento de cotizar, para poder auditarla. */
     desglose: jsonb('desglose').notNull().default({}),
+    /** Si es para una reserva (RN-080): la hora del servicio. El precio se calcula con los recargos de esa hora. */
+    programadoPara: marca('programado_para'),
     expiraEn: marca('expira_en').notNull(),
     creadoEn: creadoEn(),
   },
@@ -100,6 +103,12 @@ export const viaje = pgTable(
     destinoDireccion: text('destino_direccion'),
     notaConductor: text('nota_conductor'),
     programadoPara: marca('programado_para'),
+    /** Reserva (RN-082): el conductor que la tomó, cuándo, y cuándo la confirmó. Mientras tanto el viaje sigue «programado». */
+    reservaConductorId: uuid('reserva_conductor_id').references(() => conductor.usuarioId),
+    reservaTomadaEn: marca('reserva_tomada_en'),
+    reservaConfirmadaEn: marca('reserva_confirmada_en'),
+    /** Desde cuándo se busca conductor. En una reserva es la hora en que se activó, no la de la solicitud. */
+    busquedaDesde: marca('busqueda_desde'),
     cotizacionId: uuid('cotizacion_id')
       .notNull()
       .references(() => cotizacion.id),
@@ -115,6 +124,15 @@ export const viaje = pgTable(
       .default(1),
     metodoPago: metodoPagoViaje('metodo_pago').notNull(),
     metodoPagoId: uuid('metodo_pago_id').references(() => metodoPago.id),
+    /** Viaje corporativo (RN-103): a qué empresa se carga, quién lo pidió, a qué centro de costo y para qué. */
+    empresaId: uuid('empresa_id').references(() => empresa.id),
+    vinculoEmpresaId: uuid('vinculo_empresa_id').references(() => vinculoEmpresa.id),
+    centroCostoId: uuid('centro_costo_id').references(() => centroCosto.id),
+    motivoCorporativo: text('motivo_corporativo'),
+    /** Lo que se le descuenta a la empresa por su contrato; lo absorbe TransporteYa, el conductor cobra completo. */
+    descuentoCorporativo: cop('descuento_corporativo').notNull().default(0),
+    /** El estado de cuenta en el que se cobró este viaje. */
+    estadoCuentaId: uuid('estado_cuenta_id').references(() => estadoCuenta.id),
     pinInicio: text('pin_inicio'),
     precioEstimadoMin: cop('precio_estimado_min').notNull(),
     precioEstimadoMax: cop('precio_estimado_max').notNull(),
@@ -167,6 +185,33 @@ export const viaje = pgTable(
     uniqueIndex('viaje_un_activo_por_conductor_uq')
       .on(t.conductorId)
       .where(sql`${t.estado} in ('asignado', 'en_sitio', 'en_curso')`),
+    index('viaje_reservas_idx')
+      .on(t.programadoPara)
+      .where(sql`${t.estado} = 'programado'`),
+    index('viaje_reserva_conductor_idx')
+      .on(t.reservaConductorId, t.programadoPara)
+      .where(sql`${t.reservaConductorId} is not null`),
+    check(
+      'viaje_programado_con_hora',
+      sql`${t.estado} <> 'programado' or ${t.programadoPara} is not null`,
+    ),
+    check(
+      'viaje_reserva_coherente',
+      sql`(${t.reservaTomadaEn} is null) = (${t.reservaConductorId} is null)
+        and (${t.reservaConfirmadaEn} is null or ${t.reservaConductorId} is not null)`,
+    ),
+    index('viaje_empresa_idx')
+      .on(t.empresaId, t.solicitadoEn)
+      .where(sql`${t.empresaId} is not null`),
+    index('viaje_estado_cuenta_idx')
+      .on(t.estadoCuentaId)
+      .where(sql`${t.estadoCuentaId} is not null`),
+    check(
+      'viaje_corporativo_coherente',
+      sql`(${t.empresaId} is null) = (${t.vinculoEmpresaId} is null)
+        and (${t.empresaId} is not null or (${t.centroCostoId} is null and ${t.descuentoCorporativo} = 0
+          and ${t.estadoCuentaId} is null))`,
+    ),
     check('viaje_codigo_formato', sql`${t.codigo} ~ '^TY-[0-9A-Z]{6}$'`),
     check('viaje_pin_formato', sql`${t.pinInicio} is null or ${t.pinInicio} ~ '^[0-9]{4}$'`),
     check(

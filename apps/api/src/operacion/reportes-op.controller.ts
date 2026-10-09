@@ -24,7 +24,15 @@ interface Respuesta {
   setHeader(n: string, v: string): void;
   end(b: string): void;
 }
-const rango = z.object({ desde: z.coerce.date().optional(), hasta: z.coerce.date().optional() });
+const rango = z.object({
+  desde: z.coerce.date().optional(),
+  hasta: z.coerce.date().optional(),
+  categoria: z.enum(['media', 'media_alta', 'alta']).optional(),
+  zonaId: z.string().uuid().optional(),
+});
+const calor = rango.extend({
+  tipo: z.enum(['solicitudes', 'sin_conductor']).default('solicitudes'),
+});
 
 @Controller('v1/op')
 export class ReportesOperacionController {
@@ -36,7 +44,21 @@ export class ReportesOperacionController {
   @Get('reportes/tiempos')
   tiempos(@Query() q: unknown) {
     const r = validar(rango, q);
-    return this.reportes.tiempos(this.reportes.rango(r.desde, r.hasta));
+    return this.reportes.tiempos(this.reportes.rango(r.desde, r.hasta), {
+      categoria: r.categoria,
+      zonaId: r.zonaId,
+    });
+  }
+
+  @RequierePermiso('reportes.ver')
+  @Get('reportes/calor')
+  calor(@Query() q: unknown) {
+    const r = validar(calor, q);
+    return this.reportes.calor(
+      this.reportes.rango(r.desde, r.hasta),
+      { categoria: r.categoria, zonaId: r.zonaId },
+      r.tipo,
+    );
   }
 
   @RequierePermiso('reportes.ver')
@@ -51,6 +73,7 @@ export class ReportesOperacionController {
     const csv = await this.reportes.csvViajes(
       this.reportes.rango(r.desde, r.hasta),
       operadorDe(u, req.ip),
+      { categoria: r.categoria, zonaId: r.zonaId },
     );
     res.setHeader('content-type', 'text/csv; charset=utf-8');
     res.setHeader('content-disposition', 'attachment; filename="viajes.csv"');
@@ -69,6 +92,7 @@ export class ReportesOperacionController {
     const csv = await this.reportes.csvTiempos(
       this.reportes.rango(r.desde, r.hasta),
       operadorDe(u, req.ip),
+      { categoria: r.categoria, zonaId: r.zonaId },
     );
     res.setHeader('content-type', 'text/csv; charset=utf-8');
     res.setHeader('content-disposition', 'attachment; filename="tiempos-por-dia.csv"');

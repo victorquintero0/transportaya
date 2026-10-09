@@ -65,7 +65,7 @@ Mientras está **habilitado**, el conductor tiene además un **estado operativo*
 | CON-27 | Al finalizar en efectivo: valor a cobrar en grande y confirmación del valor recibido | MVP |
 | CON-28 | Calificar al pasajero | MVP |
 | CON-29 | Botón **SOS** | MVP |
-| CON-30 | Tablero de reservas programadas: ver, tomar y confirmar | F2 |
+| CON-30 | Tablero de reservas programadas: ver (el destino solo como zona, D-11), tomar, confirmar y soltar; pestaña **Reservas** | MVP · hecho |
 | CON-31 | Activar viajes intermunicipales/nacionales y de categoría inferior | MVP |
 | **Ganancias** | | |
 | CON-40 | Ganancias del día y de la semana; detalle por viaje (tarifa, comisión, propina, peajes) | MVP |
@@ -168,5 +168,7 @@ Al reconectar o volver a la app, esta recupera su oferta y su viaje desde el ser
 
 **Gamificación.** Solo refuerzos positivos y personales (meta del día que el propio conductor fija, logros, racha). No hay rankings ni castigos por rechazar ofertas, para no crear una relación de subordinación (R-02, RN-035).
 
-**Pendiente.** Mapa propio (D-27), proveedor real de OTP, notificaciones *push*, pago por Wompi / Bre-B reales, y la prueba del ADR-0003 en celulares Android reales (la pantalla encendida y la ubicación en segundo plano siguen siendo el riesgo R-03).
+> **Datos personales.** El último paso del registro pide aceptar la política de tratamiento de datos; en Perfil, «Mis datos y privacidad» permite leerla, descargar los datos y pedir corregirlos o borrarlos ([doc 15](15-observabilidad-y-privacidad.md)).
+
+**Pendiente.** Proveedor de mapas definitivo y rutas por calles (D-27; el mapa de calles ya está, ADR-0009), proveedor real de OTP, notificaciones *push*, pago por Wompi / Bre-B reales, y la prueba del ADR-0003 en celulares Android reales (la pantalla encendida y la ubicación en segundo plano siguen siendo el riesgo R-03).
 

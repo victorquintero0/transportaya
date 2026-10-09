@@ -1,7 +1,8 @@
-import { api, mensajeDe as mensajeError, pesos } from '@transportaya/ui';
+import { api, mensajeDe as mensajeError, pesos, type Punto } from '@transportaya/ui';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Encabezado } from '../componentes/Layout.tsx';
+import { MapaZonas } from '../componentes/MapaZonas.tsx';
 import {
   AccionMotivo,
   Boton,
@@ -21,13 +22,14 @@ import { fechaCorta, fechaHora, soloHora } from '../lib/fechas.ts';
 import type {
   DinamicaFila,
   Pagina,
+  Peaje,
   RutaFija,
   SimulacionTarifa,
   VersionTarifa,
   Zona,
 } from '../lib/tipos.ts';
 
-type Pestana = 'versiones' | 'simulador' | 'festivos' | 'rutas' | 'zonas' | 'dinamica';
+type Pestana = 'versiones' | 'simulador' | 'festivos' | 'rutas' | 'zonas' | 'peajes' | 'dinamica';
 
 const NOMBRES_RECARGO: Record<string, string> = {
   nocturno: 'Nocturno',
@@ -657,67 +659,94 @@ function Rutas() {
 function Zonas() {
   const puedeEditar = usePermiso('tarifas.editar');
   const ejecutar = useEjecutar();
-  const [f, setF] = useState({ nombre: '', tipo: 'punto_encuentro', puntos: '' });
+  const [nombre, setNombre] = useState('');
+  const [tipo, setTipo] = useState('punto_encuentro');
+  const [dibujo, setDibujo] = useState<Punto[]>([]);
   const { data } = useQuery({
     queryKey: ['zonas'],
     queryFn: () => api.get<Zona[]>('/v1/op/zonas'),
   });
-  // Una línea por vértice: "lat, lng". El mapa de dibujo llega con el mapa propio (ADR-0002).
-  const anillo = f.puntos
-    .split('\n')
-    .map((l) => l.split(',').map((x) => Number(x.trim())))
-    .filter((p) => p.length === 2 && p.every(Number.isFinite))
-    .map(([lat, lng]) => [lng, lat] as [number, number]);
+  // El servidor espera el anillo como [longitud, latitud].
+  const anillo = dibujo.map((p) => [p.lng, p.lat] as [number, number]);
+  const limpiar = () => {
+    setDibujo([]);
+    setNombre('');
+  };
   return (
     <div className="space-y-4">
-      {puedeEditar && (
-        <AccionMotivo
-          id="nueva-zona"
-          etiqueta="Nueva zona"
-          icono="mas"
-          tamano="md"
-          variante="primario"
-          titulo="Nueva zona"
-          valido={f.nombre.trim().length >= 3 && anillo.length >= 3}
-          descripcion="Escribe los vértices del polígono, uno por línea, como «latitud, longitud»."
-          extra={
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Campo etiqueta="Nombre">
-                  <Entrada
-                    value={f.nombre}
-                    onChange={(e) => setF({ ...f, nombre: e.target.value })}
-                  />
-                </Campo>
-                <Campo etiqueta="Tipo">
-                  <Selector value={f.tipo} onChange={(e) => setF({ ...f, tipo: e.target.value })}>
-                    {Object.entries(TIPO_ZONA).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {v}
-                      </option>
-                    ))}
-                  </Selector>
-                </Campo>
-              </div>
-              <Campo etiqueta={`Vértices (${anillo.length})`}>
-                <textarea
-                  rows={5}
-                  className="w-full rounded-lg border border-borde bg-fondo p-3 font-mono text-xs"
-                  placeholder={'5.0689, -75.5174\n5.0700, -75.5100\n5.0650, -75.5100'}
-                  value={f.puntos}
-                  onChange={(e) => setF({ ...f, puntos: e.target.value })}
-                />
-              </Campo>
-            </div>
-          }
-          alConfirmar={(motivo) =>
-            ejecutar(
-              () => api.post('/v1/op/zonas', { nombre: f.nombre, tipo: f.tipo, anillo, motivo }),
-              { invalidar: ['zonas'], exito: 'Zona creada' },
-            )
-          }
+      <Panel
+        titulo={puedeEditar ? 'Dibujar una zona' : 'Mapa de zonas'}
+        acciones={
+          puedeEditar && (
+            <span className="text-xs text-suave" id="conteo-vertices">
+              {dibujo.length} vértices
+            </span>
+          )
+        }
+      >
+        <MapaZonas
+          className="h-[380px]"
+          zonas={data ?? []}
+          dibujo={dibujo}
+          editable={puedeEditar}
+          alAgregar={(p) => setDibujo((d) => [...d, p])}
         />
-      )}
+        {puedeEditar && (
+          <div className="mt-3 flex flex-wrap items-end gap-3">
+            <Campo etiqueta="Nombre">
+              <Entrada
+                id="zona-nombre"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                placeholder="Aeropuerto La Nubia"
+              />
+            </Campo>
+            <Campo etiqueta="Tipo">
+              <Selector value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                {Object.entries(TIPO_ZONA).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </Selector>
+            </Campo>
+            <Boton
+              id="deshacer-vertice"
+              tamano="sm"
+              deshabilitado={dibujo.length === 0}
+              onClick={() => setDibujo((d) => d.slice(0, -1))}
+            >
+              Deshacer
+            </Boton>
+            <Boton
+              id="limpiar-dibujo"
+              tamano="sm"
+              deshabilitado={dibujo.length === 0}
+              onClick={limpiar}
+            >
+              Borrar dibujo
+            </Boton>
+            <div className="ml-auto">
+              <AccionMotivo
+                id="guardar-zona"
+                etiqueta="Guardar zona"
+                icono="ok"
+                tamano="md"
+                variante="primario"
+                titulo="Guardar la zona"
+                valido={nombre.trim().length >= 3 && anillo.length >= 3}
+                descripcion={`Se creará «${nombre.trim()}» con ${anillo.length} vértices. Rige de inmediato.`}
+                alConfirmar={(motivo) =>
+                  ejecutar(
+                    () => api.post('/v1/op/zonas', { nombre: nombre.trim(), tipo, anillo, motivo }),
+                    { invalidar: ['zonas'], exito: 'Zona creada' },
+                  ).then(limpiar)
+                }
+              />
+            </div>
+          </div>
+        )}
+      </Panel>
       <Panel sinRelleno titulo={`${data?.length ?? 0} zonas`}>
         <Tabla
           id="tabla-zonas"
@@ -755,6 +784,174 @@ function Zonas() {
                       )
                     }
                   />
+                ),
+            },
+          ]}
+        />
+      </Panel>
+    </div>
+  );
+}
+
+function Peajes() {
+  const puedeEditar = usePermiso('tarifas.editar');
+  const ejecutar = useEjecutar();
+  const vacio = { nombre: '', lat: '', lng: '', valor: '', fuente: '' };
+  const [f, setF] = useState(vacio);
+  const [nuevoValor, setNuevoValor] = useState('');
+  const { data } = useQuery({
+    queryKey: ['peajes'],
+    queryFn: () => api.get<Peaje[]>('/v1/op/peajes'),
+  });
+  const lat = Number(f.lat.replace(',', '.'));
+  const lng = Number(f.lng.replace(',', '.'));
+  const valor = Number(f.valor.replace(/[.\s]/g, ''));
+  const valido =
+    f.nombre.trim().length >= 2 &&
+    Number.isFinite(lat) &&
+    f.lat !== '' &&
+    Number.isFinite(lng) &&
+    f.lng !== '' &&
+    Number.isInteger(valor) &&
+    valor > 0;
+  return (
+    <div className="space-y-4">
+      <p className="rounded-lg border border-borde bg-superficie p-3 text-sm text-suave">
+        Cuando el recorrido que mide el servidor pasa cerca de un peaje activo, su valor se suma al
+        precio del viaje. No suma a la comisión. Las rutas con tarifa fija no los suman: su tarifa
+        ya los incluye.
+      </p>
+      {puedeEditar && (
+        <AccionMotivo
+          id="nuevo-peaje"
+          etiqueta="Nuevo peaje"
+          icono="mas"
+          tamano="md"
+          variante="primario"
+          titulo="Nuevo peaje"
+          valido={valido}
+          descripcion="Pon las coordenadas del punto del peaje y lo que paga un automóvil (categoría I)."
+          extra={
+            <div className="grid grid-cols-2 gap-3">
+              <Campo etiqueta="Nombre" className="col-span-2">
+                <Entrada
+                  value={f.nombre}
+                  onChange={(e) => setF({ ...f, nombre: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Latitud">
+                <Entrada
+                  value={f.lat}
+                  placeholder="5.0689"
+                  onChange={(e) => setF({ ...f, lat: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Longitud">
+                <Entrada
+                  value={f.lng}
+                  placeholder="-75.5174"
+                  onChange={(e) => setF({ ...f, lng: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Valor (COP)">
+                <Entrada
+                  value={f.valor}
+                  inputMode="numeric"
+                  onChange={(e) => setF({ ...f, valor: e.target.value })}
+                />
+              </Campo>
+              <Campo etiqueta="Fuente (opcional)">
+                <Entrada
+                  value={f.fuente}
+                  placeholder="Resolución INVIAS 2026"
+                  onChange={(e) => setF({ ...f, fuente: e.target.value })}
+                />
+              </Campo>
+            </div>
+          }
+          alConfirmar={(motivo) =>
+            ejecutar(
+              () =>
+                api.post('/v1/op/peajes', {
+                  nombre: f.nombre.trim(),
+                  lat,
+                  lng,
+                  valor,
+                  ...(f.fuente.trim() ? { fuente: f.fuente.trim() } : {}),
+                  motivo,
+                }),
+              { invalidar: ['peajes'], exito: 'Peaje creado' },
+            ).then(() => setF(vacio))
+          }
+        />
+      )}
+      <Panel sinRelleno titulo={`${data?.length ?? 0} peajes`}>
+        <Tabla<Peaje>
+          id="tabla-peajes"
+          filas={data ?? []}
+          clave={(p) => p.id}
+          vacio="Todavía no hay peajes. Mientras no haya, los viajes no suman ninguno."
+          columnas={[
+            { titulo: 'Peaje', celda: (p) => <b>{p.nombre}</b> },
+            { titulo: 'Valor', alinear: 'der', celda: (p) => pesos(p.valor) },
+            {
+              titulo: 'Ubicación',
+              celda: (p) => (
+                <span className="numeros text-xs text-suave">
+                  {p.lat.toFixed(5)}, {p.lng.toFixed(5)}
+                </span>
+              ),
+            },
+            { titulo: 'Fuente', celda: (p) => p.fuente ?? '—' },
+            {
+              titulo: 'Estado',
+              celda: (p) => (
+                <Insignia tono={p.activo ? 'ok' : 'neutro'}>
+                  {p.activo ? 'Activo' : 'Inactivo'}
+                </Insignia>
+              ),
+            },
+            {
+              titulo: '',
+              alinear: 'der',
+              celda: (p) =>
+                puedeEditar && (
+                  <div className="flex justify-end gap-1.5">
+                    <AccionMotivo
+                      etiqueta="Cambiar valor"
+                      titulo={`Valor de ${p.nombre}`}
+                      valido={Number.isInteger(Number(nuevoValor)) && Number(nuevoValor) > 0}
+                      extra={
+                        <Campo etiqueta="Valor nuevo (COP)">
+                          <Entrada
+                            inputMode="numeric"
+                            value={nuevoValor}
+                            onChange={(e) => setNuevoValor(e.target.value)}
+                          />
+                        </Campo>
+                      }
+                      alConfirmar={(motivo) =>
+                        ejecutar(
+                          () =>
+                            api.patch(`/v1/op/peajes/${p.id}`, {
+                              valor: Number(nuevoValor),
+                              motivo,
+                            }),
+                          { invalidar: ['peajes'], exito: 'Peaje actualizado' },
+                        )
+                      }
+                    />
+                    <AccionMotivo
+                      etiqueta={p.activo ? 'Desactivar' : 'Activar'}
+                      titulo={`${p.activo ? 'Desactivar' : 'Activar'} ${p.nombre}`}
+                      alConfirmar={(motivo) =>
+                        ejecutar(
+                          () => api.patch(`/v1/op/peajes/${p.id}`, { activo: !p.activo, motivo }),
+                          { invalidar: ['peajes'], exito: 'Peaje actualizado' },
+                        )
+                      }
+                    />
+                  </div>
                 ),
             },
           ]}
@@ -922,7 +1119,7 @@ export function Tarifas() {
     <>
       <Encabezado
         titulo="Tarifas, zonas y dinámica"
-        subtitulo="Versiones de tarifa, recargos, festivos, rutas fijas, zonas y dinámica manual"
+        subtitulo="Versiones de tarifa, recargos, festivos, rutas fijas, zonas, peajes y dinámica manual"
       />
       <div className="space-y-4 p-6">
         <Pestanas
@@ -934,6 +1131,7 @@ export function Tarifas() {
             { id: 'festivos', titulo: 'Festivos' },
             { id: 'rutas', titulo: 'Rutas fijas' },
             { id: 'zonas', titulo: 'Zonas' },
+            { id: 'peajes', titulo: 'Peajes' },
             { id: 'dinamica', titulo: 'Dinámica' },
           ]}
         />
@@ -942,6 +1140,7 @@ export function Tarifas() {
         {pestana === 'festivos' && <Festivos />}
         {pestana === 'rutas' && <Rutas />}
         {pestana === 'zonas' && <Zonas />}
+        {pestana === 'peajes' && <Peajes />}
         {pestana === 'dinamica' && <Dinamica />}
       </div>
     </>

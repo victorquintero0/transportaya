@@ -15,11 +15,11 @@ describe.skipIf(!hayBase)('App Operación: ingreso con segundo factor y permisos
     await api.cerrar();
   });
 
-  it('crea una cuenta de demostración por rol y deja ingresar con el código', async () => {
+  it('crea una cuenta de demostración por rol (y la del administrador de la empresa de demostración) y deja ingresar con el código', async () => {
     const demo = await api.get('/v1/op/auth/demo');
     expect(demo.estado).toBe(200);
     expect(demo.cuerpo.cuentas.map((c: any) => c.rol).sort()).toEqual(
-      ['admin', 'cumplimiento', 'financiero', 'monitor', 'soporte', 'supervisor'].sort(),
+      ['admin', 'cumplimiento', 'empresa', 'financiero', 'monitor', 'soporte', 'supervisor'].sort(),
     );
     const s = await api.ingresarOperacion('monitor');
     const yo = await api.get('/v1/op/yo', s.accessToken);

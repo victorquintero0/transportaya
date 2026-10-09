@@ -37,6 +37,14 @@ export async function entrarConOtp(telefono: string, app: 'conductor' | 'pasajer
 }
 
 let placas = 0;
+const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const letra = () => LETRAS[Math.floor(Math.random() * LETRAS.length)]!;
+/** Tres letras de la placa. Cada archivo de pruebas usa la suya para no chocar con los demás en la misma base. */
+let serie = `T${letra()}${letra()}`;
+export function serieDePlacas(nueva: string): void {
+  serie = nueva;
+  placas = 0;
+}
 
 /** Un conductor con registro completo. Con `aprobar` queda habilitado; si no, queda "en revisión" para que lo apruebe cumplimiento. */
 export async function crearConductor(
@@ -54,7 +62,7 @@ export async function crearConductor(
     'POST',
     '/v1/conductor/vehiculos',
     {
-      placa: `TYE${String(100 + placas)}`,
+      placa: `${serie}${String(100 + placas)}`,
       color: 'Blanco',
       modeloAnio: 2022,
       catalogoVehiculoId: onix.id,
@@ -81,6 +89,8 @@ export async function crearConductor(
   for (const t of ['soat', 'revision_tecnicomecanica', 'seguro_todo_riesgo'])
     await subir(t, { vehiculoId: vehiculo.id, venceEn: lejos });
   await llamar('PUT', '/v1/conductor/cuenta-pago', { tipo: 'llave_bre_b', valor: telefono }, token);
+  const { version } = await llamar<{ version: string }>('GET', '/v1/politica-datos');
+  await llamar('POST', '/v1/conductor/terminos', { version }, token);
   await llamar('POST', '/v1/conductor/enviar-revision', undefined, token);
   if (o.aprobar) await llamar('POST', '/v1/dev/conductor/aprobar', undefined, token);
   return { token, id };
@@ -111,13 +121,14 @@ export async function pedirViajeDeMentira(
 }
 
 /** El conductor acepta la oferta que le llegó y hace el viaje de principio a fin. */
+// Si hay otros conductores cerca (los de prueba de otros tests), la oferta les llega primero y pasa a este tras su tiempo de espera.
 export async function completarViaje(
   token: string,
   viaje: { viajeId: string; pin: string },
   distanciaM = 4500,
 ) {
   let oferta: any = null;
-  for (let i = 0; i < 30 && !oferta; i++) {
+  for (let i = 0; i < 120 && !oferta; i++) {
     oferta = (await llamar('GET', '/v1/conductor/oferta-actual', undefined, token)).oferta;
     if (!oferta) await new Promise((r) => setTimeout(r, 500));
   }
@@ -141,6 +152,36 @@ export async function completarViaje(
     'POST',
     `/v1/conductor/viajes/${viaje.viajeId}/finalizar`,
     { distanciaM, tiempoDetenidoS: 0, duracionS: 20 },
+    token,
+  );
+}
+
+/** Un pasajero con su perfil y términos listos (para armar escenarios sin pasar por las pantallas). */
+export async function crearPasajero(telefono: string, nombre = 'Valentina Ríos') {
+  const { token, id } = await entrarConOtp(telefono, 'pasajero');
+  await llamar('PATCH', '/v1/pasajero/yo', { nombre }, token);
+  const { version } = await llamar<{ version: string }>('GET', '/v1/politica-datos');
+  await llamar('POST', '/v1/pasajero/terminos', { version }, token);
+  return { token, id };
+}
+
+/** El pasajero deja una reserva para dentro de `minutos` (Palogrande → Hospital de Caldas). */
+export async function reservarDeMentira(token: string, minutos = 180) {
+  const cot = await llamar<{ opciones: { id: string; categoria: string }[] }>(
+    'POST',
+    '/v1/pasajero/cotizaciones',
+    {
+      origen: { lat: 5.0548, lng: -75.4945, direccion: 'Cra 23 # 62-30, Palogrande' },
+      destino: { lat: 5.0689, lng: -75.5174, direccion: 'Hospital de Caldas' },
+      programadoPara: new Date(Date.now() + minutos * 60_000).toISOString(),
+    },
+    token,
+  );
+  const opcion = cot.opciones.find((o) => o.categoria === 'media') ?? cot.opciones[0]!;
+  return llamar<{ id: string; codigo: string }>(
+    'POST',
+    '/v1/pasajero/viajes',
+    { cotizacionId: opcion.id, metodoPago: 'efectivo' },
     token,
   );
 }

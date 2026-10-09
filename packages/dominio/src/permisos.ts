@@ -2,7 +2,7 @@
  * Permisos de la App Operación por rol interno (docs/02, matriz de permisos). Es la única fuente: la API los exige y la
  * app los usa para mostrar solo lo que cada persona puede hacer.
  */
-export const ROLES_INTERNOS = [
+export const ROLES_PERSONAL = [
   'monitor',
   'soporte',
   'cumplimiento',
@@ -10,6 +10,12 @@ export const ROLES_INTERNOS = [
   'supervisor',
   'admin',
 ] as const;
+/**
+ * Además del personal de TransporteYa hay un rol externo y limitado, el del administrador de una empresa cliente: solo
+ * ve y gestiona los datos de su propia empresa (D-09, RN-101). No cuenta como personal: no se asigna desde Usuarios.
+ */
+export const ROL_EMPRESA = 'empresa';
+export const ROLES_INTERNOS = [...ROLES_PERSONAL, ROL_EMPRESA] as const;
 export type RolInterno = (typeof ROLES_INTERNOS)[number];
 
 export const ETIQUETA_ROL: Record<RolInterno, string> = {
@@ -19,9 +25,11 @@ export const ETIQUETA_ROL: Record<RolInterno, string> = {
   financiero: 'Financiero',
   supervisor: 'Supervisor',
   admin: 'Administrador',
+  empresa: 'Administrador de empresa',
 };
 
-const TODOS = ROLES_INTERNOS;
+/** Todo el personal de TransporteYa (no el administrador externo de una empresa). */
+const TODOS = ROLES_PERSONAL;
 
 export const PERMISOS = {
   /** Ver la torre de control y las alertas. */
@@ -56,6 +64,22 @@ export const PERMISOS = {
   'usuarios.gestionar': ['admin'],
   'config.ver': ['supervisor', 'admin'],
   'config.editar': ['admin'],
+  /** Catálogo de vehículos y su clasificación en Media, Media Alta y Alta (D-21). */
+  'catalogo.ver': ['monitor', 'soporte', 'cumplimiento', 'supervisor', 'admin'],
+  'catalogo.editar': ['cumplimiento', 'supervisor', 'admin'],
+  /** Solicitudes de las personas sobre sus datos personales (Ley 1581). */
+  'privacidad.ver': ['soporte', 'supervisor', 'admin'],
+  'privacidad.responder': ['soporte', 'supervisor', 'admin'],
+  /** Aceptar borrar datos o revocar la autorización: anonimiza la cuenta. */
+  'privacidad.suprimir': ['supervisor', 'admin'],
+  /** Pantalla «Sistema»: salud, tareas programadas y tráfico de la API. */
+  'sistema.ver': ['supervisor', 'admin'],
+  /** Empresas clientes: contrato, empleados, políticas, consumo y estados de cuenta (OPE-10). */
+  'corporativo.ver': ['soporte', 'financiero', 'supervisor', 'admin'],
+  /** Crear empresas, pactar el contrato, suspender, generar estados de cuenta y registrar sus pagos. */
+  'corporativo.gestionar': ['financiero', 'supervisor', 'admin'],
+  /** El portal «Mi empresa» del administrador corporativo (solo ve su empresa). */
+  'empresa.portal': ['empresa'],
 } as const satisfies Record<string, readonly RolInterno[]>;
 
 export type Permiso = keyof typeof PERMISOS;

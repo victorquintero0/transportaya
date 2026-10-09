@@ -132,7 +132,7 @@ export interface Arnes {
   /** Lleva a un conductor por todo el registro real, hasta quedar habilitado. */
   crearConductorHabilitado(
     telefono: string,
-    opciones?: { nombre?: string; sinAprobar?: boolean },
+    opciones?: { nombre?: string; sinAprobar?: boolean; sinTerminos?: boolean },
   ): Promise<ConductorListo>;
   /** Pide el OTP, inicia sesión y devuelve los tokens. */
   iniciarSesion(
@@ -368,15 +368,23 @@ export async function levantarApi(
         ),
         'cuenta',
       );
-      ok(await arnes.post('/v1/conductor/enviar-revision', undefined, token), 'revisión');
-      if (!opciones.sinAprobar)
-        ok(await arnes.post('/v1/dev/conductor/aprobar', undefined, token), 'aprobación');
-      return {
+      const resultado = {
         accessToken: token,
         refreshToken: s.refreshToken,
         usuarioId: s.usuarioId,
         vehiculoId: vehiculo.id,
       };
+      // Registro completo, pero sin aceptar la política de datos: todavía no se puede enviar a revisión.
+      if (opciones.sinTerminos) return resultado;
+      const politica = await arnes.get('/v1/politica-datos');
+      ok(
+        await arnes.post('/v1/conductor/terminos', { version: politica.cuerpo.version }, token),
+        'términos',
+      );
+      ok(await arnes.post('/v1/conductor/enviar-revision', undefined, token), 'revisión');
+      if (!opciones.sinAprobar)
+        ok(await arnes.post('/v1/dev/conductor/aprobar', undefined, token), 'aprobación');
+      return resultado;
     },
     async ingresarOperacion(rol) {
       // Un código TOTP solo sirve una vez: se reutiliza la sesión de ese rol dentro de la misma API.

@@ -3,6 +3,7 @@ export * from './schema/enums.js';
 export * from './schema/identidad.js';
 export * from './schema/catalogos.js';
 export * from './schema/conductores.js';
+export * from './schema/corporativo.js';
 export * from './schema/viajes.js';
 export * from './schema/soporte.js';
 export * from './schema/dinero.js';

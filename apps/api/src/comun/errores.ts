@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
+import { contextoActual } from '../observabilidad/contexto.js';
 
 /** Error de negocio con un código estable que las apps pueden interpretar (docs/10). */
 export class ErrorNegocio extends HttpException {
@@ -90,6 +91,7 @@ export class FiltroProblemas implements ExceptionFilter {
       status: 500,
       codigo: 'ERROR_INTERNO',
       detail: 'Intenta de nuevo en unos segundos',
+      idSolicitud: contextoActual()?.id,
     });
   }
 }

@@ -188,7 +188,17 @@ export class SoporteOperacionService {
         .select({ id: pago.id, monto: pago.monto, estado: pago.estado, tipo: pago.tipo })
         .from(pago)
         .where(eq(pago.viajeId, t.t.viajeId));
-      if (p && p.tipo === 'electronico' && ['pagado', 'reembolsado_parcial'].includes(p.estado)) {
+      const [vj] = await this.bd.db
+        .select({ m: viaje.metodoPago })
+        .from(viaje)
+        .where(eq(viaje.id, t.t.viajeId));
+      // Lo que cobra la empresa no se reembolsa a una tarjeta: se corrige en su estado de cuenta.
+      if (
+        p &&
+        vj?.m !== 'corporativo' &&
+        p.tipo === 'electronico' &&
+        ['pagado', 'reembolsado_parcial'].includes(p.estado)
+      ) {
         const [r] = await this.bd.db
           .select({ s: sql<number>`coalesce(sum(${reembolso.monto}), 0)::int` })
           .from(reembolso)
@@ -360,6 +370,15 @@ export class SoporteOperacionService {
         `Tu límite de reembolso es $${limite.toLocaleString('es-CO')}. Pásalo a finanzas o a un supervisor.`,
       );
     return this.bd.db.transaction(async (tx) => {
+      const [vj] = await tx
+        .select({ m: viaje.metodoPago })
+        .from(viaje)
+        .where(eq(viaje.id, t.viajeId!));
+      if (vj?.m === 'corporativo')
+        throw conflicto(
+          'VIAJE_CORPORATIVO',
+          'Ese viaje se cobra a la empresa: la corrección va en su estado de cuenta, no en un reembolso.',
+        );
       const [p] = await tx.select().from(pago).where(eq(pago.viajeId, t.viajeId!)).for('update');
       if (!p || p.tipo !== 'electronico' || !['pagado', 'reembolsado_parcial'].includes(p.estado))
         throw conflicto(

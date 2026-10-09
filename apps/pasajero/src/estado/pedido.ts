@@ -11,6 +11,11 @@ interface Pedido {
   opcionId: string | null;
   metodoPago: MetodoPago;
   nota: string;
+  /** Viaje corporativo (PAS-61): el centro de costo elegido y el motivo del viaje. */
+  centroCostoId: string | null;
+  motivo: string;
+  /** Si va a reservar para más tarde: la hora del servicio (ISO). `null` es «ahora». */
+  programadoPara: string | null;
   ponerOrigen: (p: PuntoDeViaje | null) => void;
   ponerDestino: (p: PuntoDeViaje | null) => void;
   ponerRuta: (r: Pedido['ruta']) => void;
@@ -18,6 +23,9 @@ interface Pedido {
   elegirOpcion: (id: string | null) => void;
   ponerMetodo: (m: MetodoPago) => void;
   ponerNota: (n: string) => void;
+  ponerCentroCosto: (id: string | null) => void;
+  ponerMotivo: (m: string) => void;
+  ponerProgramado: (iso: string | null) => void;
   /** Deja el destino y todo lo que dependía de él; conserva el origen. */
   limpiar: () => void;
 }
@@ -30,6 +38,9 @@ export const usePedido = create<Pedido>((set) => ({
   opcionId: null,
   metodoPago: 'efectivo',
   nota: '',
+  centroCostoId: null,
+  motivo: '',
+  programadoPara: null,
   ponerOrigen: (origen) => set({ origen, cotizacion: null, opcionId: null }),
   ponerDestino: (destino) => set({ destino, ruta: null, cotizacion: null, opcionId: null }),
   ponerRuta: (ruta) =>
@@ -50,5 +61,17 @@ export const usePedido = create<Pedido>((set) => ({
   elegirOpcion: (opcionId) => set({ opcionId }),
   ponerMetodo: (metodoPago) => set({ metodoPago }),
   ponerNota: (nota) => set({ nota }),
-  limpiar: () => set({ destino: null, ruta: null, cotizacion: null, opcionId: null, nota: '' }),
+  ponerCentroCosto: (centroCostoId) => set({ centroCostoId }),
+  ponerMotivo: (motivo) => set({ motivo }),
+  ponerProgramado: (programadoPara) => set({ programadoPara }),
+  limpiar: () =>
+    set({
+      destino: null,
+      ruta: null,
+      cotizacion: null,
+      opcionId: null,
+      nota: '',
+      motivo: '',
+      programadoPara: null,
+    }),
 }));

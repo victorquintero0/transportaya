@@ -33,3 +33,30 @@ describe('permisos de operación', () => {
     expect(p).not.toContain('tarifas.editar');
   });
 });
+
+describe('administrador de una empresa cliente', () => {
+  it('solo entra a su portal: no ve nada de la operación', () => {
+    expect(permisosDe(['empresa'])).toEqual(['empresa.portal']);
+    expect(tienePermiso(['empresa'], 'viajes.ver')).toBe(false);
+    expect(tienePermiso(['empresa'], 'corporativo.ver')).toBe(false);
+  });
+
+  it('el personal no tiene el portal de empresa', () => {
+    for (const r of [
+      'monitor',
+      'soporte',
+      'cumplimiento',
+      'financiero',
+      'supervisor',
+      'admin',
+    ] as const)
+      expect(tienePermiso([r], 'empresa.portal')).toBe(false);
+  });
+
+  it('corporativo: soporte consulta, finanzas gestiona', () => {
+    expect(tienePermiso(['soporte'], 'corporativo.ver')).toBe(true);
+    expect(tienePermiso(['soporte'], 'corporativo.gestionar')).toBe(false);
+    expect(tienePermiso(['financiero'], 'corporativo.gestionar')).toBe(true);
+    expect(tienePermiso(['monitor'], 'corporativo.ver')).toBe(false);
+  });
+});

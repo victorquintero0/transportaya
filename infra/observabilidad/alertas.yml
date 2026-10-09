@@ -1,0 +1,87 @@
+# Alertas de la plataforma (RNF-83). Cada una dice qué pasa y qué mirar primero.
+# Se conectan a un Alertmanager (correo, WhatsApp, lo que se use de guardia) cuando se defina el canal.
+groups:
+  - name: transportaya
+    rules:
+      - alert: ApiCaida
+        expr: up{job="transportaya-api"} == 0
+        for: 1m
+        labels: { severidad: critica }
+        annotations:
+          resumen: 'La API no responde'
+          que_mirar: 'Registro del servicio y /v1/listo. Si la base no responde, ver la base primero.'
+
+      - alert: ErroresDelServidor
+        expr: |
+          sum(rate(ty_http_solicitudes_total{estado=~"5.."}[5m]))
+            / clamp_min(sum(rate(ty_http_solicitudes_total[5m])), 0.001) > 0.05
+          and sum(rate(ty_http_solicitudes_total[5m])) > 0.1
+        for: 5m
+        labels: { severidad: critica }
+        annotations:
+          resumen: 'Más del 5 % de las solicitudes terminan en error del servidor'
+          que_mirar: 'Registros con nivel error y la ruta que más falla: sum by (ruta) (rate(ty_http_solicitudes_total{estado=~"5.."}[5m]))'
+
+      - alert: RespuestaLenta
+        expr: histogram_quantile(0.95, sum by (le) (rate(ty_http_duracion_segundos_bucket[5m]))) > 1
+        for: 10m
+        labels: { severidad: aviso }
+        annotations:
+          resumen: 'El p95 del tiempo de respuesta supera 1 s (RNF-01)'
+          que_mirar: 'Rutas más lentas, conexiones esperando en la base y uso de CPU.'
+
+      - alert: VigilanciaDeSenalAtrasada
+        expr: time() - ty_tarea_ultimo_exito_timestamp_segundos{tarea="vigilar_senal"} > 90
+        for: 2m
+        labels: { severidad: critica }
+        annotations:
+          resumen: 'No se está vigilando la señal de los conductores'
+          que_mirar: 'Sin esta tarea nadie pasa a «sin señal» y las alertas de viajes sin posición no salen.'
+
+      - alert: CierreDiarioAtrasado
+        expr: time() - ty_tarea_ultimo_exito_timestamp_segundos{tarea="cierre_diario"} > 26 * 3600
+        for: 10m
+        labels: { severidad: critica }
+        annotations:
+          resumen: 'El cierre diario no corrió bien en las últimas 26 horas'
+          que_mirar: 'Registro de la tarea cierre_diario. Se puede correr a mano desde Finanzas.'
+
+      - alert: VencimientosAtrasados
+        expr: time() - ty_tarea_ultimo_exito_timestamp_segundos{tarea="vencimientos"} > 26 * 3600
+        for: 10m
+        labels: { severidad: aviso }
+        annotations:
+          resumen: 'La revisión de documentos vencidos no corrió en las últimas 26 horas'
+          que_mirar: 'Registro de la tarea vencimientos.'
+
+      - alert: TareaFallando
+        expr: increase(ty_tarea_ejecuciones_total{resultado="error"}[15m]) > 0
+        labels: { severidad: aviso }
+        annotations:
+          resumen: 'La tarea {{ $labels.tarea }} falló en los últimos 15 minutos'
+          que_mirar: 'Línea con evento tarea_fallida en el registro.'
+
+      - alert: BaseDeDatosSaturada
+        expr: ty_bd_conexiones{estado="esperando"} > 0
+        for: 5m
+        labels: { severidad: aviso }
+        annotations:
+          resumen: 'Hay solicitudes esperando una conexión a la base'
+          que_mirar: 'Consultas lentas y tamaño del pool.'
+
+      - alert: ViajesSinConductoresDisponibles
+        expr: |
+          ty_viajes_activos{estado="buscando_conductor"} > 0
+          and on() (sum(ty_conductores{estado="disponible"}) or vector(0)) == 0
+        for: 3m
+        labels: { severidad: critica }
+        annotations:
+          resumen: 'Hay viajes buscando conductor y ningún conductor disponible'
+          que_mirar: 'Torre de control: despacho manual y llamar a los conductores en línea.'
+
+      - alert: ErroresEnLasApps
+        expr: increase(ty_cliente_errores_total[10m]) > 20
+        labels: { severidad: aviso }
+        annotations:
+          resumen: 'Las apps están reportando muchos errores ({{ $labels.app }})'
+          que_mirar: 'Líneas con evento error_de_app en el registro: ruta, versión y pila.'

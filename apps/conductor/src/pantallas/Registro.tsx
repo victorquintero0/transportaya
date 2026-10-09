@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef, useState } from 'react';
 import { Boton } from '@transportaya/ui';
 import { Chip } from '@transportaya/ui';
+import { Hoja, PoliticaDatosVista } from '@transportaya/ui';
 import { Icono } from '@transportaya/ui';
 import { Logo } from '@transportaya/ui';
 import { Tarjeta } from '@transportaya/ui';
@@ -693,6 +694,14 @@ function PasoRevision({ perfil, irA }: { perfil: Perfil; irA: (p: IdPaso) => voi
     onError: (e) => setError(mensajeDe(e)),
   });
   const faltantes = perfil.onboarding.pasos.filter((p) => p.id !== 'revision' && !p.completo);
+  const [acepto, setAcepto] = useState(perfil.terminos.aceptados);
+  const [politica, setPolitica] = useState(false);
+  const aceptar = useMutation({
+    mutationFn: () =>
+      api.post<Perfil>('/v1/conductor/terminos', { version: perfil.terminos.version }),
+    onSuccess: (p) => poner(p),
+    onError: (e) => setError(mensajeDe(e)),
+  });
 
   return (
     <div className="space-y-5">
@@ -726,16 +735,56 @@ function PasoRevision({ perfil, irA }: { perfil: Perfil; irA: (p: IdPaso) => voi
           apenas estés listo.
         </p>
       )}
+      <button
+        type="button"
+        onClick={() => setPolitica(true)}
+        className="min-h-11 text-left text-base font-extrabold text-ty underline-offset-4 hover:underline"
+      >
+        Leer la política de tratamiento de datos
+      </button>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={acepto}
+        id="acepto-terminos"
+        disabled={perfil.terminos.aceptados}
+        onClick={() => setAcepto((a) => !a)}
+        className="flex items-start gap-3 rounded-2xl border border-borde bg-superficie p-4 text-left"
+      >
+        <span
+          className={`mt-0.5 grid size-7 shrink-0 place-items-center rounded-lg border-2 ${acepto ? 'border-ty bg-ty text-sobre-ty' : 'border-borde'}`}
+        >
+          {acepto && <Icono nombre="ok" tamano={18} />}
+        </span>
+        <span className="font-bold">
+          Acepto la política de tratamiento de datos y autorizo el uso de mis datos y documentos
+          para verificar mi identidad y operar como conductor.
+        </span>
+      </button>
       <MensajeError texto={error} />
       <Boton
+        id="enviar-revision"
         tamano="grande"
         icono="rayo"
-        deshabilitado={!perfil.onboarding.puedeEnviarRevision}
-        cargando={enviar.isPending}
-        alPulsar={() => (setError(null), enviar.mutate())}
+        deshabilitado={faltantes.length > 0 || !acepto}
+        cargando={enviar.isPending || aceptar.isPending}
+        alPulsar={() => {
+          setError(null);
+          // La autorización se guarda primero; con ella el servidor deja enviar el registro a revisión.
+          if (!perfil.terminos.aceptados)
+            aceptar.mutate(undefined, { onSuccess: () => enviar.mutate() });
+          else enviar.mutate();
+        }}
       >
         Enviar a revisión
       </Boton>
+      <Hoja
+        abierta={politica}
+        alCerrar={() => setPolitica(false)}
+        titulo="Política de tratamiento de datos"
+      >
+        {politica && <PoliticaDatosVista />}
+      </Hoja>
     </div>
   );
 }

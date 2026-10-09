@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { crearConductor, crearPasajero, reservarDeMentira } from './ayudas-api.js';
 
 /** PNG de 1×1 píxel: el servidor valida el tipo real del archivo, no su extensión. */
 const PNG = Buffer.from(
@@ -27,6 +28,9 @@ function enUnAnio(): string {
 }
 
 test.beforeEach(async ({ context }) => {
+  // El mapa de calles sale a internet: aquí se corta para que la prueba use siempre el mapa esquemático (lo de los
+  // mapas reales se prueba en mapa.spec.ts), sin depender de la red ni de la tarjeta gráfica de quien corre la prueba.
+  await context.route('https://tiles.openfreemap.org/**', (r) => r.abort());
   await context.grantPermissions(['geolocation']);
   await context.addInitScript(() => {
     // GPS de mentira rápido, para que el viaje no tarde minutos de verdad.
@@ -105,6 +109,12 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.getByRole('button', { name: 'Guardar cuenta' }).click();
     await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible();
     await captura(page, 'registro-revision');
+    // sin autorizar el tratamiento de datos no se puede enviar
+    await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeDisabled();
+    await page.getByText('Leer la política de tratamiento de datos').click();
+    await expect(page.locator('[data-politica]')).toContainText('Quién es el responsable');
+    await page.mouse.click(10, 10); // toca fuera de la hoja para cerrarla
+    await page.locator('#acepto-terminos').click();
     await page.getByRole('button', { name: 'Enviar a revisión' }).click();
     await expect(page.getByText('¡Recibimos tu registro!')).toBeVisible();
     await captura(page, 'en-revision');
@@ -129,6 +139,8 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await captura(page, 'oferta');
     await page.locator('#aceptar-oferta').click();
     await expect(page.getByText('Rumbo al pasajero')).toBeVisible();
+    // el mapa del viaje está (de calles si hay internet; si no, el esquemático de respaldo)
+    await expect(page.getByRole('img', { name: /Mapa hacia/ })).toBeVisible();
     await captura(page, 'en-camino');
   });
 
@@ -140,6 +152,7 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.locator('#pin-demo').click();
     await page.locator('#boton-iniciar').click();
     await expect(page.locator('#boton-finalizar')).toBeVisible();
+    await expect(page.getByRole('img', { name: /Mapa hacia/ })).toBeVisible();
   });
 
   await test.step('el taxímetro mide distancia y paradas mientras maneja', async () => {
@@ -188,5 +201,59 @@ test('conductor nuevo: registro, viaje con taxímetro, cobro en efectivo y pago 
     await page.locator('#simular-pago').click();
     await expect(page.getByText('Estás al día ✓')).toBeVisible();
     await captura(page, 'ganancias-al-dia');
+  });
+
+  await test.step('ejerce sus derechos: descarga sus datos y pide corregir uno', async () => {
+    await page.getByRole('link', { name: 'Perfil' }).click();
+    const descarga = page.waitForEvent('download');
+    await page.locator('#descargar-datos').click();
+    expect((await descarga).suggestedFilename()).toBe('mis-datos-transporteya.json');
+    await page.locator('#nueva-solicitud').click();
+    await page.locator('[data-tipo="rectificacion"]').click();
+    await page.locator('#detalle-solicitud').fill('Mi segundo apellido está mal escrito');
+    await page.locator('#enviar-solicitud').click();
+    await expect(page.locator('#mis-solicitudes')).toContainText('Corregir mis datos');
+    await expect(page.locator('#mis-solicitudes')).toContainText('Recibida');
+    await captura(page, 'mis-datos-y-privacidad');
+  });
+});
+
+test('conductor: ve el tablero de reservas, toma una, la confirma y la suelta', async ({
+  page,
+}) => {
+  page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
+  const telefono = celularNuevo();
+  await crearConductor(telefono, { nombre: 'Andrés Salazar', aprobar: true });
+  const pasajero = await crearPasajero(celularNuevo(), 'Marta Giraldo');
+  const reserva = await reservarDeMentira(pasajero.token, 240);
+
+  await test.step('entra y abre Reservas', async () => {
+    await page.goto('/');
+    await page.getByLabel('Número de celular').fill(telefono);
+    await page.getByRole('button', { name: 'Recibir mi código' }).click();
+    await page.getByRole('button', { name: /Toca para usar el código/ }).click();
+    await page.getByRole('link', { name: 'Reservas' }).click();
+    await expect(page.locator(`[data-reserva="${reserva.codigo}"]`)).toBeVisible();
+    await captura(page, 'reservas-tablero');
+  });
+
+  await test.step('la toma y la confirma', async () => {
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    // el destino se muestra solo como zona (D-11)
+    await expect(page.locator('[data-reserva-detalle]')).toBeVisible();
+    await page.locator('#tomar-reserva').click();
+    await expect(page.getByText('Reserva tomada')).toBeVisible();
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    await page.locator('#confirmar-reserva').click();
+    await expect(page.getByText('Reserva confirmada')).toBeVisible();
+    await expect(page.locator(`[data-reserva="${reserva.codigo}"]`)).toContainText('Confirmada');
+    await captura(page, 'reservas-confirmada');
+  });
+
+  await test.step('la suelta y vuelve al tablero', async () => {
+    await page.locator(`[data-reserva="${reserva.codigo}"]`).click();
+    await page.locator('#soltar-reserva').click();
+    await expect(page.getByText('Soltaste la reserva')).toBeVisible();
+    await expect(page.locator('#sin-mias')).toBeVisible();
   });
 });
