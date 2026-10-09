@@ -1,4 +1,11 @@
-import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Locator,
+  type Page,
+} from '@playwright/test';
 import { llamar } from './ayudas-api.js';
 
 const OPERACION = 'http://localhost:5183';
@@ -12,6 +19,18 @@ const ESTILO_FALSO = {
   sources: {},
   layers: [{ id: 'fondo', type: 'background', paint: { 'background-color': '#dfe8d8' } }],
 };
+
+/**
+ * `toBeVisible` no basta: el lienzo puede tener tamaño y estar recortado por un contenedor de alto 0 (pasó cuando la hoja
+ * de MapLibre pisó `absolute` de Tailwind). Se comprueba que el contenedor del mapa ocupe todo su sitio.
+ */
+async function expectMapaConTamano(mapa: Locator) {
+  const caja = await mapa.boundingBox();
+  const real = await mapa.locator('[data-mapa-real]').boundingBox();
+  expect(real?.height ?? 0).toBeGreaterThan(200);
+  expect(real?.height ?? 0).toBeCloseTo(caja?.height ?? 0, -1);
+  expect(real?.width ?? 0).toBeCloseTo(caja?.width ?? 0, -1);
+}
 
 async function conEstiloFalso(context: BrowserContext) {
   await context.route('https://tiles.openfreemap.org/**', (r) =>
@@ -86,6 +105,7 @@ test('mapa: se ve el mapa de calles, cae al esquemático sin internet y el admin
     const mapa = op.getByRole('img', { name: 'Mapa de la operación' });
     await expect(mapa).toHaveAttribute('data-mapa', 'real', { timeout: 30_000 });
     await expect(mapa.locator('canvas.maplibregl-canvas')).toBeVisible();
+    await expectMapaConTamano(mapa);
     await op.waitForTimeout(500);
     await op.screenshot({ path: 'capturas/mapa-01-torre-real.png' });
   });
@@ -99,6 +119,7 @@ test('mapa: se ve el mapa de calles, cae al esquemático sin internet y el admin
     const mapa = p.getByRole('img', { name: 'Mapa del viaje' });
     await expect(mapa).toHaveAttribute('data-mapa', 'real', { timeout: 30_000 });
     await expect(mapa.locator('canvas.maplibregl-canvas')).toBeVisible();
+    await expectMapaConTamano(mapa);
     await p.waitForTimeout(500);
     await p.screenshot({ path: 'capturas/mapa-02-pasajero-real.png' });
     await ctx.close();

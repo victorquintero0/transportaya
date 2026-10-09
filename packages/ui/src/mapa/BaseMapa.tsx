@@ -296,8 +296,14 @@ export function BaseMapa({
   return (
     <div
       ref={contenedor}
-      className="absolute inset-0 bg-superficie-2"
-      style={usaRespaldoOscuro ? { filter: FILTRO_OSCURO } : undefined}
+      className="bg-superficie-2"
+      // En línea y no con clases: la hoja de MapLibre (`.maplibregl-map { position: relative }`) no está en una capa de
+      // CSS y le gana a las utilidades de Tailwind; el contenedor quedaba con alto 0 y el mapa recortado, invisible.
+      style={{
+        position: 'absolute',
+        inset: 0,
+        ...(usaRespaldoOscuro ? { filter: FILTRO_OSCURO } : null),
+      }}
       data-mapa-real
       aria-hidden="true"
     />
