@@ -712,7 +712,7 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
       });
       const dias = (
         await q(
-          sql`select (vence_en - emitido_en::date)::int as d from estado_cuenta where id = ${gen.cuerpo.id}`,
+          sql`select (vence_en - (emitido_en at time zone 'America/Bogota')::date)::int as d from estado_cuenta where id = ${gen.cuerpo.id}`,
         )
       )[0].d;
       expect(dias).toBe(15);
@@ -772,7 +772,7 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
       ).toBe(true);
       // pasa el vencimiento
       await api.bd.db.execute(
-        sql`update estado_cuenta set vence_en = current_date - 1 where id = ${gen.cuerpo.id}`,
+        sql`update estado_cuenta set vence_en = (now() at time zone 'America/Bogota')::date - 1 where id = ${gen.cuerpo.id}`,
       );
       const mia = (await api.get('/v1/pasajero/empresa', p.accessToken)).cuerpo.vinculo;
       expect(mia).toMatchObject({ perfilDisponible: false });
