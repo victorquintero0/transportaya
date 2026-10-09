@@ -1,4 +1,12 @@
-import { api, Icono, Logo, type NombreIcono, useSesion } from '@transportaya/ui';
+import {
+  api,
+  EntradaPagina,
+  Icono,
+  Logo,
+  type NombreIcono,
+  PantallaCargando,
+  useSesion,
+} from '@transportaya/ui';
 import { ETIQUETA_ROL, tienePermiso, type Permiso } from '@transportaya/dominio';
 import { useQueryClient } from '@tanstack/react-query';
 import { Suspense, useEffect } from 'react';
@@ -47,12 +55,7 @@ export function Layout() {
 
   useEffect(() => conectarOperacion(qc), [qc]);
 
-  if (!perfil)
-    return (
-      <main className="grid min-h-dvh place-items-center">
-        <div className="size-10 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      </main>
-    );
+  if (!perfil) return <PantallaCargando />;
 
   const permitidos = DESTINOS.filter((d) => tienePermiso(perfil.roles, d.permiso));
   // Una dirección escrita a mano a la que no se tiene permiso lleva a la primera pantalla propia.
@@ -147,7 +150,9 @@ export function Layout() {
       </aside>
       <main className="min-w-0 flex-1">
         <Suspense fallback={<Cargando />}>
-          <Outlet />
+          <EntradaPagina clave={pathname}>
+            <Outlet />
+          </EntradaPagina>
         </Suspense>
       </main>
       <Notificaciones />

@@ -113,6 +113,17 @@ flowchart LR
 - **Dado** que agregué una tarjeta, **cuando** termina el viaje, **entonces** se cobra el valor final y recibo el recibo por correo.
 - **Dado** que el cobro falla, **entonces** la app me muestra la deuda y no me permite pedir otro viaje hasta pagarla con otro método.
 
+## Marca y movimiento
+
+> **Implementado**, y común a las tres apps (componentes en `packages/ui`).
+
+- **Pantalla de arranque:** al abrir la app (una vez por sesión del navegador, es decir, cada vez que se abre la app instalada) el carro llega a toda velocidad, la burbuja del logo se arma a su alrededor, el carro pasa a ser la «ventana» del logo, aparece el nombre y el carro sale disparado por la derecha. Dura unos 2,7 s, se salta tocando la pantalla o con cualquier tecla, y va encima de la app, que ya está cargando por debajo. Con «reducir movimiento» activado en el sistema se ve el logo ya armado durante un instante y se va.
+- **Pantallas de ingreso:** el logo se arma (sin la salida del carro) y queda flotando suave.
+- **Carga:** donde antes había un círculo giratorio a pantalla completa, ahora el carro de la marca salta sobre la ruta con las líneas de velocidad (`CargandoCarro`, `PantallaCargando`). Los botones conservan su indicador pequeño.
+- **Cambio de pantalla:** cada pantalla aparece con un desvanecido corto (`EntradaPagina`). Es solo opacidad a propósito: un movimiento volvería relativos al contenedor los elementos fijos de la pantalla mientras dura.
+- **Cómo se ve o se prueba:** abrir cualquier app con `?splash` en la dirección fuerza la pantalla de arranque; el navegador automatizado de las pruebas no la muestra sola.
+- **Piezas:** el logo está dibujado en vectores (`marca/geometria.ts`, medido sobre el PNG) para animar la burbuja, el carro, las ruedas y las líneas por separado; los PNG siguen siendo el logo oficial estático.
+
 ## Consideraciones de la PWA
 
 - **Instalación:** invitar a instalar la app después del primer viaje completado, no al entrar.

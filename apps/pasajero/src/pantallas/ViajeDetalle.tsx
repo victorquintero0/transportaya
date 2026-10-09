@@ -3,6 +3,7 @@ import {
   Chip,
   Hoja,
   Icono,
+  PantallaCargando,
   api,
   avisar,
   duracion,
@@ -59,12 +60,7 @@ export function ViajeDetalle() {
     onError: (e) => avisar(mensajeDe(e), 'error'),
   });
 
-  if (!v)
-    return (
-      <div className="grid min-h-dvh place-items-center">
-        <div className="size-12 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      </div>
-    );
+  if (!v) return <PantallaCargando />;
   const estado = ESTADOS[v.estado] ?? { texto: v.estado, tono: 'neutro' as const };
   const c = v.conductor;
   const reserva = v.estado === 'programado';

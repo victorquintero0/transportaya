@@ -64,6 +64,11 @@ export default defineConfig({
       },
     },
     {
+      // Pantalla de arranque y logo animado de las tres apps.
+      name: 'marca',
+      testMatch: /marca\.spec\.ts/,
+    },
+    {
       // El mapa de calles usa WebGL: en el navegador sin pantalla se emula por software.
       name: 'mapa',
       testMatch: /mapa\.spec\.ts/,

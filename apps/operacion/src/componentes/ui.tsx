@@ -1,4 +1,9 @@
-import { Icono, mensajeDe as mensajeError, type NombreIcono } from '@transportaya/ui';
+import {
+  CargandoCarro,
+  Icono,
+  mensajeDe as mensajeError,
+  type NombreIcono,
+} from '@transportaya/ui';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 export type Tono = 'neutro' | 'ok' | 'aviso' | 'error' | 'info' | 'uva';
@@ -256,9 +261,8 @@ export function Vacio({ texto, icono = 'chispas' }: { texto: string; icono?: Nom
 
 export function Cargando({ texto = 'Cargando…' }: { texto?: string }) {
   return (
-    <div className="grid place-items-center gap-3 py-12 text-suave" role="status">
-      <span className="size-8 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      <span className="text-sm">{texto}</span>
+    <div className="grid place-items-center py-10">
+      <CargandoCarro tamano={96} texto={texto} />
     </div>
   );
 }

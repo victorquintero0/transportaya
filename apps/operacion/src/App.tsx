@@ -1,5 +1,5 @@
 import { tienePermiso } from '@transportaya/dominio';
-import { useSesion, useTemaDocumento } from '@transportaya/ui';
+import { Splash, useSesion, useTemaDocumento } from '@transportaya/ui';
 import { lazy } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DESTINOS, Layout } from './componentes/Layout.tsx';
@@ -75,34 +75,37 @@ export function App() {
   useTemaDocumento(useAjustes((s) => s.tema));
   const token = useSesion((s) => s.accessToken);
   return (
-    <Routes>
-      <Route path="/ingresar" element={token ? <Navigate to="/" replace /> : <Ingresar />} />
-      <Route element={<Protegida />}>
-        <Route index element={<Inicio />} />
-        <Route path="torre" element={<Torre />} />
-        <Route path="viajes" element={<Viajes />} />
-        <Route path="viajes/:id" element={<ViajeDetalle />} />
-        <Route path="reservas" element={<Reservas />} />
-        <Route path="empresas" element={<Empresas />} />
-        <Route path="empresas/:id" element={<EmpresaDetalle />} />
-        <Route path="mi-empresa" element={<MiEmpresa />} />
-        <Route path="conductores" element={<Conductores />} />
-        <Route path="conductores/:id" element={<ConductorFicha />} />
-        <Route path="pasajeros" element={<Pasajeros />} />
-        <Route path="pasajeros/:id" element={<PasajeroFicha />} />
-        <Route path="soporte" element={<Soporte />} />
-        <Route path="soporte/:id" element={<TicketDetalle />} />
-        <Route path="finanzas" element={<Finanzas />} />
-        <Route path="tarifas" element={<Tarifas />} />
-        <Route path="reportes" element={<Reportes />} />
-        <Route path="usuarios" element={<Usuarios />} />
-        <Route path="auditoria" element={<Auditoria />} />
-        <Route path="configuracion" element={<Configuracion />} />
-        <Route path="catalogo" element={<CatalogoVehiculos />} />
-        <Route path="privacidad" element={<Privacidad />} />
-        <Route path="sistema" element={<Sistema />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/ingresar" element={token ? <Navigate to="/" replace /> : <Ingresar />} />
+        <Route element={<Protegida />}>
+          <Route index element={<Inicio />} />
+          <Route path="torre" element={<Torre />} />
+          <Route path="viajes" element={<Viajes />} />
+          <Route path="viajes/:id" element={<ViajeDetalle />} />
+          <Route path="reservas" element={<Reservas />} />
+          <Route path="empresas" element={<Empresas />} />
+          <Route path="empresas/:id" element={<EmpresaDetalle />} />
+          <Route path="mi-empresa" element={<MiEmpresa />} />
+          <Route path="conductores" element={<Conductores />} />
+          <Route path="conductores/:id" element={<ConductorFicha />} />
+          <Route path="pasajeros" element={<Pasajeros />} />
+          <Route path="pasajeros/:id" element={<PasajeroFicha />} />
+          <Route path="soporte" element={<Soporte />} />
+          <Route path="soporte/:id" element={<TicketDetalle />} />
+          <Route path="finanzas" element={<Finanzas />} />
+          <Route path="tarifas" element={<Tarifas />} />
+          <Route path="reportes" element={<Reportes />} />
+          <Route path="usuarios" element={<Usuarios />} />
+          <Route path="auditoria" element={<Auditoria />} />
+          <Route path="configuracion" element={<Configuracion />} />
+          <Route path="catalogo" element={<CatalogoVehiculos />} />
+          <Route path="privacidad" element={<Privacidad />} />
+          <Route path="sistema" element={<Sistema />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Splash />
+    </>
   );
 }

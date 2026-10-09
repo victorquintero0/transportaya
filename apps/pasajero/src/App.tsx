@@ -1,4 +1,11 @@
-import { Avisos, useSesion, useTemaDocumento } from '@transportaya/ui';
+import {
+  Avisos,
+  EntradaPagina,
+  PantallaCargando,
+  Splash,
+  useSesion,
+  useTemaDocumento,
+} from '@transportaya/ui';
 import { useQueryClient } from '@tanstack/react-query';
 import { Boton, Hoja, Icono } from '@transportaya/ui';
 import { useEffect, useState } from 'react';
@@ -67,7 +74,9 @@ function Principal() {
 
   return (
     <>
-      <Outlet />
+      <EntradaPagina clave={pathname}>
+        <Outlet />
+      </EntradaPagina>
       {conBarra && <BarraInferior aviso={(perfil?.deuda ?? 0) > 0} />}
       <SinConductor abierta={sinConductor} />
     </>
@@ -114,12 +123,7 @@ function Protegida() {
   const token = useSesion((s) => s.accessToken);
   const { data: perfil, isLoading, isError } = usePerfil();
   if (!token) return <Navigate to="/entrar" replace />;
-  if (isLoading || isError || !perfil)
-    return (
-      <main className="grid min-h-dvh place-items-center">
-        <div className="size-12 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-      </main>
-    );
+  if (isLoading || isError || !perfil) return <PantallaCargando />;
   if (!perfil.terminos.aceptados || perfil.usuario.nombre.trim().length < 3)
     return <Bienvenida perfil={perfil} />;
   return <Principal />;
@@ -148,6 +152,7 @@ export function App() {
         </Route>
       </Routes>
       <Avisos />
+      <Splash />
     </>
   );
 }

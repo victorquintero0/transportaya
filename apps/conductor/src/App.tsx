@@ -2,9 +2,9 @@ import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'motion/react';
 import { useEffect } from 'react';
 import { useTemaDocumento } from '@transportaya/ui';
-import { Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { BarraInferior } from './componentes/BarraInferior.tsx';
-import { Avisos } from '@transportaya/ui';
+import { Avisos, EntradaPagina, PantallaCargando, Splash } from '@transportaya/ui';
 import { useAjustes } from './estado/ajustes.ts';
 import { useJornada } from './estado/jornada.ts';
 import { useSesion } from '@transportaya/ui';
@@ -27,6 +27,7 @@ function Jornada() {
   const oferta = useJornada((s) => s.oferta);
   const viaje = useJornada((s) => s.viaje);
   const resumen = useJornada((s) => s.resumen);
+  const { pathname } = useLocation();
 
   useEffect(() => iniciarMotor(qc), [qc]);
 
@@ -42,7 +43,9 @@ function Jornada() {
     );
   return (
     <>
-      <Outlet />
+      <EntradaPagina clave={pathname}>
+        <Outlet />
+      </EntradaPagina>
       <BarraInferior />
       <AnimatePresence>
         {oferta && <OfertaEntrante key={oferta.ofertaId} oferta={oferta} />}
@@ -55,18 +58,10 @@ function Protegida() {
   const token = useSesion((s) => s.accessToken);
   const { data: perfil, isLoading, isError } = usePerfil();
   if (!token) return <Navigate to="/entrar" replace />;
-  if (isLoading) return <Cargando />;
-  if (isError || !perfil) return <Cargando />;
+  if (isLoading) return <PantallaCargando />;
+  if (isError || !perfil) return <PantallaCargando />;
   if (perfil.conductor.estadoHabilitacion !== 'habilitado') return <Registro />;
   return <Jornada />;
-}
-
-function Cargando() {
-  return (
-    <main className="grid min-h-dvh place-items-center">
-      <div className="size-12 animate-spin rounded-full border-4 border-ty border-t-transparent" />
-    </main>
-  );
 }
 
 export function App() {
@@ -86,6 +81,7 @@ export function App() {
         </Route>
       </Routes>
       <Avisos />
+      <Splash />
     </>
   );
 }
