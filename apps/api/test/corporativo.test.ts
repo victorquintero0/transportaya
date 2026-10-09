@@ -394,11 +394,20 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
     });
 
     it('bloquea por día y horario de la hora del servicio (en hora de Bogotá)', async () => {
+      // La fecha de la prueba no puede depender del día en que se corra: el día bloqueado es el de la reserva que se pida.
+      const bogota = (dias: number, hora: string) => {
+        const base = new Date(Date.now() + dias * 86_400_000 - 5 * 3_600_000);
+        return { dia: base.getUTCDay(), iso: `${base.toISOString().slice(0, 10)}T${hora}-05:00` };
+      };
+      const bloqueado = bogota(2, '10:00:00');
+      const habil = bogota(3, '10:00:00');
+      const noche = bogota(3, '22:30:00');
+      expect(habil.dia).not.toBe(bloqueado.dia);
       const { p } = await conEmpleado(
         {},
         {
           nombre: 'Oficina',
-          dias: [1, 2, 3, 4, 5],
+          dias: [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== bloqueado.dia),
           desdeMin: 6 * 60,
           hastaMin: 20 * 60,
           montoMaximo: null,
@@ -407,21 +416,13 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
           motivoObligatorio: false,
         },
       );
-      // el primer sábado y el primer lunes que quedan dentro de la ventana de reservas
-      const bogota = (dias: number, hora: string) => {
-        const base = new Date(Date.now() + dias * 86_400_000 - 5 * 3_600_000);
-        return { dia: base.getUTCDay(), iso: `${base.toISOString().slice(0, 10)}T${hora}-05:00` };
-      };
-      const candidatos = [2, 3, 4, 5, 6].map((d) => ({ d, ...bogota(d, '10:00:00') }));
-      const sabado = candidatos.find((c) => c.dia === 6)!;
-      const habil = candidatos.find((c) => c.dia >= 1 && c.dia <= 5)!;
-      const enSabado = await cotizar(p, new Date(sabado.iso).toISOString());
-      expect(media(enSabado).corporativo).toMatchObject({
+      const enDiaBloqueado = await cotizar(p, new Date(bloqueado.iso).toISOString());
+      expect(media(enDiaBloqueado).corporativo).toMatchObject({
         permitido: false,
         codigo: 'POLITICA_DIA',
       });
-      const noche = await cotizar(p, new Date(bogota(habil.d, '22:30:00').iso).toISOString());
-      expect(media(noche).corporativo).toMatchObject({
+      const deNoche = await cotizar(p, new Date(noche.iso).toISOString());
+      expect(media(deNoche).corporativo).toMatchObject({
         permitido: false,
         codigo: 'POLITICA_HORARIO',
       });
