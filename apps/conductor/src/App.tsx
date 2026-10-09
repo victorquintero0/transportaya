@@ -4,7 +4,14 @@ import { useEffect } from 'react';
 import { useTemaDocumento } from '@transportaya/ui';
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { BarraInferior } from './componentes/BarraInferior.tsx';
-import { Avisos, EntradaPagina, PantallaCargando, Splash } from '@transportaya/ui';
+import {
+  AvisoSinConexion,
+  Avisos,
+  EntradaPagina,
+  PantallaCargando,
+  PantallaDiagnostico,
+  Splash,
+} from '@transportaya/ui';
 import { useAjustes } from './estado/ajustes.ts';
 import { useJornada } from './estado/jornada.ts';
 import { useSesion } from '@transportaya/ui';
@@ -70,7 +77,14 @@ export function App() {
   return (
     <>
       <Routes>
-        <Route path="/diagnostico" element={<PruebaPwa />} />
+        <Route
+          path="/diagnostico"
+          element={
+            <PantallaDiagnostico app="App Conductor">
+              <PruebaPwa />
+            </PantallaDiagnostico>
+          }
+        />
         <Route path="/entrar" element={token ? <Navigate to="/" replace /> : <Entrar />} />
         <Route element={<Protegida />}>
           <Route index element={<Inicio />} />
@@ -81,6 +95,7 @@ export function App() {
         </Route>
       </Routes>
       <Avisos />
+      <AvisoSinConexion />
       <Splash />
     </>
   );

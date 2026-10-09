@@ -126,12 +126,14 @@ flowchart LR
 
 ## Consideraciones de la PWA
 
-- **Instalación:** invitar a instalar la app después del primer viaje completado, no al entrar.
+- **Instalación:** la tarjeta «Instala TransporteYa en tu teléfono» (Cuenta) abre el cuadro de instalación en Android y explica los pasos en iPhone, donde Safari no permite instalar con un botón. Queda pendiente invitar también tras el primer viaje completado.
+- **Probar en un teléfono real:** [guía](16-pruebas-en-telefono.md) (`pnpm movil`).
 - **iOS:** las notificaciones push solo funcionan si la PWA está **instalada** en la pantalla de inicio
   (iOS 16.4 o superior). La app debe explicarlo y, sin push, apoyarse en la conexión en tiempo real
   mientras está abierta.
-- **Sin conexión:** la interfaz base, el historial y los lugares guardados se guardan en caché.
+- **Sin conexión:** la interfaz base se guarda en el teléfono (service worker): la app abre sin internet y una franja avisa «Sin conexión: reintentando…» y «Conexión recuperada». El historial y los lugares guardados salen del servidor, así que no se ven sin conexión (pendiente).
   Pedir un viaje exige conexión; si se pierde durante el viaje, la app se reconecta y recupera el estado.
+- **Diagnóstico:** `/diagnostico` muestra qué permite el teléfono (HTTPS, instalación, sin conexión, ubicación, pantalla encendida, vibración, sonido) y copia un informe.
 - **Ubicación:** pedir el permiso solo al momento de fijar el origen, explicando para qué se usa.
 - **Datos móviles:** mapas vectoriales en caché y actualizaciones de posición del conductor limitadas
   a lo necesario para no consumir el plan del usuario.

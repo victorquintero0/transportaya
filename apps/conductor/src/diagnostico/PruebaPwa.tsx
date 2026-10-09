@@ -1,3 +1,4 @@
+import { Boton, Tarjeta } from '@transportaya/ui';
 import { useEffect, useRef, useState } from 'react';
 import { resumirCobertura } from './cobertura.ts';
 
@@ -63,48 +64,52 @@ export function PruebaPwa() {
     setEstado((e) => ({ ...e, corriendo: false, fin: Date.now() }));
   }
 
-  /** Sonido de prueba: debe oírse con el volumen del teléfono (la oferta del conductor suena así). */
-  function probarSonido() {
-    const audio = new AudioContext();
-    const oscilador = audio.createOscillator();
-    oscilador.connect(audio.destination);
-    oscilador.frequency.value = 880;
-    oscilador.start();
-    oscilador.stop(audio.currentTime + 0.4);
-  }
-
   const resumen =
     estado.inicio !== null && estado.fin !== null
       ? resumirCobertura(marcas, INTERVALO_MS, estado.inicio, estado.fin)
       : null;
 
   return (
-    <section>
-      <h2>Prueba técnica de la PWA (ADR-0003)</h2>
-      <p>
+    <Tarjeta className="space-y-3" id="prueba-gps">
+      <h2 className="text-lg font-black">Prueba de GPS continuo (ADR-0003)</h2>
+      <p className="text-sm text-suave">
         Instala la app, pulsa <b>Iniciar</b>, usa el celular durante 10 minutos con la pantalla
         encendida y luego 10 con la pantalla apagada o en otra app. Pulsa <b>Terminar</b> para ver
         el resultado.
       </p>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button onClick={iniciar} disabled={estado.corriendo}>
+      <div className="grid grid-cols-2 gap-3">
+        <Boton
+          id="iniciar-prueba"
+          icono="navegar"
+          alPulsar={() => void iniciar()}
+          deshabilitado={estado.corriendo}
+        >
           Iniciar
-        </button>
-        <button onClick={terminar} disabled={!estado.corriendo}>
+        </Boton>
+        <Boton
+          id="terminar-prueba"
+          variante="secundario"
+          icono="cerrar"
+          alPulsar={() => void terminar()}
+          deshabilitado={!estado.corriendo}
+        >
           Terminar
-        </button>
-        <button onClick={probarSonido}>Probar sonido</button>
+        </Boton>
       </div>
-      <ul>
+      <ul className="space-y-1 text-sm">
         <li>Ubicaciones recibidas: {marcas.length}</li>
         <li>Veces que la app quedó oculta: {ocultaciones}</li>
         <li>Pantalla activa (Wake Lock): {wakeLock}</li>
       </ul>
-      {error && <p role="alert">Error: {error}</p>}
+      {error && (
+        <p role="alert" className="text-sm font-bold text-peligro">
+          Error: {error}
+        </p>
+      )}
       {resumen && (
-        <div>
-          <h3>Resultado</h3>
-          <ul>
+        <div className="space-y-1 rounded-2xl bg-superficie-2 p-3 text-sm">
+          <h3 className="font-black">Resultado</h3>
+          <ul className="space-y-1">
             <li>Intervalos medidos (de 4 s): {resumen.intervalos}</li>
             <li>Intervalos con ubicación: {resumen.cubiertos}</li>
             <li>Pérdida: {(resumen.perdida * 100).toFixed(1)} %</li>
@@ -119,6 +124,6 @@ export function PruebaPwa() {
           </ul>
         </div>
       )}
-    </section>
+    </Tarjeta>
   );
 }

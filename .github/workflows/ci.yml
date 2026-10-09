@@ -67,6 +67,9 @@ jobs:
 
       - name: Pruebas de punta a punta
         run: pnpm --filter @transportaya/e2e e2e
+        env:
+          # Las pruebas de PWA (service worker, modo sin conexión) corren sobre la compilación del paso anterior
+          E2E_PWA: '1'
 
       - name: Capturas de pantalla de la prueba
         if: always()

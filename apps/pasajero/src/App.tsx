@@ -1,7 +1,9 @@
 import {
+  AvisoSinConexion,
   Avisos,
   EntradaPagina,
   PantallaCargando,
+  PantallaDiagnostico,
   Splash,
   useSesion,
   useTemaDocumento,
@@ -137,6 +139,7 @@ export function App() {
       <Routes>
         <Route path="/entrar" element={token ? <Navigate to="/" replace /> : <Entrar />} />
         <Route path="/c/:token" element={<Compartido />} />
+        <Route path="/diagnostico" element={<PantallaDiagnostico app="App Pasajero" />} />
         <Route element={<Protegida />}>
           <Route index element={<Inicio />} />
           <Route path="viajes" element={<Viajes />} />
@@ -152,6 +155,7 @@ export function App() {
         </Route>
       </Routes>
       <Avisos />
+      <AvisoSinConexion />
       <Splash />
     </>
   );

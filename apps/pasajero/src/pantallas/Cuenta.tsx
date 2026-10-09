@@ -3,6 +3,7 @@ import {
   Chip,
   Hoja,
   Icono,
+  InstalarApp,
   Interruptor,
   PanelPrivacidad,
   Tarjeta,
@@ -277,7 +278,15 @@ export function Cuenta() {
             titulo="Ayuda"
             detalle="Reportes, objetos perdidos y soporte"
           />
+          <Enlace
+            a="/diagnostico"
+            icono="telefono"
+            titulo="Diagnóstico del teléfono"
+            detalle="Instalación, ubicación y modo sin conexión"
+          />
         </Tarjeta>
+
+        <InstalarApp />
 
         <MiEmpresa />
 
