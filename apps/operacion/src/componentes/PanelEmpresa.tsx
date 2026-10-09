@@ -102,7 +102,7 @@ export function PanelEmpresa({
 }) {
   const personal = modo === 'personal';
   const [pestana, setPestana] = useState<Pestana>('resumen');
-  const { data: e } = useQuery({
+  const { data: e, refetch } = useQuery({
     queryKey: ['empresa', base, 'detalle'],
     queryFn: () => api.get<EmpresaDetalleDatos>(base),
     refetchInterval: 20_000,
@@ -113,7 +113,11 @@ export function PanelEmpresa({
       <div className="space-y-4 p-6">
         <Pestanas<Pestana>
           activa={pestana}
-          alCambiar={setPestana}
+          alCambiar={(p) => {
+            setPestana(p);
+            // El consumo y lo que falta por facturar cambian con cada viaje: al abrir una pestaña se pide al día, sin esperar el ciclo de 20 s
+            void refetch();
+          }}
           items={[
             { id: 'resumen', titulo: 'Resumen' },
             { id: 'empleados', titulo: 'Empleados' },
