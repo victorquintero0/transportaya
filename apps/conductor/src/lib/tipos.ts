@@ -151,7 +151,7 @@ export interface ResultadoFinalizar {
   codigo: string;
   metodoPago: 'efectivo' | 'tarjeta' | 'local' | 'corporativo';
   precioFinal: number;
-  /** Lo que el pasajero descontó con puntos; TransporteYa se lo paga al conductor (RN-127). */
+  /** Lo que el pasajero descontó con puntos; TransporteYa se lo paga al conductor (RN-157). */
   descuentoPuntos: number;
   totalCarrera: number;
   cobroEspera: number;

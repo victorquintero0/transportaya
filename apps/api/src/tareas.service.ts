@@ -87,7 +87,7 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     await this.estado.correr('estados_cuenta', () => this.corporativo.generarPendientes());
   }
 
-  /** Cada minuto: red de seguridad para devolver los puntos de viajes que terminaron sin cobrarse (RN-126). */
+  /** Cada minuto: red de seguridad para devolver los puntos de viajes que terminaron sin cobrarse (RN-156). */
   @Interval(60_000)
   async puntosPeriodicos(): Promise<void> {
     await this.estado.correr('puntos', () => this.referidos.liberarPendientes());

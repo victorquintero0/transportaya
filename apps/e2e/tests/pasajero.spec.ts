@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { crearConductor, llamar } from './ayudas-api.js';
+import { crearConductor, entrarConOtp, llamar } from './ayudas-api.js';
 
 let capturas = 0;
 async function captura(page: Page, nombre: string) {
@@ -308,5 +308,95 @@ test('pasajero: reserva un viaje para más tarde, ve que un conductor lo confirm
     await expect(page.getByText('Cancelaste la reserva sin costo')).toBeVisible();
     await page.goto('/reservas');
     await expect(page.getByText('No tienes reservas')).toBeVisible();
+  });
+});
+
+test('pasajero: usa el código de quien lo invitó, gana puntos al terminar su primer viaje y los usa para pagar menos', async ({
+  page,
+}) => {
+  page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
+  // Quien invita: una persona que ya tiene cuenta (se prepara por la API)
+  const invitador = await entrarConOtp(celularNuevo(), 'pasajero');
+  const { codigo } = await llamar<{ codigo: string }>(
+    'GET',
+    '/v1/referidos',
+    undefined,
+    invitador.token,
+  );
+  expect(codigo).toMatch(/^[A-Z]{2,4}-[A-Z2-9]{4}$|^[A-Z2-9]{3,}-[A-Z2-9]{4}$/);
+
+  await entrar(page);
+  await onboarding(page, 'Mariana Osorio Gil');
+  await expect(page.locator('#origen-actual')).toBeVisible();
+
+  await test.step('escribe el código de quien lo invitó', async () => {
+    await page.getByRole('link', { name: 'Cuenta' }).click();
+    await page.getByRole('link', { name: /Puntos e invitados/ }).click();
+    await expect(page.locator('#puntos-saldo')).toHaveText('0');
+    await expect(page.locator('#mi-codigo')).toBeVisible();
+    await page.locator('#codigo-invitacion').fill('NOEXISTE-0000');
+    await page.locator('#usar-codigo').click();
+    await expect(page.locator('#error-codigo')).toBeVisible();
+    await page.locator('#codigo-invitacion').fill(codigo.toLowerCase());
+    await page.locator('#usar-codigo').click();
+    await expect(page.locator('#uso-codigo')).toContainText('Te invitó');
+    await captura(page, 'puntos-codigo');
+  });
+
+  await test.step('hay conductores y termina su primer viaje: gana los puntos de bienvenida', async () => {
+    await page.goBack();
+    await page.locator('#demo-conductores').click();
+    await expect(page.getByText('Hay 3 conductores de prueba cerca de ti')).toBeVisible();
+    await page.getByRole('link', { name: 'Inicio' }).click();
+    await page.locator('#a-donde-vas').click();
+    await page.locator('#campo-busqueda').fill('hospital');
+    await page.locator('[data-resultado="hospital-de-caldas"]').click();
+    await expect(page.locator('#usar-puntos')).toHaveCount(0); // todavía no tiene puntos
+    await page.locator('#pedir-viaje').click();
+    await expect(page.locator('#titulo-resumen')).toBeVisible({ timeout: 150_000 });
+    await expect(page.getByText(/puntos de bienvenida/).first()).toBeVisible({ timeout: 15_000 });
+    await captura(page, 'puntos-bienvenida');
+    await page.locator('#enviar-resumen').click();
+    await expect(page.locator('#a-donde-vas')).toBeVisible();
+  });
+
+  await test.step('quien invitó recibe los suyos', async () => {
+    const r = await llamar<{ saldo: number; totales: { otorgados: number } }>(
+      'GET',
+      '/v1/referidos',
+      undefined,
+      invitador.token,
+    );
+    expect(r.saldo).toBe(500);
+    expect(r.totales.otorgados).toBe(1);
+  });
+
+  await test.step('en el siguiente viaje usa sus puntos y paga menos', async () => {
+    await page.getByRole('link', { name: 'Cuenta' }).click();
+    await expect(page.getByText('300 puntos')).toBeVisible();
+    await page.getByRole('link', { name: 'Inicio' }).click();
+    await page.locator('#a-donde-vas').click();
+    await page.locator('#campo-busqueda').fill('hospital');
+    await page.locator('[data-resultado="hospital-de-caldas"]').click();
+    await expect(page.locator('#usar-puntos')).toBeVisible();
+    await page.locator('#usar-puntos').getByRole('switch').click();
+    await captura(page, 'usar-puntos');
+    await page.locator('#pedir-viaje').click();
+    await expect(page.locator('#titulo-resumen')).toBeVisible({ timeout: 150_000 });
+    await expect(page.locator('#descuento-puntos')).toContainText('ahorraste');
+    await captura(page, 'resumen-con-puntos');
+    await page.locator('#ver-recibo').click();
+    await expect(page.getByText(/Descuento con \d+ puntos/)).toBeVisible();
+    await captura(page, 'recibo-con-puntos');
+    await page.keyboard.press('Escape');
+    await page.mouse.click(195, 60); // fuera de la hoja
+    await page.locator('#enviar-resumen').click();
+    await expect(page.locator('#a-donde-vas')).toBeVisible();
+  });
+
+  await test.step('quita los conductores de prueba para no estorbar a otras pruebas', async () => {
+    await page.goto('/cuenta');
+    await page.getByRole('button', { name: 'Quitar conductores de prueba' }).click();
+    await expect(page.getByText('Quitamos los conductores de prueba')).toBeVisible();
   });
 });

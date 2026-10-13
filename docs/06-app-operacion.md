@@ -31,6 +31,7 @@
 | OPE-10 | Clientes corporativos | F3 · hecho |
 | OPE-11 | Usuarios internos, roles y auditoría | MVP |
 | OPE-12 | Configuración general y plantillas de notificación | MVP |
+| OPE-14 | Referidos y puntos | F3 · hecho |
 
 ---
 
@@ -246,3 +247,17 @@ Parámetros operativos (tiempos de espera, radios de búsqueda, límites de deud
 de alertas) y plantillas de notificaciones (push, SMS, correo). Todo cambio queda en auditoría.
 
 > **Implementado (mapa).** Configuración → *Mapa de las apps* elige el proveedor del mapa de las tres apps (OpenFreeMap, MapTiler, otro `style.json` o el esquemático), con botón «Probar estilo», clave cifrada y motivo ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)).
+
+## OPE-14 · Referidos y puntos
+
+> **Implementado.** Pantalla **Referidos** (permiso `referidos.ver`: soporte, finanzas, supervisión y administración;
+> `referidos.gestionar`: finanzas, supervisión y administración). Los valores del programa se editan en
+> Configuración → *Referidos* (encenderlo o apagarlo, puntos por invitar y de bienvenida, valor del punto, tope del
+> descuento, valor mínimo del primer viaje, ventana para usar un código, tope mensual y mínimo para abonar).
+
+- **Resumen:** invitaciones (pendientes, otorgadas, rechazadas), puntos emitidos y canjeados, puntos en circulación con lo que
+  valdrían hoy, y el **costo ya pagado** por TransporteYa (descuentos en viajes y abonos a comisión). Abajo, quienes más invitan.
+- **Lista** de invitaciones con filtro por estado y búsqueda por nombre, teléfono o código: quién invitó, a quién, con qué
+  código, el estado y los puntos de cada parte. **Rechazar** (pendiente) y **Revertir** (otorgada) piden motivo (RN-154).
+- **Ficha de puntos** de una persona (clic en su nombre): saldo, código, quién la invitó, a cuántos ha invitado y sus
+  movimientos. **Ajustar puntos** suma o resta a mano con motivo; queda en la auditoría (RN-159).

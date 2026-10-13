@@ -170,7 +170,7 @@ export class CotizacionesService {
       : null;
     return {
       ...r,
-      // Los puntos del pasajero: cuánto podría descontar en cada opción (RN-125)
+      // Los puntos del pasajero: cuánto podría descontar en cada opción (RN-155)
       puntos: {
         activo: puntos.activo,
         saldo: puntos.saldo,

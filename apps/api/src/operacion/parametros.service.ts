@@ -35,7 +35,7 @@ export class ParametrosService {
     return typeof v === 'number' && Number.isFinite(v) ? v : CATALOGO_PARAMETROS[clave].defecto;
   }
 
-  /** Las reglas del programa de referidos y puntos (RN-120 a RN-129) con los cambios que haya hecho Operación. */
+  /** Las reglas del programa de referidos y puntos (RN-150 a RN-159) con los cambios que haya hecho Operación. */
   async referidos(): Promise<ReglasReferidos> {
     const [a, b, c, d, e, f, g, h, i, j, k] = await Promise.all([
       this.numero('referidos.activo'),

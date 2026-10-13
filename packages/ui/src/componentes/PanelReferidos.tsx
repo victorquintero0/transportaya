@@ -51,7 +51,7 @@ async function copiar(texto: string): Promise<boolean> {
 }
 
 /**
- * El programa de puntos por referidos, igual para pasajeros y conductores (RN-120 a RN-129): tu código para invitar,
+ * El programa de puntos por referidos, igual para pasajeros y conductores (RN-150 a RN-159): tu código para invitar,
  * tus puntos y lo que valen, quién se ha unido y el historial. Los datos y las acciones llegan por props.
  */
 export function PanelReferidos({ rol, resumen: r, movimientos, alUsarCodigo, alAbonar }: Props) {
@@ -60,10 +60,14 @@ export function PanelReferidos({ rol, resumen: r, movimientos, alUsarCodigo, alA
   const [abonando, setAbonando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const porInvitado =
-    rol === 'pasajero' ? r.recompensas.invitarPasajero : r.recompensas.invitarConductor;
-  const bienvenida = r.recompensas.bienvenidaPasajero;
-  const mensaje = mensajeInvitacion(r.codigo, bienvenida, window.location.origin);
+  // Lo que gana quien invita depende de a quién invita; lo que recibe la persona invitada, de su propio rol
+  const bienvenida =
+    rol === 'pasajero' ? r.recompensas.bienvenidaPasajero : r.recompensas.bienvenidaConductor;
+  const mensaje = mensajeInvitacion(
+    r.codigo,
+    r.recompensas.bienvenidaPasajero,
+    window.location.origin,
+  );
 
   const invitar = async () => {
     if (typeof navigator.share === 'function') {
@@ -159,8 +163,9 @@ export function PanelReferidos({ rol, resumen: r, movimientos, alUsarCodigo, alA
         </div>
         <p className="text-sm text-suave">
           Compártelo con quien quieras. Cuando termine su primer viaje (desde{' '}
-          {pesos(r.recompensas.viajeMinimo)}) ganas {numero(porInvitado)} puntos y tu invitado
-          recibe {numero(bienvenida)}.
+          {pesos(r.recompensas.viajeMinimo)}) ganas {numero(r.recompensas.invitarPasajero)} puntos
+          si es pasajero o {numero(r.recompensas.invitarConductor)} si es conductor, y tu invitado
+          recibe {numero(r.recompensas.bienvenidaPasajero)} de bienvenida.
         </p>
         <button
           type="button"

@@ -136,7 +136,7 @@ export class CancelacionPasajeroService {
         actorId: v.pasajeroId,
         datos: { costo, reserva: true },
       });
-      // Los puntos que había apartado para este viaje vuelven a su saldo (RN-126)
+      // Los puntos que había apartado para este viaje vuelven a su saldo (RN-156)
       await this.referidos.liberar(tx, v.id);
       return actualizada;
     });

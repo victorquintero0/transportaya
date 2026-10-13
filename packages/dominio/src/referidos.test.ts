@@ -45,7 +45,7 @@ describe('códigos de referido', () => {
   });
 });
 
-describe('usar un código (RN-121)', () => {
+describe('usar un código (RN-151)', () => {
   const ok = {
     reglas: R,
     codigoExiste: true,
@@ -72,7 +72,7 @@ describe('usar un código (RN-121)', () => {
   });
 });
 
-describe('cuándo se entregan los puntos (RN-123)', () => {
+describe('cuándo se entregan los puntos (RN-153)', () => {
   const base = {
     reglas: R,
     rolInvitado: 'pasajero' as const,
@@ -120,7 +120,7 @@ describe('cuándo se entregan los puntos (RN-123)', () => {
   });
 });
 
-describe('descuento con puntos (RN-125, RN-126)', () => {
+describe('descuento con puntos (RN-155, RN-156)', () => {
   it('llega al tope del 30 % del viaje o al saldo, lo que sea menor', () => {
     // viaje de $20.000: tope $6.000 = 600 puntos
     expect(descuentoConPuntos({ saldo: 5_000, precio: 20_000, reglas: R })).toEqual({
@@ -163,7 +163,7 @@ describe('descuento con puntos (RN-125, RN-126)', () => {
   });
 });
 
-describe('abono a la comisión (RN-128)', () => {
+describe('abono a la comisión (RN-158)', () => {
   it('abona hasta la deuda y no más', () => {
     expect(abonoConPuntos({ saldoPuntos: 5_000, deuda: 12_000, reglas: R })).toEqual({
       ok: true,
@@ -214,7 +214,7 @@ describe('abono a la comisión (RN-128)', () => {
   });
 });
 
-describe('el libro del conductor con un descuento por puntos (RN-127)', () => {
+describe('el libro del conductor con un descuento por puntos (RN-157)', () => {
   const base = { base: { totalRedondeado: 20_000 }, ambito: 'urbano' as const };
   it('en efectivo, TransporteYa le acredita lo que el pasajero descontó', () => {
     expect(movimientosDeViaje({ ...base, metodo: 'efectivo', descuentoPuntos: 3_000 })).toEqual([

@@ -76,7 +76,7 @@ ALTER TABLE "movimiento_saldo" ADD CONSTRAINT "movimiento_signo_y_origen" CHECK 
           and "movimiento_saldo"."aprobado_por" is not null and "movimiento_saldo"."aprobado_por" <> "movimiento_saldo"."creado_por"
         else false end);
 --> statement-breakpoint
--- El libro de puntos solo se corrige con movimientos nuevos (RN-129), igual que el del conductor.
+-- El libro de puntos solo se corrige con movimientos nuevos (RN-159), igual que el del conductor.
 CREATE TRIGGER movimiento_puntos_inmutable BEFORE UPDATE OR DELETE ON movimiento_puntos
   FOR EACH ROW EXECUTE FUNCTION bloquear_modificacion();
 --> statement-breakpoint

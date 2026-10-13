@@ -102,7 +102,7 @@ export function Cotizar() {
       : opcion?.corporativo && !opcion.corporativo.permitido
         ? opcion.corporativo.detalle
         : null;
-  // Pagar parte con puntos (RN-125): no aplica a un viaje a cargo de la empresa
+  // Pagar parte con puntos (RN-155): no aplica a un viaje a cargo de la empresa
   const puntosOpcion =
     !pagaConEmpresa && opcion && opcion.puntos.descuento > 0 ? opcion.puntos : null;
   const usarPuntos = conPuntos && puntosOpcion !== null;

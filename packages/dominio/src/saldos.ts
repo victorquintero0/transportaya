@@ -42,9 +42,9 @@ export const TIPOS_MOVIMIENTO = [
   'pago_comision',
   'pago_liquidacion',
   'ajuste',
-  /** TransporteYa le paga al conductor lo que el pasajero descontó con puntos en un viaje en efectivo (RN-127). */
+  /** TransporteYa le paga al conductor lo que el pasajero descontó con puntos en un viaje en efectivo (RN-157). */
   'descuento_puntos',
-  /** Puntos que el conductor canjeó como abono a su comisión (RN-128). */
+  /** Puntos que el conductor canjeó como abono a su comisión (RN-158). */
   'abono_puntos',
 ] as const;
 export type TipoMovimiento = (typeof TIPOS_MOVIMIENTO)[number];
@@ -62,7 +62,7 @@ export interface LiquidacionViaje {
   ambito: AmbitoComision;
   peajes?: number;
   propina?: number;
-  /** Lo que el pasajero pagó de menos por usar puntos; lo absorbe TransporteYa (RN-127). */
+  /** Lo que el pasajero pagó de menos por usar puntos; lo absorbe TransporteYa (RN-157). */
   descuentoPuntos?: number;
   viajeId?: string;
 }

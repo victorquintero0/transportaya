@@ -43,6 +43,7 @@ pnpm test                                                                       
 | Catálogos y tarifas | `ciudad`, `catalogo_vehiculo`, `tarifa`, `tarifa_recargo`, `ruta_fija`, `zona`, `dinamica_zona`, `festivo`, `parametro` |
 | Viajes y despacho | `cotizacion`, `viaje`, `viaje_evento`, `oferta`, `viaje_mensaje`, `viaje_compartido`, `calificacion`, `alerta` |
 | Dinero | `pago`, `reembolso`, `movimiento_saldo`, `cierre_diario`, `pago_conductor`, `pago_comision` |
+| Referidos y puntos | `referido`, `movimiento_puntos` |
 | Soporte y control | `ticket`, `ticket_mensaje`, `auditoria` |
 
 Vistas: `saldo_conductor` (suma del libro) y `viaje_tiempos` (asignación, llegada, espera, viaje y total de servicio de cada viaje).
@@ -273,6 +274,17 @@ tomado, `CHECK viaje_reserva_coherente`) y `busqueda_desde` (cuándo se activó 
 la hora cotizada. Los índices `viaje_reservas_idx` y `viaje_reserva_conductor_idx` sirven al tablero y a la tarea que las
 mantiene. El estado que ven las personas (sin conductor, por confirmar, confirmada…) se calcula con `estadoDeReserva`
 (`packages/dominio/src/reservas.ts`); no se guarda.
+
+### Referidos y puntos
+
+Migración `0011_referidos_y_puntos`. **`usuario.codigo_referido`** (único, formato revisado por un `CHECK`). **`referido`**: una fila
+por persona invitada (`invitado_id` único), con quién invitó (`referidor_id`), el código usado, el `rol_invitado`, el `estado`
+(pendiente, otorgado, rechazado, revertido), los puntos de cada parte, el viaje que lo detonó y quién lo resolvió. Un `CHECK`
+impide invitarse a uno mismo. **`movimiento_puntos`**: el libro inmutable de puntos de cada persona (`tipo`, `puntos` con signo,
+`valor_punto` vigente al momento, `viaje_id` y `motivo`); el signo está restringido por tipo, hay índices únicos para que un
+mismo viaje no entregue ni devuelva dos veces, y un disparador (`bloquear_modificacion`) impide editar o borrar. El saldo no se guarda: es la suma.
+`viaje` suma `puntos_separados`, `puntos_usados` y `descuento_puntos` (con un `CHECK` que los mantiene coherentes y excluye los
+viajes corporativos). `tipo_movimiento` del libro del conductor suma `descuento_puntos` y `abono_puntos`.
 
 ### Solicitudes sobre datos personales
 

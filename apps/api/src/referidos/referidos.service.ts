@@ -38,7 +38,7 @@ export interface AvisoPuntos {
 }
 
 /**
- * Referidos y puntos (RN-120 a RN-129): códigos, invitaciones, entrega de puntos al primer viaje, canje por descuento
+ * Referidos y puntos (RN-150 a RN-159): códigos, invitaciones, entrega de puntos al primer viaje, canje por descuento
  * en un viaje y abono a la comisión del conductor. El saldo de puntos es siempre la suma del libro `movimiento_puntos`.
  */
 @Injectable()
@@ -265,7 +265,7 @@ export class ReferidosService {
     return r.ok;
   }
 
-  /** RN-121: la persona escribe el código de quien la invitó. Los puntos llegan con su primer viaje terminado. */
+  /** RN-151: la persona escribe el código de quien la invitó. Los puntos llegan con su primer viaje terminado. */
   async aplicarCodigo(usuarioId: string, rol: RolReferido, texto: string) {
     const reglas = await this.parametros.referidos();
     const codigo = normalizarCodigo(texto);
@@ -325,7 +325,7 @@ export class ReferidosService {
 
   /**
    * Al terminar un viaje: si el pasajero o el conductor tenían una invitación pendiente y este es su primer viaje que
-   * cuenta, se entregan los puntos (RN-123). Corre dentro de la transacción del viaje; devuelve los avisos para
+   * cuenta, se entregan los puntos (RN-153). Corre dentro de la transacción del viaje; devuelve los avisos para
    * mandarlos cuando esta termine.
    */
   async alFinalizarViaje(
@@ -466,7 +466,7 @@ export class ReferidosService {
     };
   }
 
-  /** Aparta los puntos para pagar parte de un viaje recién pedido (RN-125). Dentro de la transacción del pedido. */
+  /** Aparta los puntos para pagar parte de un viaje recién pedido (RN-155). Dentro de la transacción del pedido. */
   async separar(tx: DbOTx, usuarioId: string, viajeId: string, precioMaximo: number) {
     const reglas = await this.parametros.referidos();
     await this.bloquear(tx, usuarioId);
@@ -486,7 +486,7 @@ export class ReferidosService {
   }
 
   /**
-   * Al terminar el viaje: con el precio real se usan los puntos que el tope permita y el resto se devuelve (RN-126).
+   * Al terminar el viaje: con el precio real se usan los puntos que el tope permita y el resto se devuelve (RN-156).
    * Devuelve lo que hay que guardar en el viaje.
    */
   async liquidar(
@@ -576,7 +576,7 @@ export class ReferidosService {
     return Math.max(0, -Number(f?.s ?? 0));
   }
 
-  /** RN-128: el conductor paga con puntos parte o toda su comisión pendiente. */
+  /** RN-158: el conductor paga con puntos parte o toda su comisión pendiente. */
   async abonarComision(conductorId: string, puntosPedidos?: number) {
     const reglas = await this.parametros.referidos();
     if (!reglas.activo)

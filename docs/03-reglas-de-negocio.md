@@ -394,3 +394,46 @@ El simulador de la App Operación y las pruebas automáticas del paquete `domini
   de reembolso `[agente: $ 30.000]`; por encima, aprueba un supervisor.
 - **RN-144** **Objetos perdidos:** al reportarlo, se habilita un chat entre pasajero y conductor durante `[48 h]`,
   mediado por soporte si es necesario.
+
+## 16. Referidos y puntos
+
+> **Implementado.** Decisiones en [D-46 a D-48](13-decisiones-pendientes-y-riesgos.md); los valores entre corchetes se editan en Configuración → Referidos.
+
+- **RN-150** *Mi código.* Cada persona (pasajero o conductor) tiene un **código personal** como `ANA-7K3Q`: las letras del
+  nombre y cuatro caracteres sin `0`, `1`, `I` ni `O`, para que no se confundan al dictarlo. Se crea la primera vez que
+  lo pide y no cambia. Se comparte desde la app («Invitar») y no requiere que quien lo recibe conozca nada más.
+- **RN-151** *Usar un código.* Una persona usa **un solo código**, una vez, y solo mientras no haya terminado un viaje
+  y dentro de los `[7 días]` desde que creó su cuenta. No puede usar el suyo. El rol de la invitación es el de la app
+  desde la que se registra (pasajero o conductor); una invitación queda **pendiente** hasta que se cumpla RN-153.
+- **RN-152** *Qué son los puntos.* Cada punto vale `[$ 10]`. La persona ve su saldo, lo que valen y cada movimiento
+  (Cuenta → «Puntos e invitados» en el pasajero; Perfil → «Puntos e invitados» en el conductor), y la app le avisa
+  con una celebración cuando gana puntos. Los puntos **no vencen** (D-47).
+- **RN-153** *Cuándo se entregan.* Cuando la persona invitada **termina su primer viaje** en el rol por el que la
+  invitaron, y ese viaje vale al menos `[$ 5.000]` (si vale menos, se espera al siguiente). Quien invita recibe
+  `[500]` puntos si invitó a un pasajero y `[1.500]` si invitó a un conductor; la persona invitada recibe
+  `[300]` de bienvenida.
+- **RN-154** *Contra el abuso.* No se entregan puntos si quien invita es la **otra parte del primer viaje** (invitar a
+  alguien y llevarlo uno mismo es la forma más fácil de ganar puntos de mentira): la invitación queda **rechazada**.
+  Una misma persona recibe puntos por invitar hasta `[20]` personas al mes; pasado el tope, la persona invitada
+  igual recibe su bienvenida. Soporte ve las invitaciones; finanzas, supervisión y administración pueden **rechazar**
+  una pendiente o **revertir** una ya otorgada (se descuentan los puntos que sigan en el saldo), siempre con motivo.
+- **RN-155** *Pagar parte del viaje con puntos.* Al cotizar, la app muestra cuántos puntos se pueden usar en cada
+  categoría y cuánto descuentan; el pasajero lo activa («Usar mis puntos») al pedir. Se pueden usar hasta el
+  `[30 %]` del valor del viaje y lo que alcance el saldo. Al pedir, los puntos se **apartan** calculados con el
+  precio máximo estimado, de modo que el saldo no se pueda gastar dos veces.
+- **RN-156** *Al terminar o cancelar.* Al finalizar, el descuento se calcula con el **precio real** (con el mismo tope)
+  y los puntos que sobren **vuelven** al saldo. Si el viaje se cancela o no encuentra conductor, vuelven todos de
+  inmediato; una tarea cada minuto los devuelve si algo falló. Mientras el viaje tiene puntos apartados, la operación
+  no puede ajustarle el precio a mano.
+- **RN-157** *Quién lo paga.* El descuento lo **absorbe TransporteYa**: el conductor cobra el viaje completo y la
+  comisión (RN-060) se calcula sobre el valor completo. En **efectivo**, el pasajero le entrega al conductor el valor
+  menos el descuento y el libro del conductor suma un movimiento `descuento_puntos` por la diferencia (así queda
+  con lo mismo que si no hubiera puntos). Con **tarjeta**, se cobra el valor menos el descuento. Los puntos **no se
+  combinan** con viajes a cargo de una empresa (RN-103).
+- **RN-158** *Abonar la comisión.* El conductor puede **pagar con puntos** su comisión pendiente: nunca más que su
+  deuda y al menos `[500]` puntos, salvo que con menos salde toda la deuda. El abono suma un movimiento `abono_puntos`
+  a su libro y, si con eso queda al día, se habilita de inmediato (RN-063).
+- **RN-159** *El libro de puntos.* Igual que el del conductor (RN-061), el libro de puntos es **inmutable**: el saldo es
+  la suma de los movimientos (`referido_referidor`, `referido_invitado`, `canje_descuento`, `canje_abono`, `reverso`,
+  `ajuste`) y los errores se corrigen con un movimiento nuevo. Un **ajuste manual** (positivo o negativo, hasta
+  `100.000` puntos) lo hacen finanzas, supervisión o administración con motivo, y queda en la auditoría.

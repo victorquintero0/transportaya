@@ -14,7 +14,7 @@ export interface EventosServidor {
   'viaje:estado': (d: { viajeId: string; estado: string }) => void;
   'conductor:estado': (d: { estadoOperativo: string; motivo?: string }) => void;
   'viaje:mensaje': (m: Mensaje) => void;
-  /** Ganaste puntos del programa de referidos (RN-122). */
+  /** Ganaste puntos del programa de referidos (RN-152). */
   'puntos:ganados': (d: {
     puntos: number;
     motivo: 'invitado_viajo' | 'bienvenida';

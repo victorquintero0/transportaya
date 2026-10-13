@@ -24,7 +24,7 @@ export function useSimulador(): boolean {
   return data?.simulador === true;
 }
 
-/** Los puntos y el código de referidos del conductor (RN-120 a RN-129). */
+/** Los puntos y el código de referidos del conductor (RN-150 a RN-159). */
 export function useReferidos() {
   const hayToken = useSesion((s) => s.accessToken !== null);
   return useQuery({

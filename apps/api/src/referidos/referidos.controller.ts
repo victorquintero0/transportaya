@@ -13,7 +13,7 @@ const movimientos = z.object({
 });
 
 /**
- * Referidos y puntos para quien usa las apps (PAS-70, CON-40). La app desde la que se pregunta decide el rol: quien
+ * Referidos y puntos para quien usa las apps (PAS-80, CON-60). La app desde la que se pregunta decide el rol: quien
  * entra a la App Conductor usa el código como conductor y quien entra a la App Pasajero, como pasajero.
  */
 @Controller('v1/referidos')
@@ -41,7 +41,7 @@ export class ReferidosController {
     return this.referidos.aplicarCodigo(u.id, u.rol as RolReferido, validar(codigo, cuerpo).codigo);
   }
 
-  /** El conductor paga con puntos parte o toda su comisión pendiente (RN-128). */
+  /** El conductor paga con puntos parte o toda su comisión pendiente (RN-158). */
   @RequiereRol('conductor')
   @Post('abonar')
   @HttpCode(200)

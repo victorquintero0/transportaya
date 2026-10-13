@@ -38,7 +38,7 @@ export interface EventosAPasajero {
   'puntos:ganados': PuntosGanados;
 }
 
-/** Aviso de puntos nuevos: quien invitó o la persona invitada, cuando esta termina su primer viaje (RN-123). */
+/** Aviso de puntos nuevos: quien invitó o la persona invitada, cuando esta termina su primer viaje (RN-153). */
 export interface PuntosGanados {
   puntos: number;
   motivo: 'invitado_viajo' | 'bienvenida';

@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useReferidos } from '../lib/consultas.ts';
 
-/** Mis puntos: invitar a otros conductores y pasajeros, y pagar la comisión con puntos (CON-70). */
+/** Mis puntos: invitar a otros conductores y pasajeros, y pagar la comisión con puntos (CON-60). */
 export function Referidos() {
   const navegar = useNavigate();
   const qc = useQueryClient();

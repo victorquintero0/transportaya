@@ -56,6 +56,7 @@ flowchart LR
 | Mapa de calles con MapLibre y proveedor configurable desde la App Operación ([ADR-0009](adr/0009-mapa-con-maplibre-y-proveedor-configurable.md)) | Hecho |
 | Observabilidad: registro JSON con identificador de solicitud, métricas, salud, pantalla Sistema y alertas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta Alertmanager y trazas |
 | Protección de datos: política versionada, derechos del titular, anonimización, retención y particiones automáticas ([doc 15](15-observabilidad-y-privacidad.md)) | Hecho; falta revisión de Legal, RNBD |
+| Referidos y puntos: código personal, puntos al primer viaje, descuento en viajes y abono a la comisión, con revisión en Operación ([RN-150 a RN-159](03-reglas-de-negocio.md), D-46 a D-48) | Hecho |
 | Servicios de mapas propios (PMTiles, OSRM, Photon) y prueba de direcciones | Pendiente |
 | Diseño UX/UI de los flujos críticos | Pendiente |
 | Concepto legal, modelo de margen de Wompi y elección de nube | Pendiente (no es trabajo de código) |

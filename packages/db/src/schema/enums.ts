@@ -23,7 +23,7 @@ export const tipoMovimiento = pgEnum('tipo_movimiento', TIPOS_MOVIMIENTO);
 export const estadoUsuario = pgEnum('estado_usuario', ['activo', 'bloqueado', 'anonimizado']);
 export const rolInterno = pgEnum('rol_interno', ROLES_INTERNOS);
 
-/** Referidos y puntos (RN-120 a RN-129). */
+/** Referidos y puntos (RN-150 a RN-159). */
 export const rolReferido = pgEnum('rol_referido', ROLES_REFERIDO);
 export const estadoReferido = pgEnum('estado_referido', ESTADOS_REFERIDO);
 export const tipoPuntos = pgEnum('tipo_puntos', TIPOS_PUNTOS);

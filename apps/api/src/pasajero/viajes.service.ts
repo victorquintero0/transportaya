@@ -90,7 +90,7 @@ export class ViajesPasajeroService {
       /** Solo con pago corporativo (PAS-61): a qué centro de costo se carga y para qué es el viaje. */
       centroCostoId?: string | undefined;
       motivo?: string | undefined;
-      /** Pagar parte del viaje con puntos (RN-125). */
+      /** Pagar parte del viaje con puntos (RN-155). */
       usarPuntos?: boolean | undefined;
     },
   ) {
@@ -240,7 +240,7 @@ export class ViajesPasajeroService {
             : {}),
         })
         .returning({ id: viaje.id });
-      // Pagar parte con puntos: se apartan ya, con el precio máximo estimado; al terminar se liquidan con el real (RN-126)
+      // Pagar parte con puntos: se apartan ya, con el precio máximo estimado; al terminar se liquidan con el real (RN-156)
       if (d.usarPuntos) await this.referidos.separar(tx, pasajeroId, v!.id, cot.precioMax);
       await registrarEvento(tx, {
         viajeId: v!.id,
@@ -413,7 +413,7 @@ export class ViajesPasajeroService {
       pin: ['asignado', 'en_sitio'].includes(v.estado) ? v.pinInicio : null,
       precioEstimado: { min: v.precioEstimadoMin, max: v.precioEstimadoMax },
       precioFinal: v.precioFinal,
-      /** Puntos del programa de referidos usados en este viaje y lo que de verdad paga la persona (RN-125 a RN-127). */
+      /** Puntos del programa de referidos usados en este viaje y lo que de verdad paga la persona (RN-155 a RN-157). */
       puntos: {
         separados: v.puntosSeparados,
         usados: v.puntosUsados,

@@ -12,7 +12,7 @@ const CENTRO = { lat: 5.0689, lng: -75.5174 };
 let siguienteZona = 0;
 const zona = () => desplazar(CENTRO, 22_000, (siguienteZona++ % 8) * 45);
 
-describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
+describe.skipIf(!hayBase)('Referidos y puntos (RN-150 a RN-159)', () => {
   let api: Arnes;
   let financiero: string;
   let soporte: string;
@@ -171,7 +171,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
 
   // ───────────────────────────────────────────────────────────────────────────── usar un código
 
-  describe('usar un código (RN-121)', () => {
+  describe('usar un código (RN-151)', () => {
     it('lo acepta con mayúsculas o minúsculas y con espacios, y queda pendiente', async () => {
       const a = await pasajeroNuevo('Valentina Ríos');
       const b = await pasajeroNuevo();
@@ -235,7 +235,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
 
   // ───────────────────────────────────────────────────────────────────────────── entregar los puntos
 
-  describe('los puntos llegan con el primer viaje (RN-123)', () => {
+  describe('los puntos llegan con el primer viaje (RN-153)', () => {
     it('quien invita y quien es invitado reciben sus puntos, una sola vez', async () => {
       const z = zona();
       const c = await conductorNuevo(z);
@@ -297,7 +297,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
       c.socket.cerrar();
     });
 
-    it('si el referidor es el conductor que lleva a su invitado, no se entrega nada (RN-124)', async () => {
+    it('si el referidor es el conductor que lleva a su invitado, no se entrega nada (RN-154)', async () => {
       const z = zona();
       const c = await conductorNuevo(z);
       const b = await pasajeroNuevo();
@@ -361,7 +361,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
 
   // ───────────────────────────────────────────────────────────────────────────── pagar con puntos
 
-  describe('pagar parte del viaje con puntos (RN-125 a RN-127)', () => {
+  describe('pagar parte del viaje con puntos (RN-155 a RN-157)', () => {
     it('la cotización dice cuánto se puede descontar en cada opción', async () => {
       const z = zona();
       const a = await pasajeroNuevo();
@@ -429,6 +429,14 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
       expect(detalle.puntos).toMatchObject({ usados, descuento: usados * 10 });
       expect(detalle.aPagar).toBe(fin.aPagar);
 
+      // el recibo muestra el descuento como una línea y el total es lo que de verdad pagó
+      const recibo = (await api.get<any>(`/v1/pasajero/viajes/${id}/recibo`, a.token)).cuerpo;
+      expect(recibo.lineas).toContainEqual({
+        concepto: `Descuento con ${usados} puntos`,
+        valor: -usados * 10,
+      });
+      expect(recibo.total).toBe(fin.aPagar + detalle.propina);
+
       // el conductor confirma el efectivo que de verdad recibió
       const rec = await api.post<any>(
         `/v1/conductor/viajes/${id}/efectivo-recibido`,
@@ -485,7 +493,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
       expect((await api.get<any>('/v1/pasajero/viaje-actual', a.token)).cuerpo.viaje).toBeNull();
     });
 
-    it('si el viaje se cancela, los puntos vuelven al instante (RN-126)', async () => {
+    it('si el viaje se cancela, los puntos vuelven al instante (RN-156)', async () => {
       const z = zona();
       const a = await pasajeroNuevo();
       await darPuntos(a.id, 1000);
@@ -562,7 +570,7 @@ describe.skipIf(!hayBase)('Referidos y puntos (RN-120 a RN-129)', () => {
 
   // ───────────────────────────────────────────────────────────────────────────── abono a la comisión
 
-  describe('abonar la comisión con puntos (RN-128)', () => {
+  describe('abonar la comisión con puntos (RN-158)', () => {
     /** Un conductor con una deuda real: un viaje en efectivo deja su comisión a cargo. */
     async function conductorConDeuda() {
       const z = zona();

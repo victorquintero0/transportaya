@@ -131,9 +131,9 @@ export const viaje = pgTable(
     motivoCorporativo: text('motivo_corporativo'),
     /** Lo que se le descuenta a la empresa por su contrato; lo absorbe TransporteYa, el conductor cobra completo. */
     descuentoCorporativo: cop('descuento_corporativo').notNull().default(0),
-    /** Puntos apartados al pedir el viaje para pagar parte con ellos (RN-125). Se liquidan al terminar. */
+    /** Puntos apartados al pedir el viaje para pagar parte con ellos (RN-155). Se liquidan al terminar. */
     puntosSeparados: integer('puntos_separados').notNull().default(0),
-    /** Puntos que de verdad se usaron al terminar el viaje y lo que valen: lo absorbe TransporteYa (RN-127). */
+    /** Puntos que de verdad se usaron al terminar el viaje y lo que valen: lo absorbe TransporteYa (RN-157). */
     puntosUsados: integer('puntos_usados').notNull().default(0),
     descuentoPuntos: cop('descuento_puntos').notNull().default(0),
     /** El estado de cuenta en el que se cobró este viaje. */

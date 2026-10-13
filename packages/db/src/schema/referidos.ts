@@ -7,8 +7,8 @@ import { viaje } from './viajes.js';
 import { creadoEn, id, marca } from './tipos.js';
 
 /**
- * Una invitación: `referidor` invitó a `invitado` con su código (RN-120). Queda pendiente hasta que el invitado termina
- * su primer viaje en el rol por el que lo invitaron; ahí se entregan los puntos (RN-123). Una persona solo puede ser
+ * Una invitación: `referidor` invitó a `invitado` con su código (RN-150). Queda pendiente hasta que el invitado termina
+ * su primer viaje en el rol por el que lo invitaron; ahí se entregan los puntos (RN-153). Una persona solo puede ser
  * invitada una vez.
  */
 export const referido = pgTable(
@@ -45,7 +45,7 @@ export const referido = pgTable(
 
 /**
  * El libro de puntos de cada persona. El saldo es la suma de `puntos` (positivo suma, negativo resta); no se guarda
- * aparte para que nunca se desfase (RN-129).
+ * aparte para que nunca se desfase (RN-159).
  */
 export const movimientoPuntos = pgTable(
   'movimiento_puntos',

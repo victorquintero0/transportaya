@@ -383,9 +383,9 @@ export class ViajesService {
       const efectivo = v.metodoPago === 'efectivo';
       const corporativo = v.metodoPago === 'corporativo';
       const descuento = contrato ? descuentoCorporativo(precioFinal, contrato.descuentoPb) : 0;
-      // Puntos que el pasajero apartó al pedir el viaje: con el precio real se usan los que el tope permita (RN-126).
+      // Puntos que el pasajero apartó al pedir el viaje: con el precio real se usan los que el tope permita (RN-156).
       const canje = await this.referidos.liquidar(tx, v, precioFinal);
-      // Lo que el pasajero de verdad paga; el conductor cobra el viaje completo y TransporteYa absorbe la diferencia (RN-127).
+      // Lo que el pasajero de verdad paga; el conductor cobra el viaje completo y TransporteYa absorbe la diferencia (RN-157).
       const aPagar = precioFinal - canje.descuento;
       // Con tarjeta, el cobro lo resuelve la pasarela. Mientras no hay Wompi, el simulador aprueba todo salvo las
       // tarjetas de prueba rechazadas; en ese caso el viaje queda como deuda del pasajero (RN-053, HU-PAS-04).
@@ -494,7 +494,7 @@ export class ViajesService {
           datos: { taximetro, servidor, diferencia: comparacion },
         });
       }
-      // Referidos: si es el primer viaje de alguien invitado, se entregan los puntos (RN-123). Si algo falla aquí, el
+      // Referidos: si es el primer viaje de alguien invitado, se entregan los puntos (RN-153). Si algo falla aquí, el
       // viaje igual termina: va en un punto de guardado aparte.
       try {
         avisosPuntos = await tx.transaction((sp) =>
@@ -551,7 +551,7 @@ export class ViajesService {
         throw conflicto('ESTADO_INVALIDO', 'Este viaje no tiene un cobro en efectivo pendiente.');
       if (v.estadoPago !== 'pendiente')
         throw conflicto('YA_CONFIRMADO', 'Ya confirmaste el efectivo de este viaje.');
-      // El pasajero paga lo del viaje menos lo que descontó con puntos (RN-127)
+      // El pasajero paga lo del viaje menos lo que descontó con puntos (RN-157)
       const total = (v.precioFinal ?? 0) - v.descuentoPuntos;
       const completo = monto >= total;
 

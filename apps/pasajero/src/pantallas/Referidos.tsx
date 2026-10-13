@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useReferidos } from '../lib/consultas.ts';
 
-/** Mis puntos: el código para invitar, lo que valen los puntos y quién se ha unido (PAS-70). */
+/** Mis puntos: el código para invitar, lo que valen los puntos y quién se ha unido (PAS-80). */
 export function Referidos() {
   const navegar = useNavigate();
   const qc = useQueryClient();

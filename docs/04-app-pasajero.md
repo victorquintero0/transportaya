@@ -56,6 +56,8 @@
 | PAS-60 | Vincular el perfil a una empresa por invitación (llega al celular, se acepta en Cuenta → «Mi empresa»; se puede salir de la empresa) | F3 · hecho |
 | PAS-61 | Elegir perfil personal o corporativo al pedir («Empresa · nombre» entre las formas de pago); elegir centro de costo y motivo; la política avisa antes de confirmar | F3 · hecho |
 | PAS-62 | Sección **Empresa** para administradores: empleados, centros de costo, políticas, viajes y estados de cuenta. Por D-09 vive en la **App Operación** («Mi empresa»), no en esta app | F3 · hecho en Operación |
+| **Puntos** | | |
+| PAS-80 | **Puntos e invitados:** mi código para invitar y compartirlo, escribir el código de quien me invitó, mi saldo y sus movimientos, mis invitados y usar los puntos para pagar menos al pedir (RN-150 a RN-159) | F3 · hecho |
 | **Notificaciones** | | |
 | PAS-70 | Push: conductor asignado, conductor llegó, viaje finalizado, recordatorios de reserva, respuestas de soporte | MVP |
 
@@ -158,6 +160,7 @@ Código en `apps/pasajero`; la prueba con navegador real está en `apps/e2e`.
 | **Resumen** | Precio final, calificación con etiquetas, propina para viajes con tarjeta y recibo con cada concepto (PAS-40 a PAS-43) |
 | **Mis viajes** | Historial con filtros, detalle, recibo (se guarda como PDF desde el navegador), pedir de nuevo y reportar un problema (PAS-44, PAS-50, PAS-51) |
 | **Pagos** | Tarjetas (la tarjeta nunca se guarda: solo el token), predeterminada, y pago de la deuda (PAS-10, PAS-11, PAS-13) |
+| **Cuenta → Puntos e invitados** | Mi código con «Invitar» (menú de compartir del teléfono), «¿Alguien te invitó?» para escribir un código, mis puntos con lo que valen, mis invitados y el historial. En **Cotizar** aparece «Usar mis puntos» con el descuento; el resumen y el recibo muestran lo ahorrado (PAS-80) |
 | **Cuenta** | Datos, lugares, contactos de confianza, preferencias, **descargar mis datos** y **eliminar la cuenta** (PAS-03 a PAS-05) |
 | **Enlace compartido** (`/c/…`) | Página pública, sin cuenta: conductor, placa, posición y barrio de destino; se apaga al terminar el viaje (PAS-34) |
 

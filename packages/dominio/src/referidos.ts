@@ -1,5 +1,5 @@
 /**
- * Referidos y puntos (RN-120 a RN-129). Quien tiene la app invita a otra persona con su código; cuando la persona
+ * Referidos y puntos (RN-150 a RN-159). Quien tiene la app invita a otra persona con su código; cuando la persona
  * invitada termina su primer viaje, las dos reciben puntos. Los puntos valen pesos y se canjean por un descuento en un
  * viaje (pasajero) o como abono a la comisión (conductor); TransporteYa absorbe ese costo.
  *
@@ -141,7 +141,7 @@ export interface EntradaAplicarCodigo {
   viajesTerminados: number;
 }
 
-/** RN-121: quién puede usar un código y cuándo. */
+/** RN-151: quién puede usar un código y cuándo. */
 export function validarAplicarCodigo(e: EntradaAplicarCodigo): { ok: true } | MotivoNoAplica {
   if (!e.reglas.activo)
     return {
@@ -180,7 +180,7 @@ export type DecisionOtorgamiento =
   | { accion: 'otorgar'; referidor: number; invitado: number; topeAlcanzado: boolean };
 
 /**
- * RN-123 y RN-124: cuándo se entregan los puntos. Con el primer viaje terminado que llegue al mínimo, y no si el propio
+ * RN-153 y RN-154: cuándo se entregan los puntos. Con el primer viaje terminado que llegue al mínimo, y no si el propio
  * referidor fue la otra parte del viaje. Si el referidor ya llegó al
  * tope del mes, la persona invitada igual recibe sus puntos de bienvenida y el referidor no.
  */
@@ -193,7 +193,7 @@ export function decidirOtorgamiento(e: {
   /** El referidor fue la otra parte de ese viaje (el conductor que llevó al pasajero invitado, o al revés). */
   viajeConElReferidor?: boolean;
 }): DecisionOtorgamiento {
-  // Invitar a alguien y llevarlo uno mismo es la forma más fácil de cobrar puntos de mentira (RN-124)
+  // Invitar a alguien y llevarlo uno mismo es la forma más fácil de cobrar puntos de mentira (RN-154)
   if (e.viajeConElReferidor) return { accion: 'rechazar', motivo: 'VIAJE_CON_EL_REFERIDOR' };
   if (e.precioFinal < e.reglas.minViaje) return { accion: 'esperar', motivo: 'VIAJE_MUY_BARATO' };
   const base = puntosDeReferido(e.reglas, e.rolInvitado);
@@ -208,7 +208,7 @@ export function decidirOtorgamiento(e: {
 
 // ───────────────────────────────────────────────────────────── canje
 
-/** Puntos que se pueden usar en un cobro de `precio` pesos (RN-125): hasta el tope %, y lo que alcance el saldo. */
+/** Puntos que se pueden usar en un cobro de `precio` pesos (RN-155): hasta el tope %, y lo que alcance el saldo. */
 export function descuentoConPuntos(e: {
   saldo: number;
   precio: number;
@@ -223,7 +223,7 @@ export function descuentoConPuntos(e: {
 
 /**
  * Al terminar el viaje se conoce el precio real: de los puntos separados al pedirlo se usan los que el tope permita y
- * el resto se devuelve (RN-126).
+ * el resto se devuelve (RN-156).
  */
 export function liquidarPuntosDeViaje(e: {
   separados: number;
@@ -244,7 +244,7 @@ export type ResultadoAbono =
   | { ok: false; codigo: 'SIN_DEUDA' | 'SIN_PUNTOS' | 'MINIMO_ABONO'; detalle: string };
 
 /**
- * RN-128: el conductor abona su comisión con puntos. Nunca más que su deuda, y al menos el mínimo de puntos salvo que
+ * RN-158: el conductor abona su comisión con puntos. Nunca más que su deuda, y al menos el mínimo de puntos salvo que
  * con ellos se salde toda la deuda. Con `puntosPedidos` se abona menos que el máximo posible.
  */
 export function abonoConPuntos(e: {

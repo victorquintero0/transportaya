@@ -24,7 +24,7 @@ export const usuario = pgTable(
     nombre: text('nombre').notNull(),
     estado: estadoUsuario('estado').notNull().default('activo'),
     fotoClave: text('foto_clave'),
-    /** Código con el que la persona invita a otras (RN-120). Se genera la primera vez que lo pide. */
+    /** Código con el que la persona invita a otras (RN-150). Se genera la primera vez que lo pide. */
     codigoReferido: text('codigo_referido'),
     creadoEn: creadoEn(),
     actualizadoEn: actualizadoEn(),

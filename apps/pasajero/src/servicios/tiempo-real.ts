@@ -23,7 +23,7 @@ export interface EventosServidor {
     t: number;
   }) => void;
   'viaje:mensaje': (m: Mensaje) => void;
-  /** Ganaste puntos del programa de referidos (RN-122). */
+  /** Ganaste puntos del programa de referidos (RN-152). */
   'puntos:ganados': (d: {
     puntos: number;
     motivo: 'invitado_viajo' | 'bienvenida';
