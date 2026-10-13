@@ -16,6 +16,7 @@ import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, ErrorNegocio, noEncontrado, solicitudInvalida } from '../comun/errores.js';
 import { DespachoService } from '../viajes/despacho.service.js';
 import { EmpresaPasajeroService } from '../corporativo/empresa-pasajero.service.js';
+import { ReferidosService } from '../referidos/referidos.service.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
 import { PrecioService } from '../viajes/precio.service.js';
 import { UBICACION_DESTINOS } from './destinos-nacionales.js';
@@ -63,6 +64,7 @@ export class CotizacionesService {
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
     @Inject(EmpresaPasajeroService) private readonly empresa: EmpresaPasajeroService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   /** Destinos con tarifa fija que se ofrecen en la app: los que tienen ubicación conocida (D-29). */
@@ -153,6 +155,10 @@ export class CotizacionesService {
   /** Cotiza y, si la persona pertenece a una empresa, indica por opción si se puede cargar a la empresa (RN-103). */
   async cotizar(pasajeroId: string, e: EntradaCotizacion) {
     const r = await this.cotizarBase(pasajeroId, e);
+    const puntos = await this.referidos.evaluarPrecios(
+      pasajeroId,
+      r.opciones.map((o) => o.precio.max),
+    );
     const instante = e.programadoPara ?? new Date();
     const primera = r.opciones[0];
     const evaluadas = primera
@@ -164,9 +170,17 @@ export class CotizacionesService {
       : null;
     return {
       ...r,
-      opciones: r.opciones.map((o) => ({
+      // Los puntos del pasajero: cuánto podría descontar en cada opción (RN-125)
+      puntos: {
+        activo: puntos.activo,
+        saldo: puntos.saldo,
+        valorPunto: puntos.valorPunto,
+        topeDescuentoPct: puntos.topeDescuentoPct,
+      },
+      opciones: r.opciones.map((o, i) => ({
         ...o,
         corporativo: evaluadas?.get(o.id) ?? null,
+        puntos: puntos.porPrecio[i] ?? { puntos: 0, descuento: 0 },
       })),
     };
   }

@@ -14,6 +14,7 @@ import { MiddlewareSolicitudes } from './observabilidad/solicitudes.middleware.j
 import { ObservabilidadModule } from './observabilidad/observabilidad.module.js';
 import { PasajeroModule } from './pasajero/pasajero.module.js';
 import { PrivacidadModule } from './privacidad/privacidad.module.js';
+import { ReferidosModule } from './referidos/referidos.module.js';
 import { SimuladorModule } from './simulador/simulador.module.js';
 import { TareasService } from './tareas.service.js';
 import { TiempoRealModule } from './tiempo-real/tiempo-real.module.js';
@@ -36,6 +37,7 @@ import { SaludController } from './salud.controller.js';
     PrivacidadModule,
     OperacionModule,
     CorporativoModule,
+    ReferidosModule,
     SimuladorModule,
   ],
   controllers: [SaludController],

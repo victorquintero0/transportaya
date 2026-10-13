@@ -348,7 +348,7 @@ export class ConductoresSimuladosService implements OnModuleDestroy {
             duracionS: Math.max(r.duracionS, 1),
           });
           if (bot.metodoPago === 'efectivo')
-            await this.viajes.efectivoRecibido(bot.id, bot.viajeId!, fin.precioFinal);
+            await this.viajes.efectivoRecibido(bot.id, bot.viajeId!, fin.cobrarEnEfectivo);
           await this.viajes
             .calificar(bot.id, bot.viajeId!, { estrellas: 5, etiquetas: ['Amable'] })
             .catch(() => undefined);

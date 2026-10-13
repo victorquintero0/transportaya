@@ -24,11 +24,18 @@ export const usuario = pgTable(
     nombre: text('nombre').notNull(),
     estado: estadoUsuario('estado').notNull().default('activo'),
     fotoClave: text('foto_clave'),
+    /** Código con el que la persona invita a otras (RN-120). Se genera la primera vez que lo pide. */
+    codigoReferido: text('codigo_referido'),
     creadoEn: creadoEn(),
     actualizadoEn: actualizadoEn(),
   },
   (t) => [
     uniqueIndex('usuario_telefono_uq').on(t.telefono),
+    uniqueIndex('usuario_codigo_referido_uq').on(t.codigoReferido),
+    check(
+      'usuario_codigo_referido_formato',
+      sql`${t.codigoReferido} is null or ${t.codigoReferido} ~ '^[A-Z]{2,4}-[2-9A-HJ-NP-Z]{4}$'`,
+    ),
     check('usuario_telefono_e164', sql`${t.telefono} ~ '^[+][1-9][0-9]{7,14}$'`),
   ],
 );

@@ -28,6 +28,7 @@ import { and, desc, eq, gt, inArray, isNull, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, ErrorNegocio, noEncontrado } from '../comun/errores.js';
 import { EmpresaPasajeroService } from '../corporativo/empresa-pasajero.service.js';
+import { ReferidosService } from '../referidos/referidos.service.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
 import { CancelacionPasajeroService } from '../viajes/cancelacion-pasajero.service.js';
@@ -75,6 +76,7 @@ export class ViajesPasajeroService {
     @Inject(CancelacionPasajeroService) private readonly cancelacion: CancelacionPasajeroService,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
     @Inject(EmpresaPasajeroService) private readonly empresa: EmpresaPasajeroService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   /** PAS-24: confirma un viaje a partir de una cotización y empieza a buscar conductor. */
@@ -88,6 +90,8 @@ export class ViajesPasajeroService {
       /** Solo con pago corporativo (PAS-61): a qué centro de costo se carga y para qué es el viaje. */
       centroCostoId?: string | undefined;
       motivo?: string | undefined;
+      /** Pagar parte del viaje con puntos (RN-125). */
+      usarPuntos?: boolean | undefined;
     },
   ) {
     const { db } = this.bd;
@@ -196,6 +200,12 @@ export class ViajesPasajeroService {
             })
           : null;
 
+      if (d.usarPuntos && d.metodoPago === 'corporativo')
+        throw conflicto(
+          'PUNTOS_NO_APLICA',
+          'Los puntos no se pueden usar en un viaje a cargo de la empresa.',
+        );
+
       const pin = String(randomInt(0, 10_000)).padStart(4, '0');
       const [v] = await tx
         .insert(viaje)
@@ -230,6 +240,8 @@ export class ViajesPasajeroService {
             : {}),
         })
         .returning({ id: viaje.id });
+      // Pagar parte con puntos: se apartan ya, con el precio máximo estimado; al terminar se liquidan con el real (RN-126)
+      if (d.usarPuntos) await this.referidos.separar(tx, pasajeroId, v!.id, cot.precioMax);
       await registrarEvento(tx, {
         viajeId: v!.id,
         tipo: 'solicitado',
@@ -401,6 +413,13 @@ export class ViajesPasajeroService {
       pin: ['asignado', 'en_sitio'].includes(v.estado) ? v.pinInicio : null,
       precioEstimado: { min: v.precioEstimadoMin, max: v.precioEstimadoMax },
       precioFinal: v.precioFinal,
+      /** Puntos del programa de referidos usados en este viaje y lo que de verdad paga la persona (RN-125 a RN-127). */
+      puntos: {
+        separados: v.puntosSeparados,
+        usados: v.puntosUsados,
+        descuento: v.descuentoPuntos,
+      },
+      aPagar: v.precioFinal === null ? null : v.precioFinal - v.descuentoPuntos,
       cobroEspera: v.cobroEspera,
       peajes: v.peajes,
       propina: v.propina,

@@ -397,7 +397,11 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
       // La fecha de la prueba no puede depender del día en que se corra: el día bloqueado es el de la reserva que se pida.
       const bogota = (dias: number, hora: string) => {
         const base = new Date(Date.now() + dias * 86_400_000 - 5 * 3_600_000);
-        return { dia: base.getUTCDay(), iso: `${base.toISOString().slice(0, 10)}T${hora}-05:00` };
+        // Los días de una política van de 1 (lunes) a 7 (domingo)
+        return {
+          dia: base.getUTCDay() || 7,
+          iso: `${base.toISOString().slice(0, 10)}T${hora}-05:00`,
+        };
       };
       const bloqueado = bogota(2, '10:00:00');
       const habil = bogota(3, '10:00:00');
@@ -407,7 +411,7 @@ describe.skipIf(!hayBase)('Clientes corporativos (RN-100 a RN-105)', () => {
         {},
         {
           nombre: 'Oficina',
-          dias: [0, 1, 2, 3, 4, 5, 6].filter((d) => d !== bloqueado.dia),
+          dias: [1, 2, 3, 4, 5, 6, 7].filter((d) => d !== bloqueado.dia),
           desdeMin: 6 * 60,
           hastaMin: 20 * 60,
           montoMaximo: null,

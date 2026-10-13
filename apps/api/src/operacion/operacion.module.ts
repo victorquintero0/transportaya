@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module.js';
 import { ConductorModule } from '../conductor/conductor.module.js';
 import { DineroModule } from '../dinero/dinero.module.js';
+import { ReferidosModule } from '../referidos/referidos.module.js';
 import { ViajesModule } from '../viajes/viajes.module.js';
 import { AuthOperacionController } from './auth-op.controller.js';
 import { AuthOperacionService } from './auth-op.service.js';
@@ -28,7 +29,7 @@ import { ViajesOperacionService } from './viajes-op.service.js';
 import { UsuariosOperacionController } from './usuarios-op.controller.js';
 
 @Module({
-  imports: [AuthModule, ConductorModule, ViajesModule, DineroModule],
+  imports: [AuthModule, ConductorModule, ViajesModule, DineroModule, ReferidosModule],
   controllers: [
     CatalogosOperacionController,
     ReservasOperacionController,

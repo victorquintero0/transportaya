@@ -7,7 +7,7 @@ import {
 } from '@transportaya/db';
 import { Inject, Injectable } from '@nestjs/common';
 import { and, desc, eq, sql } from 'drizzle-orm';
-import { BaseDeDatos } from '../bd/bd.module.js';
+import { BaseDeDatos, type DbOTx } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { CONFIG, type Configuracion } from '../config.js';
 import { Eventos } from '../tiempo-real/eventos.service.js';
@@ -184,24 +184,7 @@ export class PagosService {
         motivo: `Pago por ${p.canal}`,
       });
 
-      const r = await tx.execute<{ s: string }>(
-        sql`select coalesce(sum(monto), 0)::text as s from movimiento_saldo where conductor_id = ${p.conductorId}`,
-      );
-      const saldo = Number(r.rows[0]?.s ?? 0);
-      let habilitado = false;
-      if (saldo >= 0) {
-        await tx
-          .update(conductor)
-          .set({ bloqueadoPorDeuda: false })
-          .where(eq(conductor.usuarioId, p.conductorId));
-        await tx
-          .update(cierreDiario)
-          .set({ estado: 'cobrado' })
-          .where(
-            and(eq(cierreDiario.conductorId, p.conductorId), eq(cierreDiario.estado, 'por_cobrar')),
-          );
-        habilitado = true;
-      }
+      const { saldo, habilitado } = await this.habilitarSiSinDeuda(tx, p.conductorId);
       return { yaConciliado: false as const, conductorId: p.conductorId, saldo, habilitado };
     });
     if (!resultado.yaConciliado && resultado.habilitado) {
@@ -211,6 +194,30 @@ export class PagosService {
       });
     }
     return resultado;
+  }
+
+  /**
+   * Si el libro del conductor ya no está a su cargo, lo habilita y da por cobrados los cierres que estaban por cobrar
+   * (RN-063). Se llama justo después de acreditar un pago de comisión o un abono con puntos.
+   */
+  async habilitarSiSinDeuda(
+    tx: DbOTx,
+    conductorId: string,
+  ): Promise<{ saldo: number; habilitado: boolean }> {
+    const r = await tx.execute<{ s: string }>(
+      sql`select coalesce(sum(monto), 0)::text as s from movimiento_saldo where conductor_id = ${conductorId}`,
+    );
+    const saldo = Number(r.rows[0]?.s ?? 0);
+    if (saldo < 0) return { saldo, habilitado: false };
+    await tx
+      .update(conductor)
+      .set({ bloqueadoPorDeuda: false })
+      .where(eq(conductor.usuarioId, conductorId));
+    await tx
+      .update(cierreDiario)
+      .set({ estado: 'cobrado' })
+      .where(and(eq(cierreDiario.conductorId, conductorId), eq(cierreDiario.estado, 'por_cobrar')));
+    return { saldo, habilitado: true };
   }
 
   /** Confirma que el banco entregó el pago al conductor: lo descuenta del libro (RN-073). */

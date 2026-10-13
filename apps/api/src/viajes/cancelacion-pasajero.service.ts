@@ -12,6 +12,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
+import { ReferidosService } from '../referidos/referidos.service.js';
 import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from './despacho.service.js';
 import { descuentoDeEmpresa } from './descuento-corporativo.js';
@@ -36,6 +37,7 @@ export class CancelacionPasajeroService {
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(Eventos) private readonly eventos: Eventos,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   /** Cuánto cuesta cancelar este viaje en este momento, para avisárselo al pasajero antes de confirmar (HU-PAS-02). */
@@ -134,6 +136,8 @@ export class CancelacionPasajeroService {
         actorId: v.pasajeroId,
         datos: { costo, reserva: true },
       });
+      // Los puntos que había apartado para este viaje vuelven a su saldo (RN-126)
+      await this.referidos.liberar(tx, v.id);
       return actualizada;
     });
     void r;
@@ -172,6 +176,7 @@ export class CancelacionPasajeroService {
         .where(eq(viaje.id, v.id))
         .returning({ id: viaje.id });
       if (r.length === 0) throw conflicto('ESTADO_INVALIDO', 'Este viaje ya no se puede cancelar.');
+      await db.transaction((tx) => this.referidos.liberar(tx, v.id));
       await registrarEvento(db, {
         viajeId: v.id,
         tipo: 'cancelado',
@@ -238,6 +243,7 @@ export class CancelacionPasajeroService {
         actorId: v.pasajeroId,
         datos: { costo },
       });
+      await this.referidos.liberar(tx, v.id);
     });
 
     this.eventos.aConductor(conductorId, 'viaje:estado', {

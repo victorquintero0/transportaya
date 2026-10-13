@@ -131,6 +131,11 @@ export const viaje = pgTable(
     motivoCorporativo: text('motivo_corporativo'),
     /** Lo que se le descuenta a la empresa por su contrato; lo absorbe TransporteYa, el conductor cobra completo. */
     descuentoCorporativo: cop('descuento_corporativo').notNull().default(0),
+    /** Puntos apartados al pedir el viaje para pagar parte con ellos (RN-125). Se liquidan al terminar. */
+    puntosSeparados: integer('puntos_separados').notNull().default(0),
+    /** Puntos que de verdad se usaron al terminar el viaje y lo que valen: lo absorbe TransporteYa (RN-127). */
+    puntosUsados: integer('puntos_usados').notNull().default(0),
+    descuentoPuntos: cop('descuento_puntos').notNull().default(0),
     /** El estado de cuenta en el que se cobró este viaje. */
     estadoCuentaId: uuid('estado_cuenta_id').references(() => estadoCuenta.id),
     pinInicio: text('pin_inicio'),
@@ -211,6 +216,11 @@ export const viaje = pgTable(
       sql`(${t.empresaId} is null) = (${t.vinculoEmpresaId} is null)
         and (${t.empresaId} is not null or (${t.centroCostoId} is null and ${t.descuentoCorporativo} = 0
           and ${t.estadoCuentaId} is null))`,
+    ),
+    check(
+      'viaje_puntos_coherentes',
+      sql`${t.puntosSeparados} >= 0 and ${t.puntosUsados} between 0 and ${t.puntosSeparados}
+        and ${t.descuentoPuntos} >= 0 and (${t.empresaId} is null or ${t.puntosSeparados} = 0)`,
     ),
     check('viaje_codigo_formato', sql`${t.codigo} ~ '^TY-[0-9A-Z]{6}$'`),
     check('viaje_pin_formato', sql`${t.pinInicio} is null or ${t.pinInicio} ~ '^[0-9]{4}$'`),

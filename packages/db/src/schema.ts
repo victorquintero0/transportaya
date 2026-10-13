@@ -7,3 +7,4 @@ export * from './schema/corporativo.js';
 export * from './schema/viajes.js';
 export * from './schema/soporte.js';
 export * from './schema/dinero.js';
+export * from './schema/referidos.js';

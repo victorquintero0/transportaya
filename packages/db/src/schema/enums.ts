@@ -1,11 +1,14 @@
 import {
   CATEGORIAS_VEHICULO,
   ESTADOS_EMPRESA,
+  ESTADOS_REFERIDO,
   ESTADOS_PAGO,
   ESTADOS_VIAJE,
   ESTADOS_VINCULO,
   ROLES_INTERNOS,
+  ROLES_REFERIDO,
   TIPOS_MOVIMIENTO,
+  TIPOS_PUNTOS,
   TIPOS_SERVICIO,
 } from '@transportaya/dominio';
 import { pgEnum } from 'drizzle-orm/pg-core';
@@ -19,6 +22,11 @@ export const tipoMovimiento = pgEnum('tipo_movimiento', TIPOS_MOVIMIENTO);
 
 export const estadoUsuario = pgEnum('estado_usuario', ['activo', 'bloqueado', 'anonimizado']);
 export const rolInterno = pgEnum('rol_interno', ROLES_INTERNOS);
+
+/** Referidos y puntos (RN-120 a RN-129). */
+export const rolReferido = pgEnum('rol_referido', ROLES_REFERIDO);
+export const estadoReferido = pgEnum('estado_referido', ESTADOS_REFERIDO);
+export const tipoPuntos = pgEnum('tipo_puntos', TIPOS_PUNTOS);
 
 /** Empresas clientes (RN-100 a RN-105). */
 export const estadoEmpresa = pgEnum('estado_empresa', ESTADOS_EMPRESA);

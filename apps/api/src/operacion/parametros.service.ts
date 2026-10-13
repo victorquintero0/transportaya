@@ -1,6 +1,10 @@
 import { Global, Inject, Injectable, Module } from '@nestjs/common';
 import { parametro } from '@transportaya/db';
-import { RESERVA_POR_DEFECTO, type ParametrosReserva } from '@transportaya/dominio';
+import {
+  RESERVA_POR_DEFECTO,
+  type ParametrosReserva,
+  type ReglasReferidos,
+} from '@transportaya/dominio';
 import { like } from 'drizzle-orm';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { CATALOGO_PARAMETROS, type ClaveParametro } from './parametros.js';
@@ -29,6 +33,36 @@ export class ParametrosService {
   async numero(clave: ClaveParametro): Promise<number> {
     const v = (await this.valores()).get(clave);
     return typeof v === 'number' && Number.isFinite(v) ? v : CATALOGO_PARAMETROS[clave].defecto;
+  }
+
+  /** Las reglas del programa de referidos y puntos (RN-120 a RN-129) con los cambios que haya hecho Operación. */
+  async referidos(): Promise<ReglasReferidos> {
+    const [a, b, c, d, e, f, g, h, i, j, k] = await Promise.all([
+      this.numero('referidos.activo'),
+      this.numero('referidos.puntos_referidor_pasajero'),
+      this.numero('referidos.puntos_referidor_conductor'),
+      this.numero('referidos.puntos_invitado_pasajero'),
+      this.numero('referidos.puntos_invitado_conductor'),
+      this.numero('referidos.valor_punto'),
+      this.numero('referidos.tope_descuento_pct'),
+      this.numero('referidos.min_viaje'),
+      this.numero('referidos.ventana_dias'),
+      this.numero('referidos.tope_mensual'),
+      this.numero('referidos.min_abono_puntos'),
+    ]);
+    return {
+      activo: a === 1,
+      puntosReferidorPasajero: b,
+      puntosReferidorConductor: c,
+      puntosInvitadoPasajero: d,
+      puntosInvitadoConductor: e,
+      valorPunto: f,
+      topeDescuentoPct: g,
+      minViaje: h,
+      ventanaDias: i,
+      topeMensual: j,
+      minAbonoPuntos: k,
+    };
   }
 
   /** Los plazos de las reservas (RN-080 a RN-085) con los cambios que haya hecho Operación. */

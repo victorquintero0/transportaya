@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConductorModule } from '../conductor/conductor.module.js';
 import { CorporativoModule } from '../corporativo/corporativo.module.js';
 import { PrivacidadModule } from '../privacidad/privacidad.module.js';
+import { ReferidosModule } from '../referidos/referidos.module.js';
 import { ViajesModule } from '../viajes/viajes.module.js';
 import { CompartidoController } from './compartido.controller.js';
 import { CompartidoService } from './compartido.service.js';
@@ -14,7 +15,7 @@ import { SoportePasajeroService } from './soporte.service.js';
 import { ViajesPasajeroService } from './viajes.service.js';
 
 @Module({
-  imports: [ConductorModule, ViajesModule, PrivacidadModule, CorporativoModule],
+  imports: [ConductorModule, ViajesModule, PrivacidadModule, CorporativoModule, ReferidosModule],
   controllers: [PasajeroController, CompartidoController],
   providers: [
     PerfilPasajeroService,

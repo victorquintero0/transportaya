@@ -14,3 +14,4 @@ export * from './mapa.js';
 export * from './privacidad.js';
 export * from './reservas.js';
 export * from './corporativo.js';
+export * from './referidos.js';

@@ -32,6 +32,7 @@ import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado } from '../comun/errores.js';
 import { UbicacionStore } from '../conductor/ubicacion.store.js';
 import { ParametrosService } from '../operacion/parametros.service.js';
+import { ReferidosService } from '../referidos/referidos.service.js';
 import { Eventos, type OfertaParaConductor } from '../tiempo-real/eventos.service.js';
 import { primerNombre, registrarEvento, zonaDeDireccion } from './eventos-viaje.js';
 
@@ -83,6 +84,7 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
     @Inject(Eventos) private readonly eventos: Eventos,
     @Inject(PARAMETROS_DESPACHO) private readonly p: ParametrosDespacho,
     @Inject(ParametrosService) private readonly parametros: ParametrosService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   /**
@@ -747,6 +749,10 @@ export class DespachoService implements OnApplicationBootstrap, OnModuleDestroy 
       .returning({ id: viaje.id, pasajeroId: viaje.pasajeroId });
     if (r.length) {
       await registrarEvento(this.bd.db, { viajeId, tipo: 'sin_conductor', actorTipo: 'sistema' });
+      // Si el pasajero apartó puntos para este viaje, vuelven a su saldo
+      await this.bd.db
+        .transaction((tx) => this.referidos.liberar(tx, viajeId))
+        .catch(() => undefined);
       this.eventos.aPasajero(r[0]!.pasajeroId, 'viaje:estado', {
         viajeId,
         estado: 'sin_conductor',

@@ -70,6 +70,8 @@ const crearViaje = z.object({
   nota: z.string().trim().max(140).optional(),
   centroCostoId: z.string().uuid().optional(),
   motivo: z.string().trim().min(2).max(200).optional(),
+  /** Pagar parte del viaje con los puntos del programa de referidos (RN-125). No va con lo corporativo. */
+  usarPuntos: z.boolean().optional(),
 });
 const calificar = z.object({
   estrellas: z.number().int().min(1).max(5),

@@ -74,6 +74,10 @@ export const PERMISOS = {
   'privacidad.suprimir': ['supervisor', 'admin'],
   /** Pantalla «Sistema»: salud, tareas programadas y tráfico de la API. */
   'sistema.ver': ['supervisor', 'admin'],
+  /** Programa de referidos y puntos: ver referidos, saldos y movimientos. */
+  'referidos.ver': ['soporte', 'financiero', 'supervisor', 'admin'],
+  /** Ajustar puntos de una persona, rechazar o devolver un referido (cuesta dinero a TransporteYa). */
+  'referidos.gestionar': ['financiero', 'supervisor', 'admin'],
   /** Empresas clientes: contrato, empleados, políticas, consumo y estados de cuenta (OPE-10). */
   'corporativo.ver': ['soporte', 'financiero', 'supervisor', 'admin'],
   /** Crear empresas, pactar el contrato, suspender, generar estados de cuenta y registrar sus pagos. */

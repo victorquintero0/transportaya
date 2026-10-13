@@ -73,7 +73,8 @@ describe.skipIf(!hayBase)('libro de movimientos del conductor', () => {
       expect(borrar.mensaje).toContain('inmutable');
 
       const vaciar = await violacion(base.db.execute(sql`truncate movimiento_saldo`));
-      expect(vaciar.mensaje).toContain('inmutable');
+      // Vaciar el libro lo impide el disparador o, ahora que otras tablas lo referencian, la llave foránea
+      expect(vaciar.mensaje).toMatch(/inmutable|cannot truncate/);
     });
 
     it('la auditoría y los eventos del viaje también son inmutables', async () => {
