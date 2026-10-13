@@ -8,6 +8,7 @@ import {
   avisar,
   duracion,
   mensajeDe,
+  numero,
   pesos,
 } from '@transportaya/ui';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -131,9 +132,14 @@ export function ViajeDetalle() {
               {reserva
                 ? `${pesos(v.precioEstimado.min)} – ${pesos(v.precioEstimado.max)}`
                 : v.precioFinal
-                  ? pesos(v.precioFinal + v.propina)
+                  ? pesos((v.aPagar ?? v.precioFinal) + v.propina)
                   : '—'}
             </p>
+            {v.puntos.descuento > 0 && (
+              <p className="text-sm font-extrabold text-ty">
+                Con {numero(v.puntos.usados)} puntos ahorraste {pesos(v.puntos.descuento)}
+              </p>
+            )}
           </div>
           {v.calificacion !== null && (
             <span className="flex items-center gap-1 text-lg font-black text-sol">

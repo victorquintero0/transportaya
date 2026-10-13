@@ -4,7 +4,15 @@ import { avisar } from '@transportaya/ui';
 import { useChat } from '../estado/chat.ts';
 import { useJornada } from '../estado/jornada.ts';
 import { api } from '@transportaya/ui';
-import { alerta, desbloquearAudio, ding, iniciarTimbreOferta } from '@transportaya/ui';
+import {
+  alerta,
+  celebrar,
+  desbloquearAudio,
+  ding,
+  iniciarTimbreOferta,
+  numero,
+  tada,
+} from '@transportaya/ui';
 import { mantenerPantallaEncendida } from '../lib/pantalla-activa.ts';
 import type { Oferta, Perfil, ViajeActual } from '../lib/tipos.ts';
 import { vibrar } from '@transportaya/ui';
@@ -147,6 +155,18 @@ export function iniciarMotor(qc: QueryClient): () => void {
         avisar('El pasajero canceló el viaje', 'error');
       }
       void refrescarViaje(qc);
+    },
+    'puntos:ganados': (d) => {
+      tada();
+      vibrar('exito');
+      celebrar();
+      avisar(
+        d.motivo === 'bienvenida'
+          ? `¡Ganaste ${numero(d.puntos)} puntos de bienvenida!`
+          : `¡Tu invitado ya viajó! Ganaste ${numero(d.puntos)} puntos`,
+        'exito',
+      );
+      void qc.invalidateQueries({ queryKey: ['referidos'] });
     },
     'reserva:cambio': (d) => {
       void qc.invalidateQueries({ queryKey: ['reservas'] });

@@ -485,6 +485,51 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await captura(p, 'reportes');
   });
 
+  await test.step('referidos: el supervisor ve una invitación pendiente, ajusta puntos y la rechaza; el monitor no ve la pantalla', async () => {
+    const p = supervisor.page;
+    const sufijo = String(Math.floor(Math.random() * 9000) + 1000);
+    const invitador = await crearPasajero(
+      `3${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`,
+      `Lucía Invitadora ${sufijo}`,
+    );
+    const invitado = await crearPasajero(
+      `3${String(Math.floor(Math.random() * 1e9)).padStart(9, '0')}`,
+      `Mateo Invitado ${sufijo}`,
+    );
+    const { codigo } = await llamar<{ codigo: string }>(
+      'GET',
+      '/v1/referidos',
+      undefined,
+      invitador.token,
+    );
+    await llamar('POST', '/v1/referidos/codigo', { codigo }, invitado.token);
+
+    await p.getByRole('link', { name: 'Referidos' }).click();
+    await expect(p.locator('#resumen-referidos')).toContainText('Puntos emitidos');
+    await p.locator('#buscar-referidos').fill(sufijo);
+    const fila = p.locator('#tabla-referidos tr', { hasText: `Mateo Invitado ${sufijo}` });
+    await expect(fila).toContainText('Pendiente');
+    await captura(p, 'referidos');
+
+    // la ficha de quien invita: ajusta 200 puntos a mano
+    await fila.getByRole('button', { name: new RegExp(`Lucía Invitadora ${sufijo}`) }).click();
+    await expect(p.locator('#ficha-puntos')).toContainText('0 pts');
+    await p.locator('#ajustar-puntos').click();
+    await p.locator('#puntos-ajuste').fill('200');
+    await p.getByRole('dialog').last().locator('textarea').fill('Cortesía de la prueba');
+    await p.getByRole('dialog').last().getByRole('button', { name: 'Aplicar ajuste' }).click();
+    await expect(p.getByText('Ajuste aplicado')).toBeVisible();
+    await expect(p.locator('#ficha-puntos')).toContainText('200 pts');
+    await captura(p, 'referidos-ficha');
+    await p.getByRole('button', { name: 'Cerrar' }).last().click();
+
+    await fila.getByRole('button', { name: 'Rechazar' }).click();
+    await p.getByRole('dialog').getByRole('textbox').fill('Misma persona, dos cuentas');
+    await p.getByRole('dialog').getByRole('button', { name: 'Rechazar' }).click();
+    await expect(p.getByText('Invitación rechazada')).toBeVisible();
+    await expect(fila).toContainText('Rechazado');
+  });
+
   // los permisos limitan lo que se ve: el monitor no tiene finanzas ni usuarios
   await test.step('el monitor no ve finanzas, usuarios ni configuración', async () => {
     const nav = monitor.page.getByRole('navigation', { name: 'Principal' });
@@ -492,6 +537,7 @@ test('operación: ingreso con segundo factor, onboarding, torre en vivo, finanza
     await expect(nav.getByRole('link', { name: 'Finanzas' })).toHaveCount(0);
     await expect(nav.getByRole('link', { name: 'Usuarios' })).toHaveCount(0);
     await expect(nav.getByRole('link', { name: 'Configuración' })).toHaveCount(0);
+    await expect(nav.getByRole('link', { name: 'Referidos' })).toHaveCount(0);
   });
 
   for (const d of detener) d();

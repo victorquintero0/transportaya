@@ -16,7 +16,7 @@ import {
   usuario,
   viaje,
 } from '@transportaya/db';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { descuentoDeEmpresa } from './descuento-corporativo.js';
 import {
   ambitoComision,
@@ -40,6 +40,7 @@ import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from './despacho.service.js';
 import { primerNombre, registrarEvento } from './eventos-viaje.js';
 import { cobroSimulado } from '../comun/tarjetas.js';
+import { ReferidosService, type AvisoPuntos } from '../referidos/referidos.service.js';
 import { PeajesService } from './peajes.service.js';
 import { PrecioService } from './precio.service.js';
 
@@ -61,6 +62,7 @@ export interface MedicionTaximetro {
 @Injectable()
 export class ViajesService {
   private readonly intentosPin = new Map<string, number>();
+  private readonly log = new Logger(ViajesService.name);
 
   constructor(
     @Inject(BaseDeDatos) private readonly bd: BaseDeDatos,
@@ -70,6 +72,7 @@ export class ViajesService {
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(PrecioService) private readonly precios: PrecioService,
     @Inject(PeajesService) private readonly peajesServicio: PeajesService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   private async cargar(conductorId: string, viajeId: string, db: DbOTx = this.bd.db) {
@@ -257,6 +260,7 @@ export class ViajesService {
   async finalizar(conductorId: string, viajeId: string, taximetro: MedicionTaximetro) {
     const ahora = new Date();
     let pasajeroDelViaje = '';
+    let avisosPuntos: AvisoPuntos[] = [];
     const resultado = await this.bd.db.transaction(async (tx) => {
       const { v, ciudadId } = await this.cargar(conductorId, viajeId, tx);
       pasajeroDelViaje = v.pasajeroId;
@@ -379,6 +383,10 @@ export class ViajesService {
       const efectivo = v.metodoPago === 'efectivo';
       const corporativo = v.metodoPago === 'corporativo';
       const descuento = contrato ? descuentoCorporativo(precioFinal, contrato.descuentoPb) : 0;
+      // Puntos que el pasajero apartó al pedir el viaje: con el precio real se usan los que el tope permita (RN-156).
+      const canje = await this.referidos.liquidar(tx, v, precioFinal);
+      // Lo que el pasajero de verdad paga; el conductor cobra el viaje completo y TransporteYa absorbe la diferencia (RN-157).
+      const aPagar = precioFinal - canje.descuento;
       // Con tarjeta, el cobro lo resuelve la pasarela. Mientras no hay Wompi, el simulador aprueba todo salvo las
       // tarjetas de prueba rechazadas; en ese caso el viaje queda como deuda del pasajero (RN-053, HU-PAS-04).
       let tarjetaRechazada = false;
@@ -429,20 +437,22 @@ export class ViajesService {
           comision,
           comisionPb: COMISION_PUNTOS_BASICOS[ambito],
           descuentoCorporativo: descuento,
+          puntosUsados: canje.usados,
+          descuentoPuntos: canje.descuento,
         })
         .where(eq(viaje.id, v.id));
 
       await tx.insert(pago).values({
         viajeId: v.id,
         tipo: efectivo ? 'efectivo' : 'electronico',
-        monto: precioFinal,
+        monto: aPagar,
         estado: estadoPago,
         claveIdempotencia: `viaje:${v.id}:cobro`,
       });
       if (tarjetaRechazada) {
         await tx
           .update(pasajero)
-          .set({ deudaPendiente: sql`${pasajero.deudaPendiente} + ${precioFinal}` })
+          .set({ deudaPendiente: sql`${pasajero.deudaPendiente} + ${aPagar}` })
           .where(eq(pasajero.usuarioId, v.pasajeroId));
       }
       const movimientos = movimientosDeViaje({
@@ -451,6 +461,7 @@ export class ViajesService {
         ambito,
         viajeId: v.id,
         peajes,
+        descuentoPuntos: canje.descuento,
       });
       await tx
         .insert(movimientoSaldo)
@@ -483,11 +494,29 @@ export class ViajesService {
           datos: { taximetro, servidor, diferencia: comparacion },
         });
       }
+      // Referidos: si es el primer viaje de alguien invitado, se entregan los puntos (RN-153). Si algo falla aquí, el
+      // viaje igual termina: va en un punto de guardado aparte.
+      try {
+        avisosPuntos = await tx.transaction((sp) =>
+          this.referidos.alFinalizarViaje(sp, {
+            viajeId: v.id,
+            pasajeroId: v.pasajeroId,
+            conductorId,
+            precioFinal,
+          }),
+        );
+      } catch (e) {
+        this.log.error(
+          `No se pudieron entregar los puntos de referidos del viaje ${v.id}: ${(e as Error).message}`,
+        );
+      }
       return {
         viajeId: v.id,
         codigo: v.codigo,
         metodoPago: v.metodoPago,
         precioFinal,
+        descuentoPuntos: canje.descuento,
+        aPagar,
         totalCarrera,
         cobroEspera,
         peajes,
@@ -500,9 +529,10 @@ export class ViajesService {
           verificadas: verificable,
           usadaServidor: usarServidor,
         },
-        cobrarEnEfectivo: efectivo ? precioFinal : 0,
+        cobrarEnEfectivo: efectivo ? aPagar : 0,
       };
     });
+    this.referidos.avisar(avisosPuntos);
     this.eventos.aConductor(conductorId, 'viaje:estado', { viajeId, estado: 'finalizado' });
     this.eventos.aPasajero(pasajeroDelViaje, 'viaje:estado', {
       viajeId,
@@ -521,7 +551,8 @@ export class ViajesService {
         throw conflicto('ESTADO_INVALIDO', 'Este viaje no tiene un cobro en efectivo pendiente.');
       if (v.estadoPago !== 'pendiente')
         throw conflicto('YA_CONFIRMADO', 'Ya confirmaste el efectivo de este viaje.');
-      const total = v.precioFinal ?? 0;
+      // El pasajero paga lo del viaje menos lo que descontó con puntos (RN-157)
+      const total = (v.precioFinal ?? 0) - v.descuentoPuntos;
       const completo = monto >= total;
 
       await tx
@@ -626,6 +657,7 @@ export class ViajesService {
             .set({ deudaPendiente: sql`${pasajero.deudaPendiente} + ${tarifaCancelacion}` })
             .where(eq(pasajero.usuarioId, v.pasajeroId));
         }
+        await this.referidos.liberar(tx, v.id);
         await tx
           .update(conductor)
           .set({ estadoOperativo: 'disponible' })
@@ -861,6 +893,8 @@ export class ViajesService {
       tipoServicio: v.tipoServicio,
       metodoPago: v.metodoPago,
       precioFinal: v.precioFinal,
+      /** Lo que el pasajero descontó con puntos y TransporteYa te acredita (en efectivo) o ya incluía (con tarjeta). */
+      descuentoPuntos: v.descuentoPuntos,
       comision: v.comision,
       gananciaNeta:
         v.precioFinal === null || v.comision === null ? null : v.precioFinal - v.comision,

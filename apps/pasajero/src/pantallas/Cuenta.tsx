@@ -11,6 +11,7 @@ import {
   auth,
   avisar,
   mensajeDe,
+  numero,
   primerNombre,
   telefonoLegible,
   useSesion,
@@ -21,7 +22,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAjustes } from '../estado/ajustes.ts';
 import { usePedido } from '../estado/pedido.ts';
-import { useEmpresa, usePerfil, useSimulador } from '../lib/consultas.ts';
+import { useEmpresa, usePerfil, useReferidos, useSimulador } from '../lib/consultas.ts';
 import { CENTRO_MANIZALES, useUbicacion } from '../servicios/ubicacion.ts';
 
 const ENTRADA =
@@ -154,6 +155,7 @@ export function Cuenta() {
   const qc = useQueryClient();
   const navegar = useNavigate();
   const { data: perfil } = usePerfil();
+  const { data: referidos } = useReferidos();
   const ajustes = useAjustes();
   const salir = useSesion((s) => s.limpiar);
   const simulador = useSimulador();
@@ -271,6 +273,18 @@ export function Cuenta() {
                 : 'Efectivo'
             }
             insignia={perfil.deuda > 0 ? 'Pendiente' : undefined}
+          />
+          <Enlace
+            a="/puntos"
+            icono="chispas"
+            titulo="Puntos e invitados"
+            detalle={
+              referidos?.resumen.activo === false
+                ? 'Programa en pausa'
+                : referidos
+                  ? `${numero(referidos.resumen.saldo)} puntos · Invita y gana`
+                  : 'Invita y gana'
+            }
           />
           <Enlace
             a="/ayuda"

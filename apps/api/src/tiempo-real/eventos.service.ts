@@ -14,6 +14,8 @@ export interface EventosAConductor {
   'viaje:mensaje': MensajeDeViaje;
   /** Cambió una de sus reservas (la operación se la asignó o se la quitó). */
   'reserva:cambio': { viajeId: string; motivo: 'asignada' | 'liberada' | 'cancelada' };
+  /** Ganó puntos del programa de referidos. */
+  'puntos:ganados': PuntosGanados;
 }
 
 /** Eventos del servidor hacia el pasajero (docs/10). */
@@ -32,6 +34,16 @@ export interface EventosAPasajero {
     t: number;
   };
   'viaje:mensaje': MensajeDeViaje;
+  /** Ganó puntos del programa de referidos. */
+  'puntos:ganados': PuntosGanados;
+}
+
+/** Aviso de puntos nuevos: quien invitó o la persona invitada, cuando esta termina su primer viaje (RN-153). */
+export interface PuntosGanados {
+  puntos: number;
+  motivo: 'invitado_viajo' | 'bienvenida';
+  /** Saldo después de recibirlos. */
+  saldo: number;
 }
 
 export interface MensajeDeViaje {

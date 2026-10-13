@@ -210,7 +210,8 @@ export const movimientoSaldo = pgTable(
     check('movimiento_monto_no_cero', sql`${t.monto} <> 0`),
     check(
       'movimiento_signo_y_origen',
-      sql`case ${t.tipo}
+      // Se compara como texto para poder estrenar valores del enum sin usarlos como enum en la misma migración
+      sql`case ${t.tipo}::text
         when 'ingreso_viaje_electronico' then ${t.monto} > 0 and ${t.viajeId} is not null
         when 'comision_viaje_efectivo' then ${t.monto} < 0 and ${t.viajeId} is not null
         when 'peaje' then ${t.monto} > 0 and ${t.viajeId} is not null
@@ -218,6 +219,8 @@ export const movimientoSaldo = pgTable(
         when 'cancelacion' then ${t.viajeId} is not null
         when 'pago_comision' then ${t.monto} > 0 and ${t.pagoComisionId} is not null
         when 'pago_liquidacion' then ${t.monto} < 0 and ${t.pagoConductorId} is not null
+        when 'descuento_puntos' then ${t.monto} > 0 and ${t.viajeId} is not null
+        when 'abono_puntos' then ${t.monto} > 0
         when 'ajuste' then ${t.motivo} is not null and ${t.creadoPor} is not null
           and ${t.aprobadoPor} is not null and ${t.aprobadoPor} <> ${t.creadoPor}
         else false end`,

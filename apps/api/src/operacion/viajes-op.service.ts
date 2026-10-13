@@ -21,6 +21,7 @@ import { and, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import { BaseDeDatos } from '../bd/bd.module.js';
 import { conflicto, noEncontrado, solicitudInvalida } from '../comun/errores.js';
+import { ReferidosService } from '../referidos/referidos.service.js';
 import { Eventos } from '../tiempo-real/eventos.service.js';
 import { DespachoService } from '../viajes/despacho.service.js';
 import { registrarEvento } from '../viajes/eventos-viaje.js';
@@ -56,6 +57,7 @@ export class ViajesOperacionService {
     @Inject(BaseDeDatos) private readonly bd: BaseDeDatos,
     @Inject(DespachoService) private readonly despacho: DespachoService,
     @Inject(Eventos) private readonly eventos: Eventos,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   async listar(f: FiltroViajes) {
@@ -475,6 +477,7 @@ export class ViajesOperacionService {
           motivoCancelacion: motivo,
         })
         .where(eq(viaje.id, v.id));
+      await this.referidos.liberar(tx, v.id);
       if (v.conductorId)
         await tx
           .update(conductor)
@@ -543,6 +546,12 @@ export class ViajesOperacionService {
         throw conflicto('ESTADO_INVALIDO', 'Solo se ajusta el precio de un viaje finalizado.');
       if (nuevoPrecio === v.precioFinal)
         throw solicitudInvalida('El precio nuevo es igual al actual.');
+      // El descuento por puntos se calculó sobre el precio original: ajustarlo desordenaría el libro del conductor.
+      if (v.descuentoPuntos > 0)
+        throw conflicto(
+          'VIAJE_CON_PUNTOS',
+          'Ese viaje se pagó en parte con puntos: no se puede ajustar el precio. Resuélvelo con un reembolso o un ajuste de finanzas.',
+        );
       const nuevoTotal = nuevoPrecio - v.cobroEspera;
       if (nuevoTotal < 0)
         throw solicitudInvalida('El precio no puede ser menor al cobro por espera.');

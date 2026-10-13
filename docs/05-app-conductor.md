@@ -72,6 +72,8 @@ Mientras está **habilitado**, el conductor tiene además un **estado operativo*
 | CON-41 | **Cierre del día**: lo que TransporteYa le debe o la comisión que debe pagar, con los datos de la llave de TransporteYa | MVP |
 | CON-42 | Historial de cierres diarios y pagos recibidos | MVP |
 | CON-43 | Pagar la comisión desde la app con Bre-B y habilitación automática | F2 |
+| **Puntos** | | |
+| CON-60 | **Puntos e invitados** (Perfil): mi código para invitar a conductores y pasajeros, escribir el código de quien me invitó, mi saldo y **pagar mi comisión con puntos** (RN-150 a RN-159) | F3 · hecho |
 | **Calidad y soporte** | | |
 | CON-50 | Mis indicadores: calificación, tasa de aceptación, tasa de cancelación, horas en línea | MVP |
 | CON-51 | Reportar un problema sobre un viaje u objeto encontrado | MVP |

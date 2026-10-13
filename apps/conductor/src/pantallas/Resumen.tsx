@@ -109,6 +109,18 @@ function Ganaste({ resultado, alSeguir }: { resultado: ResultadoFinalizar; alSeg
           </div>
         </Tarjeta>
 
+        {resultado.descuentoPuntos > 0 && (
+          <p
+            className="w-full max-w-md rounded-xl bg-ty/10 px-4 py-3 text-center text-sm font-bold text-ty"
+            id="aviso-puntos"
+          >
+            El pasajero pagó {pesos(resultado.descuentoPuntos)} menos con sus puntos.
+            {resultado.metodoPago === 'efectivo'
+              ? ' TransporteYa te lo abona: tu ganancia no cambia.'
+              : ' Tu ganancia no cambia.'}
+          </p>
+        )}
+
         <div className="flex flex-wrap justify-center gap-2">
           <Chip>
             <Icono nombre="pin" tamano={14} /> {distancia(m.distanciaM)}

@@ -117,7 +117,23 @@ export function Perfil() {
         </div>
 
         <InstalarApp nombre="TransporteYa Conductor" />
-        <Tarjeta className="p-0">
+        <Tarjeta className="divide-y divide-borde p-0">
+          <Link
+            to="/puntos"
+            id="enlace-puntos"
+            className="flex min-h-16 items-center gap-3 px-4 py-2"
+          >
+            <span className="grid size-10 place-items-center rounded-xl bg-ty/15 text-ty">
+              <Icono nombre="chispas" tamano={20} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-extrabold">Puntos e invitados</span>
+              <span className="block truncate text-sm text-suave">
+                Invita conductores y pasajeros, y paga tu comisión con puntos
+              </span>
+            </span>
+            <Icono nombre="derecha" className="text-suave" tamano={20} />
+          </Link>
           <Link to="/diagnostico" className="flex min-h-16 items-center gap-3 px-4 py-2">
             <span className="grid size-10 place-items-center rounded-xl bg-ty/15 text-ty">
               <Icono nombre="telefono" tamano={20} />

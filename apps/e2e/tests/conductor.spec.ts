@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { crearConductor, crearPasajero, reservarDeMentira } from './ayudas-api.js';
+import { crearConductor, crearPasajero, llamar, reservarDeMentira } from './ayudas-api.js';
 
 /** PNG de 1×1 píxel: el servidor valida el tipo real del archivo, no su extensión. */
 const PNG = Buffer.from(
@@ -255,5 +255,46 @@ test('conductor: ve el tablero de reservas, toma una, la confirma y la suelta', 
     await page.locator('#soltar-reserva').click();
     await expect(page.getByText('Soltaste la reserva')).toBeVisible();
     await expect(page.locator('#sin-mias')).toBeVisible();
+  });
+});
+
+test('conductor: usa el código de quien lo invitó y ve sus puntos y el abono a la comisión', async ({
+  page,
+}) => {
+  page.on('pageerror', (e) => console.log('ERROR EN LA PÁGINA:', e.message));
+  const telefono = celularNuevo();
+  await crearConductor(telefono, { nombre: 'Julián Vélez', aprobar: true });
+  const invitador = await crearPasajero(celularNuevo(), 'Paula Marín');
+  const { codigo } = await llamar<{ codigo: string }>(
+    'GET',
+    '/v1/referidos',
+    undefined,
+    invitador.token,
+  );
+
+  await test.step('abre Puntos e invitados desde el perfil', async () => {
+    await page.goto('/');
+    await page.getByLabel('Número de celular').fill(telefono);
+    await page.getByRole('button', { name: 'Recibir mi código' }).click();
+    await page.getByRole('button', { name: /Toca para usar el código/ }).click();
+    await page.getByRole('link', { name: 'Perfil' }).click();
+    await page.locator('#enlace-puntos').click();
+    await expect(page.locator('#puntos-saldo')).toHaveText('0');
+    await expect(page.locator('#mi-codigo')).toBeVisible();
+    await expect(page.locator('#abonar-comision')).toContainText('Paga tu comisión con puntos');
+    await captura(page, 'puntos');
+  });
+
+  await test.step('escribe el código y queda pendiente hasta su primer viaje', async () => {
+    await page.locator('#codigo-invitacion').fill(codigo);
+    await page.locator('#usar-codigo').click();
+    await expect(page.locator('#uso-codigo')).toContainText('Te invitó');
+    const r = await llamar<{ totales: { pendientes: number } }>(
+      'GET',
+      '/v1/referidos',
+      undefined,
+      invitador.token,
+    );
+    expect(r.totales.pendientes).toBe(1);
   });
 });

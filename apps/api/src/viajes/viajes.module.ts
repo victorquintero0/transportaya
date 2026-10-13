@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConductorModule } from '../conductor/conductor.module.js';
+import { ReferidosModule } from '../referidos/referidos.module.js';
 import { CancelacionPasajeroService } from './cancelacion-pasajero.service.js';
 import { DESPACHO_POR_DEFECTO, DespachoService, PARAMETROS_DESPACHO } from './despacho.service.js';
 import { MensajesViajeService } from './mensajes.service.js';
@@ -11,7 +12,7 @@ import { ViajesController } from './viajes.controller.js';
 import { ViajesService } from './viajes.service.js';
 
 @Module({
-  imports: [ConductorModule],
+  imports: [ConductorModule, ReferidosModule],
   controllers: [ViajesController, ReservasConductorController],
   providers: [
     PrecioService,

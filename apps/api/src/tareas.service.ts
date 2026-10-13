@@ -13,6 +13,7 @@ import { CierresService } from './dinero/cierres.service.js';
 import { EstadoTareasService } from './observabilidad/estado-tareas.service.js';
 import { CorporativoService } from './corporativo/corporativo.service.js';
 import { RetencionService } from './privacidad/retencion.service.js';
+import { ReferidosService } from './referidos/referidos.service.js';
 import { ReservasService } from './viajes/reservas.service.js';
 import { ViajesService } from './viajes/viajes.service.js';
 
@@ -32,6 +33,7 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
     @Inject(RetencionService) private readonly retencion: RetencionService,
     @Inject(ReservasService) private readonly reservas: ReservasService,
     @Inject(CorporativoService) private readonly corporativo: CorporativoService,
+    @Inject(ReferidosService) private readonly referidos: ReferidosService,
   ) {}
 
   onModuleInit(): void {
@@ -44,6 +46,11 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
       'reservas',
       'Libera las reservas sin confirmar, activa las que llegaron a su hora y alerta las que siguen sin conductor',
       30_000,
+    );
+    this.estado.registrar(
+      'puntos',
+      'Devuelve los puntos apartados en viajes que se cancelaron o se quedaron sin conductor',
+      60_000,
     );
     this.estado.registrar('cierre_diario', 'Cierre de cuentas del día (00:00)', DIA_MS);
     this.estado.registrar(
@@ -78,6 +85,12 @@ export class TareasService implements OnModuleInit, OnApplicationBootstrap {
   @Cron('10 0 * * *', { timeZone: 'America/Bogota' })
   async estadosDeCuentaDiarios(): Promise<void> {
     await this.estado.correr('estados_cuenta', () => this.corporativo.generarPendientes());
+  }
+
+  /** Cada minuto: red de seguridad para devolver los puntos de viajes que terminaron sin cobrarse (RN-156). */
+  @Interval(60_000)
+  async puntosPeriodicos(): Promise<void> {
+    await this.estado.correr('puntos', () => this.referidos.liberarPendientes());
   }
 
   /** Cada 30 s: el ciclo de vida de las reservas (RN-082, RN-083). */

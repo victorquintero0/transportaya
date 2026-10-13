@@ -893,3 +893,62 @@ export interface EstadoCuentaDetalle extends EstadoCuentaFila {
     descuento: number;
   }[];
 }
+
+/** OPE-14: el programa de referidos y puntos. */
+export interface ResumenReferidosOp {
+  activo: boolean;
+  valorPunto: number;
+  referidos: { pendientes: number; otorgados: number; rechazados: number };
+  puntos: { emitidos: number; canjeados: number; enCirculacion: number };
+  costo: { realizado: number; pendiente: number };
+  masInvitan: {
+    id: string;
+    nombre: string;
+    telefono: string;
+    invitados: number;
+    otorgados: number;
+    puntos: number;
+  }[];
+}
+
+export interface FilaReferido {
+  id: string;
+  codigo: string;
+  estado: 'pendiente' | 'otorgado' | 'rechazado';
+  rol: 'pasajero' | 'conductor';
+  puntosReferidor: number;
+  puntosInvitado: number;
+  motivo: string | null;
+  creadoEn: string;
+  resueltoEn: string | null;
+  referidorId: string;
+  referidorNombre: string;
+  referidorTelefono: string;
+  invitadoId: string;
+  invitadoNombre: string;
+  invitadoTelefono: string;
+}
+
+export interface FichaPuntos {
+  persona: { id: string; nombre: string; telefono: string };
+  codigo: string | null;
+  saldo: number;
+  valorPunto: number;
+  movimientos: {
+    id: string;
+    tipo: string;
+    puntos: number;
+    valor: number;
+    motivo: string | null;
+    viaje: string | null;
+    creadoEn: string;
+  }[];
+  invitados: { id: string; invitado: string; estado: string; rol: string; puntos: number }[];
+  invitadoPor: {
+    id: string;
+    referidor: string;
+    codigo: string;
+    estado: string;
+    puntos: number;
+  } | null;
+}

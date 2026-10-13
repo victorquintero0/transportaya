@@ -23,6 +23,7 @@ import { Inicio } from './pantallas/Inicio.tsx';
 import { OfertaEntrante } from './pantallas/OfertaEntrante.tsx';
 import { PantallaViaje } from './pantallas/PantallaViaje.tsx';
 import { Perfil } from './pantallas/Perfil.tsx';
+import { Referidos } from './pantallas/Referidos.tsx';
 import { Reservas } from './pantallas/Reservas.tsx';
 import { Registro } from './pantallas/Registro.tsx';
 import { Resumen } from './pantallas/Resumen.tsx';
@@ -91,6 +92,7 @@ export function App() {
           <Route path="reservas" element={<Reservas />} />
           <Route path="ganancias" element={<Ganancias />} />
           <Route path="perfil" element={<Perfil />} />
+          <Route path="puntos" element={<Referidos />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

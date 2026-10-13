@@ -66,7 +66,7 @@ Todas las rutas requieren el rol `pasajero` (el celular entra con `app: "pasajer
 | GET | `/v1/pasajero/lugares/inversa?lat=&lng=` | Nombre del punto del mapa |
 | GET | `/v1/pasajero/rutas` | Destinos con tarifa fija y su precio `solo_ida` / `ida_y_vuelta` |
 | POST | `/v1/pasajero/cotizaciones` | Precio por categoría (rango), recargos, dinámica y ETA; o la tarifa fija de una ruta. Con `programadoPara` cotiza una reserva; si la persona pertenece a una empresa, cada opción trae `corporativo: {permitido, codigo, detalle}` |
-| POST | `/v1/pasajero/viajes` | Crear el viaje desde una cotización vigente, con PIN; empieza a buscar conductor (o queda reservado). `metodoPago` puede ser `corporativo`, con `centroCostoId` y `motivo`: la política y el contrato se comprueban otra vez aquí |
+| POST | `/v1/pasajero/viajes` | Crear el viaje desde una cotización vigente, con PIN; con `usarPuntos: true` aparta puntos para pagar parte (`SIN_PUNTOS`, `PUNTOS_NO_APLICA`); empieza a buscar conductor (o queda reservado). `metodoPago` puede ser `corporativo`, con `centroCostoId` y `motivo`: la política y el contrato se comprueban otra vez aquí |
 | GET | `/v1/pasajero/viaje-actual` | El viaje activo, o el que acaba de terminar y falta calificar |
 | GET | `/v1/pasajero/viajes[?estado=&antes=]` · `/{id}` · `/{id}/recibo` | Historial, detalle y recibo con cada concepto del precio |
 | POST | `/v1/pasajero/viajes/{id}/cancelar` | Cancelar (gratis al buscar y 2 min tras la asignación; después, tarifa de cancelación) |
@@ -80,6 +80,8 @@ Todas las rutas requieren el rol `pasajero` (el celular entra con `app: "pasajer
 | GET | `/v1/pasajero/empresa` | Su empresa (con centros de costo y si su perfil corporativo está disponible) y las invitaciones recibidas (PAS-60) |
 | POST | `/v1/pasajero/empresa/invitaciones/{id}/aceptar` · `/rechazar` · `/v1/pasajero/empresa/salir` | Aceptar o rechazar una invitación; salir de la empresa |
 | GET / POST | `/v1/pasajero/soporte/tickets` | Reportar un problema u objeto perdido ligado a un viaje; ver mis reportes |
+| GET | `/v1/referidos` · `/v1/referidos/movimientos` | **Pasajero o conductor** (PAS-80, CON-60). Mi código, saldo, reglas y recompensas, a quién invité, quién me invitó y, para el conductor, su deuda y lo que puede abonar; y el libro de puntos |
+| POST | `/v1/referidos/codigo` | `{codigo}`: usar el código de quien me invitó. Errores: `CODIGO_NO_EXISTE`, `CODIGO_PROPIO`, `YA_INVITADO`, `YA_VIAJO`, `FUERA_DE_VENTANA`, `REFERIDOS_INACTIVOS` |
 
 ### Modo demostración para el pasajero
 
@@ -122,6 +124,7 @@ Todas las rutas requieren el rol `conductor`. Los errores siguen RFC 9457 con un
 | POST | `/v1/conductor/pagos-comision` | Avisar que pagó la comisión (queda en revisión hasta conciliar) |
 | GET | `/v1/conductor/reservas` | `{disponibles, mias}`: el tablero (desde 24 h antes) y las que ya tomé |
 | POST | `/v1/conductor/reservas/{id}/tomar` · `/confirmar` · `/soltar` | Tomar, confirmar (≥ 60 min antes) o soltar una reserva; devuelven `{mias}` |
+| POST | `/v1/referidos/abonar` | `{puntos?}`: pagar la comisión pendiente con puntos; sin `puntos` usa todos los que se pueden (RN-158). Ver también `/v1/referidos` arriba |
 
 ### Modo demostración (`/v1/dev/*`)
 
@@ -199,6 +202,9 @@ guarda su registro en la auditoría dentro de la misma transacción. Las listas 
 | GET | `/v1/op/reportes/tiempos?categoria=&zonaId=` · `/calor?tipo=` | `reportes.ver` | Reportes con filtros y mapa de calor por celdas |
 | GET | `/v1/op/sistema` | `sistema.ver` | Salud técnica: base de datos, tareas programadas, tráfico y conexiones ([doc 15](15-observabilidad-y-privacidad.md)) |
 | GET | `/v1/op/privacidad/solicitudes` · `/{id}` | `privacidad.ver` | Solicitudes de las personas sobre sus datos, con plazo y semáforo |
+| GET | `/v1/op/referidos/resumen` · `/v1/op/referidos?estado=&q=` | `referidos.ver` | Cifras del programa y lista de invitaciones (OPE-14) |
+| GET | `/v1/op/referidos/personas/{id}` | `referidos.ver` | Ficha de puntos de una persona: saldo, código, movimientos e invitaciones |
+| POST | `/v1/op/referidos/personas/{id}/ajustar` · `/v1/op/referidos/{id}/rechazar` · `/revertir` | `referidos.gestionar` | Sumar o restar puntos a mano; rechazar una invitación pendiente; revertir una otorgada. Todos con motivo |
 | POST | `/v1/op/privacidad/solicitudes/{id}/tomar` · `/resolver` | `privacidad.responder` (borrar: `privacidad.suprimir`) | Responder; aceptar una supresión anonimiza la cuenta |
 
 ## Integraciones entrantes
@@ -220,6 +226,7 @@ Los eventos son **avisos**: al reconectar, el cliente vuelve a pedir el estado p
 | `viaje:estado` | Pasajero, conductor, operación | Nuevo estado del viaje y datos relevantes (conductor asignado, precio final...) |
 | `viaje:ubicacion_conductor` | Pasajero, enlace compartido | Posición, rumbo y ETA actualizado |
 | `viaje:mensaje` | Pasajero, conductor | Mensaje de chat |
+| `puntos:ganados` | Pasajero, conductor | `{puntos, motivo: 'invitado_viajo' \| 'bienvenida', saldo}`: se entregaron puntos del programa de referidos |
 | `oferta:nueva` | Conductor | Datos de la oferta y hora de expiración |
 | `oferta:retirada` | Conductor | El pasajero canceló o expiró |
 | `conductor:estado` | Conductor | Suspensión, sin señal, bloqueo o habilitación por deuda |

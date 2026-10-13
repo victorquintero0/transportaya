@@ -53,6 +53,7 @@
 | Liquidaciones | — | — | — | ✅ | ✅ | ✅ |
 | Ajustes manuales de saldo | — | — | — | Propone | Aprueba | Aprueba |
 | Clientes corporativos | — | 👁 | — | ✅ | ✅ | ✅ |
+| Referidos y puntos (ver · ajustar, rechazar y revertir) | — | 👁 | — | ✅ | ✅ | ✅ |
 | Tarifas, zonas y dinámica | 👁 (activar dinámica manual) | — | — | 👁 | 👁 | ✅ |
 | Usuarios internos y auditoría | — | — | — | — | 👁 | ✅ |
 

@@ -75,6 +75,8 @@ export interface OpcionCotizacion {
   etaRecogidaS: number | null;
   /** Si la persona pertenece a una empresa: ¿se puede cargar este viaje a la empresa? (RN-103). */
   corporativo: { permitido: boolean; codigo: string | null; detalle: string | null } | null;
+  /** Cuántos puntos se podrían usar en este viaje y cuánto descontarían (RN-155). */
+  puntos: { puntos: number; descuento: number };
 }
 
 export interface Cotizacion {
@@ -86,6 +88,8 @@ export interface Cotizacion {
   /** Si se cotizó una reserva, la hora del servicio. */
   programadoPara: string | null;
   opciones: OpcionCotizacion[];
+  /** El saldo de puntos de la persona y las reglas para canjearlos. */
+  puntos: { activo: boolean; saldo: number; valorPunto: number; topeDescuentoPct: number };
 }
 
 export interface ConductorAsignado {
@@ -130,6 +134,10 @@ export interface Viaje {
   } | null;
   precioEstimado: { min: number; max: number };
   precioFinal: number | null;
+  /** Puntos del programa de referidos usados en el viaje (RN-155 a RN-157). */
+  puntos: { separados: number; usados: number; descuento: number };
+  /** Lo que de verdad paga la persona: el precio final menos el descuento con puntos. */
+  aPagar: number | null;
   cobroEspera: number;
   peajes?: number;
   propina: number;
