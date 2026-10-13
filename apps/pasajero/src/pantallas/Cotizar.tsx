@@ -3,6 +3,8 @@ import {
   Chip,
   Hoja,
   Icono,
+  Interruptor,
+  numero,
   Tarjeta,
   api,
   avisar,
@@ -49,6 +51,7 @@ export function Cotizar() {
   const programadoPara = usePedido((s) => s.programadoPara);
   const [elegida, setElegida] = useState<string | null>(null);
   const [pagos, setPagos] = useState(false);
+  const [conPuntos, setConPuntos] = useState(false);
   const [cuando, setCuando] = useState(false);
   const reserva = programadoPara !== null;
   const [saliendo, setSaliendo] = useState(false);
@@ -99,6 +102,10 @@ export function Cotizar() {
       : opcion?.corporativo && !opcion.corporativo.permitido
         ? opcion.corporativo.detalle
         : null;
+  // Pagar parte con puntos (RN-125): no aplica a un viaje a cargo de la empresa
+  const puntosOpcion =
+    !pagaConEmpresa && opcion && opcion.puntos.descuento > 0 ? opcion.puntos : null;
+  const usarPuntos = conPuntos && puntosOpcion !== null;
   const faltaMotivo =
     pagaConEmpresa && vinculo.politica.motivoObligatorio && motivo.trim().length < 2;
 
@@ -114,6 +121,7 @@ export function Cotizar() {
               ...(motivo.trim() ? { motivo: motivo.trim() } : {}),
             }
           : {}),
+        ...(usarPuntos ? { usarPuntos: true } : {}),
         ...(nota.trim() ? { nota: nota.trim() } : {}),
       }),
     onSuccess: (viaje) => {
@@ -121,6 +129,7 @@ export function Cotizar() {
       // La cotización quedó usada; el destino se conserva por si hay que reintentar.
       qc.removeQueries({ queryKey: ['cotizacion'] });
       void qc.invalidateQueries({ queryKey: ['perfil'] });
+      void qc.invalidateQueries({ queryKey: ['referidos'] });
       if (viaje.programadoPara) {
         // Una reserva no es el viaje de ahora: queda en «Mis reservas».
         void qc.invalidateQueries({ queryKey: ['reservas'] });
@@ -147,6 +156,10 @@ export function Cotizar() {
         avisar(mensajeDe(e), 'error');
       } else if (codigo === 'COTIZACION_VENCIDA') {
         avisar('El precio venció. Te mostramos el nuevo.', 'info');
+        void qc.invalidateQueries({ queryKey: ['cotizacion'] });
+      } else if (codigo === 'SIN_PUNTOS' || codigo === 'PUNTOS_NO_APLICA') {
+        setConPuntos(false);
+        avisar(mensajeDe(e), 'error');
         void qc.invalidateQueries({ queryKey: ['cotizacion'] });
       } else if (codigo === 'DEUDA_PENDIENTE') {
         avisar(mensajeDe(e), 'error');
@@ -383,6 +396,16 @@ export function Cotizar() {
                     className="min-h-12 w-full rounded-xl border border-borde bg-fondo px-3 font-bold outline-none placeholder:font-semibold placeholder:text-borde"
                   />
                 </label>
+              </div>
+            )}
+            {puntosOpcion && (
+              <div id="usar-puntos" className="rounded-2xl border border-ty/40 bg-ty/5 px-4">
+                <Interruptor
+                  activo={conPuntos}
+                  alCambiar={setConPuntos}
+                  etiqueta="Usar mis puntos"
+                  descripcion={`${numero(puntosOpcion.puntos)} puntos descuentan hasta ${pesos(puntosOpcion.descuento)}`}
+                />
               </div>
             )}
             <label className="flex min-h-14 items-center gap-3 rounded-2xl border border-borde bg-superficie px-4">

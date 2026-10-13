@@ -12,6 +12,7 @@ import {
   distancia,
   ding,
   mensajeDe,
+  numero,
   pesos,
   reloj,
   useAhora,
@@ -379,6 +380,9 @@ function Seguimiento({ viaje }: { viaje: Viaje }) {
               : viaje.metodoPago === 'tarjeta'
                 ? 'Pagas con tarjeta'
                 : 'Pagas en efectivo'}
+            {viaje.puntos.separados > 0 && (
+              <Chip tono="ok">{numero(viaje.puntos.separados)} pts</Chip>
+            )}
           </span>
           <span className="numeros text-texto">
             {viaje.precioEstimado.min === viaje.precioEstimado.max
@@ -565,7 +569,7 @@ function Resumen({ viaje, alCerrar }: { viaje: Viaje; alCerrar: () => void }) {
             {pagaEfectivo ? 'Pagas al conductor' : 'Te cobramos'}
           </p>
           <Numero
-            valor={viaje.precioFinal ?? 0}
+            valor={viaje.aPagar ?? viaje.precioFinal ?? 0}
             formato={pesos}
             duracion={1}
             className="block text-6xl font-black text-ty"
@@ -579,6 +583,12 @@ function Resumen({ viaje, alCerrar }: { viaje: Viaje; alCerrar: () => void }) {
                   ? 'con tu tarjeta · el banco la rechazó'
                   : 'con tu tarjeta · pendiente'}
           </p>
+          {viaje.puntos.descuento > 0 && (
+            <p className="mt-1 text-sm font-extrabold text-ty" id="descuento-puntos">
+              Usaste {numero(viaje.puntos.usados)} puntos · ahorraste{' '}
+              {pesos(viaje.puntos.descuento)}
+            </p>
+          )}
           <button
             type="button"
             id="ver-recibo"

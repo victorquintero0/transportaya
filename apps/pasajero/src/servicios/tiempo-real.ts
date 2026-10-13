@@ -23,6 +23,12 @@ export interface EventosServidor {
     t: number;
   }) => void;
   'viaje:mensaje': (m: Mensaje) => void;
+  /** Ganaste puntos del programa de referidos (RN-122). */
+  'puntos:ganados': (d: {
+    puntos: number;
+    motivo: 'invitado_viajo' | 'bienvenida';
+    saldo: number;
+  }) => void;
 }
 
 let socket: Socket | null = null;

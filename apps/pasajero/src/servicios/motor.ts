@@ -1,4 +1,4 @@
-import { alerta, avisar, ding, tada, vibrar } from '@transportaya/ui';
+import { alerta, avisar, celebrar, ding, numero, tada, vibrar } from '@transportaya/ui';
 import type { QueryClient } from '@tanstack/react-query';
 import type { Mensaje } from '../lib/tipos.ts';
 import { useSeguimiento } from '../estado/seguimiento.ts';
@@ -51,6 +51,18 @@ export function iniciarMotor(qc: QueryClient): () => void {
         useSeguimiento.getState().ponerSinConductor(true);
       }
       refrescar();
+    },
+    'puntos:ganados': (d) => {
+      tada();
+      vibrar('exito');
+      celebrar();
+      avisar(
+        d.motivo === 'bienvenida'
+          ? `¡Ganaste ${numero(d.puntos)} puntos de bienvenida!`
+          : `¡Tu invitado ya viajó! Ganaste ${numero(d.puntos)} puntos`,
+        'exito',
+      );
+      void qc.invalidateQueries({ queryKey: ['referidos'] });
     },
     'viaje:ubicacion_conductor': (d) => useSeguimiento.getState().ponerPosicion(d),
     'viaje:mensaje': (m: Mensaje) => {

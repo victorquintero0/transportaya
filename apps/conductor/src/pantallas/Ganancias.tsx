@@ -361,6 +361,8 @@ const ICONO_MOVIMIENTO: Record<string, { icono: NombreIcono; texto: string }> = 
   pago_comision: { icono: 'ok', texto: 'Pago de comisión' },
   pago_liquidacion: { icono: 'billetera', texto: 'Pago de TransporteYa' },
   ajuste: { icono: 'chispas', texto: 'Ajuste' },
+  descuento_puntos: { icono: 'chispas', texto: 'Descuento con puntos del pasajero' },
+  abono_puntos: { icono: 'chispas', texto: 'Abono con tus puntos' },
 };
 
 function Movimientos() {

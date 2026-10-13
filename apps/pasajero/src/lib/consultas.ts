@@ -1,4 +1,4 @@
-import { api, useSesion } from '@transportaya/ui';
+import { api, useSesion, type MovimientoPuntos, type ResumenReferidos } from '@transportaya/ui';
 import { useQuery } from '@tanstack/react-query';
 import type { MiEmpresa, Perfil, Viaje } from './tipos.ts';
 
@@ -42,6 +42,23 @@ export function useEmpresa() {
     enabled: hayToken,
     queryKey: ['empresa'],
     queryFn: () => api.get<MiEmpresa>('/v1/pasajero/empresa'),
+    staleTime: 15_000,
+  });
+}
+
+/** Los puntos y el código de referidos de la persona (RN-120 a RN-129). */
+export function useReferidos() {
+  const hayToken = useSesion((s) => s.accessToken !== null);
+  return useQuery({
+    enabled: hayToken,
+    queryKey: ['referidos'],
+    queryFn: async () => {
+      const [resumen, mov] = await Promise.all([
+        api.get<ResumenReferidos>('/v1/referidos'),
+        api.get<MovimientoPuntos[]>('/v1/referidos/movimientos'),
+      ]);
+      return { resumen, movimientos: mov };
+    },
     staleTime: 15_000,
   });
 }

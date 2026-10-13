@@ -6,6 +6,7 @@ import { DESTINOS, Layout } from './componentes/Layout.tsx';
 import { useAjustes } from './estado/ajustes.ts';
 import { usePerfilOperador } from './lib/consultas.ts';
 import { Ingresar } from './pantallas/Ingresar.tsx';
+import { Referidos } from './pantallas/Referidos.tsx';
 import { Reservas } from './pantallas/Reservas.tsx';
 import { EmpresaDetalle, Empresas } from './pantallas/Empresas.tsx';
 import { MiEmpresa } from './pantallas/MiEmpresa.tsx';
@@ -94,6 +95,7 @@ export function App() {
           <Route path="soporte" element={<Soporte />} />
           <Route path="soporte/:id" element={<TicketDetalle />} />
           <Route path="finanzas" element={<Finanzas />} />
+          <Route path="referidos" element={<Referidos />} />
           <Route path="tarifas" element={<Tarifas />} />
           <Route path="reportes" element={<Reportes />} />
           <Route path="usuarios" element={<Usuarios />} />

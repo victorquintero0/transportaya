@@ -577,6 +577,11 @@ export class ViajesPasajeroService {
     } else if (v.estado === 'cancelado') {
       lineas.push({ concepto: 'Cancelación', valor: v.precioFinal });
     }
+    if (v.puntos.descuento > 0)
+      lineas.push({
+        concepto: `Descuento con ${v.puntos.usados} puntos`,
+        valor: -v.puntos.descuento,
+      });
     if (v.propina > 0) lineas.push({ concepto: 'Propina', valor: v.propina });
     return {
       codigo: v.codigo,
@@ -597,7 +602,7 @@ export class ViajesPasajeroService {
         tiempoDetenidoS: fila?.detenidoS ?? null,
       },
       lineas,
-      total: v.precioFinal + v.propina,
+      total: v.precioFinal - v.puntos.descuento + v.propina,
     };
   }
 

@@ -28,6 +28,7 @@ import { Cuenta } from './pantallas/Cuenta.tsx';
 import { Entrar } from './pantallas/Entrar.tsx';
 import { Inicio } from './pantallas/Inicio.tsx';
 import { Pagos } from './pantallas/Pagos.tsx';
+import { Referidos } from './pantallas/Referidos.tsx';
 import { ViajeDetalle } from './pantallas/ViajeDetalle.tsx';
 import { ViajeEnCurso } from './pantallas/ViajeEnCurso.tsx';
 import { Reservas } from './pantallas/Reservas.tsx';
@@ -150,6 +151,7 @@ export function App() {
           <Route path="ciudades" element={<Ciudades />} />
           <Route path="cotizar" element={<Cotizar />} />
           <Route path="pagos" element={<Pagos />} />
+          <Route path="puntos" element={<Referidos />} />
           <Route path="ayuda" element={<Ayuda />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
