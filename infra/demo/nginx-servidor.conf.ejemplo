@@ -1,7 +1,9 @@
 # Ejemplo para el nginx que YA tienes en el servidor (el que entrega tus otras paginas con HTTPS).
-# Copialo a /etc/nginx/conf.d/transportaya.conf (o sites-available), ajusta las rutas del certificado y recarga:
+# Guardalo como /etc/nginx/sites-available/transportaya.vitasi.cloud, enlazalo desde sites-enabled y recarga:
+#   sudo ln -s /etc/nginx/sites-available/transportaya.vitasi.cloud /etc/nginx/sites-enabled/
 #   sudo nginx -t && sudo systemctl reload nginx
-# Los tres nombres van al mismo contenedor, que decide a que app corresponde cada uno.
+# Los tres nombres van al mismo contenedor (127.0.0.1:8085), que decide a que app corresponde cada uno.
+# Ajusta las dos rutas del certificado si el tuyo esta en otro lugar.
 
 map $http_upgrade $conexion_transportaya {
     default upgrade;
@@ -10,17 +12,20 @@ map $http_upgrade $conexion_transportaya {
 
 server {
     listen 80;
+    listen [::]:80;
     server_name transportaya.vitasi.cloud transportaya-conductor.vitasi.cloud transportaya-operacion.vitasi.cloud;
     return 301 https://$host$request_uri;
 }
 
 server {
-    listen 443 ssl http2;
+    listen 443 ssl;
+    listen [::]:443 ssl;
     server_name transportaya.vitasi.cloud transportaya-conductor.vitasi.cloud transportaya-operacion.vitasi.cloud;
 
     # El certificado wildcard de *.vitasi.cloud
-    ssl_certificate     /ruta/a/vitasi.cloud/fullchain.pem;
-    ssl_certificate_key /ruta/a/vitasi.cloud/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/vitasi-wildcard/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/vitasi-wildcard/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
 
     client_max_body_size 12m;
 
