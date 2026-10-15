@@ -15,8 +15,7 @@ server {
 }
 
 server {
-    listen 443 ssl;
-    http2 on;
+    listen 443 ssl http2;
     server_name transportaya.vitasi.cloud transportaya-conductor.vitasi.cloud transportaya-operacion.vitasi.cloud;
 
     # El certificado wildcard de *.vitasi.cloud
