@@ -65,6 +65,10 @@ pnpm --filter @transportaya/operacion dev  # http://localhost:5173 (en modo demo
 
 > **Windows:** si ya tienes un PostgreSQL en el puerto 5432 (por ejemplo el de Laragon), el contenedor de Docker puede usar otro puerto (`-p 5433:5432`) y `DATABASE_URL` apuntar a él. El repositorio fuerza finales de línea LF (`.gitattributes`) para que los CSV de la semilla se lean bien.
 
+### Demostración en un servidor
+
+`infra/demo/` publica la API, la base de datos y las tres apps detrás de un nginx, listas para un servidor con Docker. Guía paso a paso en [docs/17](docs/17-despliegue-demo.md).
+
 ### Observabilidad y datos personales
 
 La API escribe un registro JSON con identificador de solicitud, expone `/v1/listo` y `/v1/metricas`, y la App Operación tiene las pantallas **Sistema** (salud técnica) y **Privacidad**

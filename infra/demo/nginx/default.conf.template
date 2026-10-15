@@ -1,0 +1,30 @@
+map $http_upgrade $conexion_ws {
+    default upgrade;
+    ''      close;
+}
+
+# auth.conf lo genera desplegar.sh: pide usuario y clave o dice "auth_basic off;".
+
+server {
+    listen 80 default_server;
+    server_name ${HOST_PASAJERO};
+    root /usr/share/nginx/pasajero;
+    include /etc/nginx/auth.conf;
+    include /etc/nginx/snippets/app.conf;
+}
+
+server {
+    listen 80;
+    server_name ${HOST_CONDUCTOR};
+    root /usr/share/nginx/conductor;
+    include /etc/nginx/auth.conf;
+    include /etc/nginx/snippets/app.conf;
+}
+
+server {
+    listen 80;
+    server_name ${HOST_OPERACION};
+    root /usr/share/nginx/operacion;
+    include /etc/nginx/auth.conf;
+    include /etc/nginx/snippets/app.conf;
+}

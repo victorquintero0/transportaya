@@ -151,3 +151,7 @@ vite.config.ts.timestamp-*
 # Archivos subidos en desarrollo y pruebas
 .almacenamiento*/
 .certs/
+
+# Despliegue de demostracion (secretos y archivos generados)
+infra/demo/.env
+infra/demo/generado/

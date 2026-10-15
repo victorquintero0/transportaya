@@ -1,0 +1,10 @@
+.git
+**/node_modules
+**/dist
+.turbo
+**/.turbo
+apps/e2e/test-results
+apps/e2e/capturas
+**/.almacenamiento*
+infra/demo/.env
+.certs

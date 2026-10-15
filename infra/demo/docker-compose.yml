@@ -1,0 +1,64 @@
+# Demostracion de TransporteYa. Uso: ver docs/17-despliegue-demo.md
+name: transportaya-demo
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: transportaya
+      POSTGRES_PASSWORD: ${DB_CLAVE:?Falta DB_CLAVE en infra/demo/.env}
+      POSTGRES_DB: transportaya
+    volumes:
+      - db-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U transportaya -d transportaya']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/demo/Dockerfile
+      target: api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # No es "production" a proposito: la API se niega a arrancar con el simulador en produccion (D-26).
+      NODE_ENV: development
+      SIMULADOR: 'true'
+      PORT: '3000'
+      DATABASE_URL: postgres://transportaya:${DB_CLAVE}@db:5432/transportaya
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en infra/demo/.env}
+      LOG_FORMATO: json
+      VERSION: demo
+      ALMACENAMIENTO_DIR: /datos/archivos
+      CORS_ORIGENES: https://${HOST_PASAJERO},https://${HOST_CONDUCTOR},https://${HOST_OPERACION}
+    volumes:
+      - archivos:/datos/archivos
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/demo/Dockerfile
+      target: web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      HOST_PASAJERO: ${HOST_PASAJERO}
+      HOST_CONDUCTOR: ${HOST_CONDUCTOR}
+      HOST_OPERACION: ${HOST_OPERACION}
+    volumes:
+      - ./generado/auth.conf:/etc/nginx/auth.conf:ro
+      - ./generado/htpasswd:/etc/nginx/htpasswd:ro
+    ports:
+      # Solo desde el propio servidor: el nginx que ya tienes entrega el HTTPS y reenvia aqui.
+      - '127.0.0.1:${PUERTO_WEB:-8085}:80'
+
+volumes:
+  db-datos:
+  archivos:
