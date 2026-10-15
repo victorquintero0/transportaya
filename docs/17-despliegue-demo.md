@@ -84,6 +84,20 @@ curl -s https://transportaya.vitasi.cloud/v1/salud       # {"estado":"ok", ... "
 Abre `https://transportaya.vitasi.cloud`; el navegador pide el usuario y la clave de `DEMO_USUARIO`/`DEMO_CLAVE`.
 Operación está en `https://transportaya-operacion.vitasi.cloud` y entra con un clic por rol.
 
+## Instalar las apps en el teléfono
+
+Con el HTTPS del certificado wildcard las tres apps se pueden instalar como cualquier PWA:
+
+- **Android (Chrome):** abre la dirección, entra con la clave de la demostración y toca **Instalar** (en Cuenta o Perfil, o en el
+  menú ⋮ → «Instalar aplicación»). Queda como app en la pantalla de inicio.
+- **iPhone (Safari):** abre la dirección, toca **Compartir** → **Añadir a pantalla de inicio**. Safari no permite instalar con un botón.
+- Cada app se instala por separado desde su propio nombre (Pasajero, Conductor y, si quieres, Operación).
+- El nginx de la demostración deja sin clave solo el manifiesto y los iconos (`/marca/`): el sistema los descarga sin
+  credenciales para armar la app instalable.
+- **Con la clave activa**, la app instalada puede volver a pedir usuario y clave al abrirse, sobre todo en iPhone. Si estorba
+  durante una presentación, desactiva la protección un rato (deja `DEMO_USUARIO` y `DEMO_CLAVE` vacíos y vuelve a correr
+  `./desplegar.sh`) y vuélvela a activar al terminar.
+
 ## Actualizar a una versión nueva
 
 ```bash
