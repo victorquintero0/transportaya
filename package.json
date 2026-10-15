@@ -14,7 +14,8 @@
     "test": "turbo run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "movil": "node scripts/movil.mjs"
+    "movil": "node scripts/movil.mjs",
+    "iniciar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/iniciar.ps1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

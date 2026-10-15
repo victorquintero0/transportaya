@@ -61,6 +61,8 @@ pnpm --filter @transportaya/conductor dev  # http://localhost:5172
 pnpm --filter @transportaya/operacion dev  # http://localhost:5173 (en modo demostración, entra con un clic por rol)
 ```
 
+> **Windows, todo con un comando.** `.\scripts\iniciar.ps1` (o doble clic en `scripts\iniciar.cmd`, o `pnpm iniciar`) abre Docker Desktop si hace falta, levanta la base de datos (la crea si no existe, en el puerto 5433), aplica las migraciones, abre una ventana para la API y para cada app y, cuando responden, abre el navegador. Opciones: `-SinNavegador`, `-Reconstruir` (reinstala y recompila el dominio), `-SinMigrar` y `-Detener` (cierra las ventanas y la base de datos; con `-DejarDocker` la deja corriendo).
+
 > **Windows:** si ya tienes un PostgreSQL en el puerto 5432 (por ejemplo el de Laragon), el contenedor de Docker puede usar otro puerto (`-p 5433:5432`) y `DATABASE_URL` apuntar a él. El repositorio fuerza finales de línea LF (`.gitattributes`) para que los CSV de la semilla se lean bien.
 
 ### Observabilidad y datos personales
